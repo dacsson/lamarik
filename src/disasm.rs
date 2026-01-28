@@ -1,0 +1,192 @@
+//! Disassembler of Lama VM bytecode file
+
+use std::fmt::Display;
+use std::fs::{File, write};
+use std::io::{BufRead, BufReader, Read};
+use std::path::Path;
+
+#[derive(Debug)]
+pub enum BytefileError {
+    InvalidFileFormat,
+    FileReadFailed,
+    MemoryAllocationFailed,
+    UnexpectedEOF,
+    NoCodeSection,
+    InvalidStringIndexInStringTable,
+}
+
+// Memory layout of the bytecode file
+// +------------------------------------+
+// |           File Header              |
+// |------------------------------------|
+// |  int32: S       | 4 bytes          |
+// |  int32: glob_count | 4 bytes       |
+// |  int32: P       | 4 bytes          |
+// |  P × (int32, int32) | 8 bytes each |
+// +------------------------------------+
+// |           String Table             |
+// |------------------------------------|
+// |  S bytes        | Variable         |
+// |  e.g., "string1\0string2\0"        |
+// +------------------------------------+
+// |           Code Region              |
+// |------------------------------------|
+// |  Variable bytes | Instructions     |
+// |  e.g., 0x01 0x02 ... 0xFF          |
+// +------------------------------------+
+pub struct Bytefile {
+    stringtab_size: u32,
+    global_area_size: u32,
+    public_symbols_number: u32,
+    public_symbols: Vec<(u32, u32)>,
+    string_table: Vec<u8>,
+    code_section: Vec<u8>, // Kept raw for later interpretation
+}
+
+impl Display for BytefileError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BytefileError::InvalidFileFormat => write!(f, "Invalid file format"),
+            BytefileError::FileReadFailed => write!(f, "File read failed"),
+            BytefileError::MemoryAllocationFailed => write!(f, "Memory allocation failed"),
+            BytefileError::UnexpectedEOF => write!(f, "Unexpected end of file"),
+            BytefileError::NoCodeSection => write!(f, "No code section"),
+            BytefileError::InvalidStringIndexInStringTable => {
+                write!(f, "Invalid string index in string table")
+            }
+        }
+    }
+}
+
+impl std::error::Error for BytefileError {}
+
+impl Bytefile {
+    /// Parse a bytecode file into a Bytefile struct.
+    /// Leaves code section raw (as raw bytes) to be interpreted later,
+    /// while all other sections are parsed and stored to be easily accessed.
+    pub fn parse(filepath: &str) -> Result<Bytefile, BytefileError> {
+        let file = File::open(filepath).map_err(|_| BytefileError::FileReadFailed)?;
+        let mut reader = BufReader::new(file);
+
+        let mut buf = [0u8; 4];
+        reader
+            .read_exact(&mut buf)
+            .map_err(|_| BytefileError::UnexpectedEOF)?;
+        let stringtab_size = u32::from_le_bytes(buf);
+
+        buf.fill(0);
+        reader
+            .read_exact(&mut buf)
+            .map_err(|_| BytefileError::UnexpectedEOF)?;
+        let global_area_size = u32::from_le_bytes(buf);
+
+        buf.fill(0);
+        reader
+            .read_exact(&mut buf)
+            .map_err(|_| BytefileError::UnexpectedEOF)?;
+        let public_symbols_number = u32::from_le_bytes(buf);
+
+        // Read public symbol table
+        // P × (int32, int32) | 8 bytes each
+        let mut public_symbols = Vec::new();
+        for _ in 0..public_symbols_number {
+            buf.fill(0);
+            reader
+                .read_exact(&mut buf)
+                .map_err(|_| BytefileError::UnexpectedEOF)?;
+            let symbol = u32::from_le_bytes(buf);
+            reader
+                .read_exact(&mut buf)
+                .map_err(|_| BytefileError::UnexpectedEOF)?;
+            let name = u32::from_le_bytes(buf);
+            public_symbols.push((symbol, name));
+        }
+
+        // Read string table
+        let mut byte = [0u8; 1];
+        let mut string_table = Vec::new();
+        for _ in 0..stringtab_size {
+            buf.fill(0);
+            reader
+                .read_exact(&mut byte)
+                .map_err(|_| BytefileError::UnexpectedEOF)?;
+            string_table.push(byte[0]);
+        }
+
+        // Read code section
+        let mut code_section = Vec::new();
+        while byte[0] != 0xff {
+            byte.fill(0);
+            reader
+                .read_exact(&mut byte)
+                .map_err(|_| BytefileError::UnexpectedEOF)?;
+            code_section.push(byte[0]);
+        }
+
+        Ok(Bytefile {
+            stringtab_size,
+            global_area_size,
+            public_symbols_number,
+            public_symbols,
+            string_table,
+            code_section,
+        })
+    }
+}
+
+impl Display for Bytefile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "--------- Bytefile Dump ----------\n")?;
+        write!(f, " - String Table Size: {}\n", self.stringtab_size)?;
+        write!(f, " - Global Area Size: {}\n", self.global_area_size)?;
+        write!(
+            f,
+            " - Public Symbol Table Size: {}\n",
+            self.public_symbols_number
+        )?;
+        write!(
+            f,
+            " - Code Section Byte Size: {}\n",
+            self.code_section.len()
+        )?;
+
+        write!(f, " - Public symbols: \n")?;
+        for (s, n) in &self.public_symbols {
+            write!(f, "  - {}: {}\n", s, n)?;
+        }
+
+        let str_table = String::from_utf8(self.string_table.clone()).unwrap();
+        write!(f, " - String Table: {}\n", str_table)?;
+        // for s in &self.string_table {
+        //     write!(f, " {} ", s)?;
+        // }
+
+        write!(f, " - Code Section:\n")?;
+        for s in &self.code_section {
+            write!(f, "{:02X?}", s)?;
+        }
+
+        write!(f, "\n-----------------------------\n")
+    }
+}
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     #[test]
+//     fn parse_minimal_file() {
+//         // ~ =>  xxd dump/test1.bc
+//         // 00000000: 0500 0000 0100 0000 0100 0000 0000 0000  ................
+//         // 00000010: 0000 0000 6d61 696e 0052 0200 0000 0000  ....main.R......
+//         // 00000020: 0000 1002 0000 0010 0300 0000 015a 0100  .............Z..
+//         // 00000030: 0000 4000 0000 0018 5a02 0000 005a 0400  ..@.....Z....Z..
+//         // 00000040: 0000 2000 0000 0071 16ff                 .. ....q..
+//         let data = [
+//             0x05, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+//             0x00, 0x00, 0x00, 0x00, 0x6d, 0x61, 0x69, 0x6e, 0x00, 0x52, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
+//             0x00, 0x00, 0x10, 0x02, 0x00, 0x00, 0x00, 0x10, 0x03, 0x00, 0x00, 0x00, 0x01, 0x5a, 0x01, 0x00,
+//             0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x18, 0x5a, 0x02, 0x00, 0x00, 0x00, 0x5a, 0x04, 0x00,
+//             0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x71, 0x16, 0xff,
+//         ];
+//     }
+// }
