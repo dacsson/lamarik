@@ -2,7 +2,7 @@
 
 use std::fmt::Display;
 use std::fs::{File, write};
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader, Cursor, Read};
 use std::path::Path;
 
 #[derive(Debug)]
@@ -64,9 +64,8 @@ impl Bytefile {
     /// Parse a bytecode file into a Bytefile struct.
     /// Leaves code section raw (as raw bytes) to be interpreted later,
     /// while all other sections are parsed and stored to be easily accessed.
-    pub fn parse(filepath: &str) -> Result<Bytefile, BytefileError> {
-        let file = File::open(filepath).map_err(|_| BytefileError::FileReadFailed)?;
-        let mut reader = BufReader::new(file);
+    pub fn parse(source: Vec<u8>) -> Result<Bytefile, BytefileError> {
+        let mut reader = BufReader::new(Cursor::new(source));
 
         let mut buf = [0u8; 4];
         reader
@@ -132,6 +131,24 @@ impl Bytefile {
             code_section,
         })
     }
+
+    /// Given a strings as array of bytes (including null terminators), find nth string
+    pub fn get_string_at(&self, index: usize) -> Result<Vec<u8>, BytefileError> {
+        let mut reader = BufReader::new(Cursor::new(&self.string_table));
+        let mut strings = Vec::new();
+
+        for i in 0..self.stringtab_size {
+            let mut buff = vec![];
+            reader.read_until(0x00, &mut buff).map_err(|_| BytefileError::InvalidStringIndexInStringTable)?;
+            strings.push(buff);
+        }
+
+        if index >= strings.len() {
+            Err(BytefileError::InvalidStringIndexInStringTable)
+        } else {
+            Ok(strings[index].to_vec())
+        }
+    }
 }
 
 impl Display for Bytefile {
@@ -170,23 +187,36 @@ impl Display for Bytefile {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     #[test]
-//     fn parse_minimal_file() {
-//         // ~ =>  xxd dump/test1.bc
-//         // 00000000: 0500 0000 0100 0000 0100 0000 0000 0000  ................
-//         // 00000010: 0000 0000 6d61 696e 0052 0200 0000 0000  ....main.R......
-//         // 00000020: 0000 1002 0000 0010 0300 0000 015a 0100  .............Z..
-//         // 00000030: 0000 4000 0000 0018 5a02 0000 005a 0400  ..@.....Z....Z..
-//         // 00000040: 0000 2000 0000 0071 16ff                 .. ....q..
-//         let data = [
-//             0x05, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-//             0x00, 0x00, 0x00, 0x00, 0x6d, 0x61, 0x69, 0x6e, 0x00, 0x52, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
-//             0x00, 0x00, 0x10, 0x02, 0x00, 0x00, 0x00, 0x10, 0x03, 0x00, 0x00, 0x00, 0x01, 0x5a, 0x01, 0x00,
-//             0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x18, 0x5a, 0x02, 0x00, 0x00, 0x00, 0x5a, 0x04, 0x00,
-//             0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x71, 0x16, 0xff,
-//         ];
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn parse_minimal_file() -> Result<(), Box<dyn std::error::Error>> {
+        // ~ =>  xxd dump/test1.bc
+        // 00000000: 0500 0000 0100 0000 0100 0000 0000 0000  ................
+        // 00000010: 0000 0000 6d61 696e 0052 0200 0000 0000  ....main.R......
+        // 00000020: 0000 1002 0000 0010 0300 0000 015a 0100  .............Z..
+        // 00000030: 0000 4000 0000 0018 5a02 0000 005a 0400  ..@.....Z....Z..
+        // 00000040: 0000 2000 0000 0071 16ff                 .. ....q..
+        let data: Vec<u8> = vec![
+            0x05, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x6d, 0x61, 0x69, 0x6e, 0x00, 0x52, 0x02, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x02, 0x00, 0x00, 0x00, 0x10, 0x03, 0x00,
+            0x00, 0x00, 0x01, 0x5a, 0x01, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x18,
+            0x5a, 0x02, 0x00, 0x00, 0x00, 0x5a, 0x04, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00,
+            0x00, 0x71, 0x16, 0xff,
+        ];
+
+        let bytefile: Bytefile = Bytefile::parse(data)?;
+
+        assert_eq!(bytefile.stringtab_size, 5);
+        assert_eq!(bytefile.global_area_size, 1);
+        assert_eq!(bytefile.public_symbols_number, 1);
+
+        // Find "main" function name stored in string table
+        let main_str = bytefile.get_string_at(0)?;
+        assert_eq!(String::from_utf8(main_str)?, "main\0");
+
+        Ok(())
+    }
+}
