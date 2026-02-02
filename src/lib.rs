@@ -4,6 +4,9 @@
 
 pub mod bytecode;
 pub mod disasm;
+pub mod interpreter;
+mod numeric;
+pub mod object;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 

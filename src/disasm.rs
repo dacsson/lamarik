@@ -40,7 +40,7 @@ pub struct Bytefile {
     public_symbols_number: u32,
     public_symbols: Vec<(u32, u32)>,
     string_table: Vec<u8>,
-    code_section: Vec<u8>, // Kept raw for later interpretation
+    pub code_section: Vec<u8>, // Kept raw for later interpretation
 }
 
 impl Display for BytefileError {
@@ -139,7 +139,9 @@ impl Bytefile {
 
         for i in 0..self.stringtab_size {
             let mut buff = vec![];
-            reader.read_until(0x00, &mut buff).map_err(|_| BytefileError::InvalidStringIndexInStringTable)?;
+            reader
+                .read_until(0x00, &mut buff)
+                .map_err(|_| BytefileError::InvalidStringIndexInStringTable)?;
             strings.push(buff);
         }
 
