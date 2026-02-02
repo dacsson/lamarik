@@ -151,6 +151,19 @@ impl Bytefile {
             Ok(strings[index].to_vec())
         }
     }
+
+    /// Create a dummy Bytefile for testing purposes
+    #[cfg(test)]
+    pub fn new_dummy() -> Self {
+        Bytefile {
+            stringtab_size: 100,
+            global_area_size: 100,
+            public_symbols_number: 100,
+            code_section: vec![0; 100],
+            string_table: vec![0; 100],
+            public_symbols: vec![],
+        }
+    }
 }
 
 impl Display for Bytefile {

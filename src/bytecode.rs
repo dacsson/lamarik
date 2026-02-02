@@ -1,7 +1,7 @@
 //! Descriptor of Lama bytecode
 use std::convert::TryFrom;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Op {
     ADD, // +
     SUB, // -
@@ -19,7 +19,7 @@ pub enum Op {
 }
 
 /// Scoping rule for a value
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ValueRel {
     Global,
     Local,
@@ -27,14 +27,14 @@ pub enum ValueRel {
     Capture, // Captured by closure
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CompareJumpKind {
     ISZERO,    // jump if operand is zero
     ISNONZERO, // jump if operand is non-zero
 }
 
 /// Builtin functions
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Builtin {
     Lread,
     Lwrite,
@@ -44,7 +44,7 @@ pub enum Builtin {
 }
 
 /// Pattern matching kind
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PattKind {
     /// Tests whether the two operands are both strings and
     /// store the same bytes.
@@ -63,7 +63,7 @@ pub enum PattKind {
     IsLambda, // "#fun"
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Instruction {
     NOP,
     /// Marks the end of the procedure definition. When executed

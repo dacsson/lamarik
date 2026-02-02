@@ -119,6 +119,32 @@ impl Interpreter {
         }
     }
 
+    /// Run the interpreter on a given program, without bytecode
+    /// Useful for testing
+    #[cfg(test)]
+    pub fn run_on_program(program: Vec<Instruction>) -> Result<Interpreter, InterpreterError> {
+        let bf = Bytefile::new_dummy();
+
+        let mut interp = Interpreter {
+            operand_stack: vec![],
+            frame_pointer: 0,
+            bf,
+            ip: 0,
+            opts: InterpreterOpts {
+                parse_only: false,
+                verbose: true,
+            },
+            instructions: Vec::new(),
+            globals: Vec::new(),
+        };
+
+        for instr in program {
+            interp.eval(&instr)?;
+        }
+
+        Ok(interp)
+    }
+
     /// Reads the next n bytes from the code section,
     /// where n is the size of type `T`.
     /// Returns the value read as type `T`, where `T` is an integer type.
@@ -149,22 +175,22 @@ impl Interpreter {
             let encoding = self.next::<u8>()?;
             let instr = self.decode(encoding)?;
 
-            if let Instruction::NOP = instr {
-                if self.opts.verbose {
-                    self.instructions.push(instr.clone());
-                } else {
-                    self.eval(&instr)?;
-                }
+            if self.opts.verbose {
+                println!("[LOG] IP {} BYTE {} INSTR {:?}", self.ip, encoding, instr);
+            }
 
-                // HACK: if we encounter END instruction, while in frame 0
-                //       (a.k.a main function) we exit the interpreter
-                if let Instruction::END = instr
-                    && self.frame_pointer == 0
-                {
-                    break;
-                }
+            if self.opts.parse_only {
+                self.instructions.push(instr.clone());
             } else {
-                self.dbgs("Instruction: NOP\n");
+                self.eval(&instr)?;
+            }
+
+            // HACK: if we encounter END instruction, while in frame 0
+            //       (a.k.a main function) we exit the interpreter
+            if let Instruction::END = instr
+                && self.frame_pointer == 0
+            {
+                break;
             }
         }
 
@@ -292,14 +318,86 @@ impl Interpreter {
     }
 
     /// Evaluate a decoded instruction
-    fn eval(&mut self, instr: &Instruction) -> Result<Instruction, InterpreterError> {
+    fn eval(&mut self, instr: &Instruction) -> Result<(), InterpreterError> {
         if self.opts.verbose {
             println!("[LOG] EVAL {:?}", instr);
         }
 
         match instr {
+            Instruction::NOP => (),
+            Instruction::BINOP { op } => {
+                let right = self.pop()?.unwrap();
+                let left = self.pop()?.unwrap();
+                let result = match op {
+                    Op::ADD => left + right,
+                    Op::SUB => left - right,
+                    Op::MUL => left * right,
+                    Op::DIV => left / right,
+                    Op::MOD => left % right,
+                    Op::EQ => {
+                        if left == right {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    Op::NEQ => {
+                        if left != right {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    Op::LT => {
+                        if left < right {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    Op::LEQ => {
+                        if left <= right {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    Op::GT => {
+                        if left > right {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    Op::GEQ => {
+                        if left >= right {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    Op::AND => {
+                        if left != 0 && right != 0 {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    Op::OR => {
+                        if left != 0 || right != 0 {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                };
+                self.push(Object::new_boxed(result));
+            }
+            Instruction::CONST { index } => self.push(Object::new_boxed(*index as i64)),
             _ => panic!("Unimplemented instruction"),
-        }
+        };
+
+        Ok(())
     }
 
     /// Push to the operand stack
@@ -351,14 +449,170 @@ impl Interpreter {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-//     #[test]
-//     fn test_push_pop() {
-//         let mut interp = Interpreter::new(Options::default());
-//         interp.push(Object::Integer(42));
-//         assert_eq!(interp.pop().unwrap(), Object::Integer(42));
-//     }
-// }
+    /// Test minimal decoder functionality of translating bytecode to instructions
+    #[test]
+    fn test_decoder_minimal() -> Result<(), Box<dyn std::error::Error>> {
+        // ~ =>  xxd dump/test1.bc
+        // 00000000: 0500 0000 0100 0000 0100 0000 0000 0000  ................
+        // 00000010: 0000 0000 6d61 696e 0052 0200 0000 0000  ....main.R......
+        // 00000020: 0000 1002 0000 0010 0300 0000 015a 0100  .............Z..
+        // 00000030: 0000 4000 0000 0018 5a02 0000 005a 0400  ..@.....Z....Z..
+        // 00000040: 0000 2000 0000 0071 16ff                 .. ....q..
+        let data: Vec<u8> = vec![
+            0x05, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x6d, 0x61, 0x69, 0x6e, 0x00, 0x52, 0x02, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x02, 0x00, 0x00, 0x00, 0x10, 0x03, 0x00,
+            0x00, 0x00, 0x01, 0x5a, 0x01, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x18,
+            0x5a, 0x02, 0x00, 0x00, 0x00, 0x5a, 0x04, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00,
+            0x00, 0x71, 0x16, 0xff,
+        ];
+
+        let bytefile: Bytefile = Bytefile::parse(data)?;
+
+        let mut interp = Interpreter::new(
+            bytefile,
+            InterpreterOpts {
+                parse_only: true,
+                verbose: true,
+            },
+        );
+
+        interp.run()?;
+
+        // We expect the following instructions to be generated:
+        // /LABEL ("main")
+        // BEGIN ("main", 2, 0, [], [], [])
+        // /SLABEL ("L1")
+        // CONST (2)
+        // CONST (3)
+        // BINOP ("+")
+        // /LINE (1)
+        // ST (Global ("z"))
+        // DROP
+        // /LINE (2)
+        // /LINE (4)
+        // LD (Global ("z"))
+        // CALL ("Lwrite", 1, false)
+        // /SLABEL ("L2")
+        // END
+
+        assert_eq!(
+            interp.instructions[0],
+            Instruction::BEGIN { args: 2, locals: 0 }
+        );
+        assert_eq!(interp.instructions[1], Instruction::CONST { index: 2 });
+        assert_eq!(interp.instructions[2], Instruction::CONST { index: 3 });
+        assert_eq!(interp.instructions[3], Instruction::BINOP { op: Op::ADD });
+        assert_eq!(
+            interp.instructions[5],
+            Instruction::STORE {
+                rel: ValueRel::Global,
+                index: 0
+            }
+        );
+        assert_eq!(interp.instructions[6], Instruction::DROP);
+        assert_eq!(
+            interp.instructions[9],
+            Instruction::LOAD {
+                rel: ValueRel::Global,
+                index: 0
+            }
+        );
+        assert_eq!(
+            interp.instructions[10],
+            Instruction::CALL {
+                offset: None,
+                n: None,
+                name: Some(Builtin::Lwrite),
+                builtin: true
+            }
+        );
+        assert_eq!(interp.instructions[11], Instruction::END);
+
+        Ok(())
+    }
+
+    /// Test minimal evaluation functionality of the interpreter
+    #[test]
+    fn test_binops_minimal_eval() -> Result<(), Box<dyn std::error::Error>> {
+        let mut programs = Vec::new();
+        for i in 1u8..=13u8 {
+            let program = vec![
+                Instruction::CONST { index: 2 },
+                Instruction::CONST { index: 3 },
+                Instruction::BINOP {
+                    op: Op::try_from(i).unwrap(),
+                },
+            ];
+            programs.push(program);
+        }
+
+        // tests on 0
+        programs.push(vec![
+            Instruction::CONST { index: 0 },
+            Instruction::CONST { index: 0 },
+            Instruction::BINOP { op: Op::AND },
+        ]);
+
+        programs.push(vec![
+            Instruction::CONST { index: 0 },
+            Instruction::CONST { index: 1 },
+            Instruction::BINOP { op: Op::OR },
+        ]);
+
+        programs.push(vec![
+            Instruction::CONST { index: 0 },
+            Instruction::CONST { index: 0 },
+            Instruction::BINOP { op: Op::OR },
+        ]);
+
+        // equality
+        programs.push(vec![
+            Instruction::CONST { index: 1 },
+            Instruction::CONST { index: 1 },
+            Instruction::BINOP { op: Op::EQ },
+        ]);
+
+        programs.push(vec![
+            Instruction::CONST { index: 1 },
+            Instruction::CONST { index: 1 },
+            Instruction::BINOP { op: Op::NEQ },
+        ]);
+
+        let expected_results = vec![
+            5,  // 2 + 3 = 5
+            -1, // 2 - 3 = 5
+            6,  // 2 * 3 = 6
+            0,  // 2 / 3 = 0
+            2,  // 2 % 3 = 2
+            1,  // 2 < 3 = 1
+            1,  // 2 <= 3 = 1
+            0,  // 2 > 3 = 0
+            0,  // 2 >= 3 = 0
+            0,  // 2 == 3 = 0
+            1,  // 2 != 3 = 1
+            1,  // 2 && 3 = 1
+            1,  // 2 != 3 = 1
+            0,  // 0 && 0 = 0
+            1,  // 0 || 1 = 1
+            0,  // 0 || 0 = 0
+            1,  // 1 == 1 = 1
+            0,  // 1 != 1 = 0
+        ];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let interp = Interpreter::run_on_program(program)?;
+
+            assert_eq!(interp.operand_stack.len(), 1);
+            assert_eq!(interp.operand_stack[0].unwrap(), expected);
+        }
+
+        Ok(())
+    }
+}
