@@ -20,7 +20,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y build-essential
     
     - name: Build C runtime
-      working-directory: ./src/runtime-c
+      working-directory: ./runtime-c
       run: make
     
     - name: Build Rust project
