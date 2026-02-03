@@ -5,11 +5,11 @@ use crate::disasm::Bytefile;
 use crate::numeric::LeBytes;
 use crate::object::Object;
 use std::convert::TryFrom;
-use std::io::{BufReader, Cursor, Read};
+use std::ffi::CString;
 use std::panic;
 
 #[derive(Debug)]
-enum InterpreterError {
+pub enum InterpreterError {
     StackUnderflow,
     EndOfCodeSection,
     ReadingMoreThenCodeSection,
@@ -17,6 +17,10 @@ enum InterpreterError {
     InvalidType(String),
     OutOfBoundsAccess,
     InvalidByteSequence(usize),
+    StringIndexOutOfBounds,
+    InvalidStringPointer,
+    InvalidUtf8String,
+    InvalidCString,
 }
 
 /// Convert a byte, that couldnt be incoded into an interpreter error.
@@ -39,6 +43,18 @@ impl std::fmt::Display for InterpreterError {
             InterpreterError::OutOfBoundsAccess => write!(f, "Out of bounds access"),
             InterpreterError::InvalidByteSequence(ip) => {
                 write!(f, "Invalid byte sequence at index {}", ip)
+            }
+            InterpreterError::StringIndexOutOfBounds => {
+                write!(f, "String index out of bounds")
+            }
+            InterpreterError::InvalidStringPointer => {
+                write!(f, "Invalid string pointer")
+            }
+            InterpreterError::InvalidUtf8String => {
+                write!(f, "Invalid UTF-8 string")
+            }
+            InterpreterError::InvalidCString => {
+                write!(f, "Invalid C string")
             }
         }
     }
@@ -73,12 +89,21 @@ struct FrameMetadata {
     ret_ip: usize,
 }
 
-struct InterpreterOpts {
+pub struct InterpreterOpts {
     parse_only: bool,
     verbose: bool,
 }
 
-struct Interpreter {
+impl InterpreterOpts {
+    pub fn new(parse_only: bool, verbose: bool) -> Self {
+        Self {
+            parse_only,
+            verbose,
+        }
+    }
+}
+
+pub struct Interpreter {
     operand_stack: Vec<Object>,
     frame_pointer: usize,
     /// Decoded bytecode file with raw code section
@@ -122,27 +147,12 @@ impl Interpreter {
     /// Run the interpreter on a given program, without bytecode
     /// Useful for testing
     #[cfg(test)]
-    pub fn run_on_program(program: Vec<Instruction>) -> Result<Interpreter, InterpreterError> {
-        let bf = Bytefile::new_dummy();
-
-        let mut interp = Interpreter {
-            operand_stack: vec![],
-            frame_pointer: 0,
-            bf,
-            ip: 0,
-            opts: InterpreterOpts {
-                parse_only: false,
-                verbose: true,
-            },
-            instructions: Vec::new(),
-            globals: Vec::new(),
-        };
-
+    pub fn run_on_program(&mut self, program: Vec<Instruction>) -> Result<(), InterpreterError> {
         for instr in program {
-            interp.eval(&instr)?;
+            self.eval(&instr)?;
         }
 
-        Ok(interp)
+        Ok(())
     }
 
     /// Reads the next n bytes from the code section,
@@ -391,10 +401,41 @@ impl Interpreter {
                         }
                     }
                 };
+
+                if self.opts.verbose {
+                    println!("[LOG] {} {:?} {} = {}", right, op, left, result);
+                }
+
                 self.push(Object::new_boxed(result));
             }
             Instruction::CONST { index } => self.push(Object::new_boxed(*index as i64)),
-            _ => panic!("Unimplemented instruction"),
+            Instruction::STRING { index } => {
+                let string = self
+                    .bf
+                    .get_string_at(*index as usize)
+                    .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
+
+                println!("[LOG] string: {:?}", string);
+
+                let c_string = CString::from_vec_with_nul(string)
+                    .map_err(|_| InterpreterError::InvalidCString)?;
+
+                let raw_ptr: *const i8 = c_string.into_raw();
+
+                self.push(
+                    Object::try_from(raw_ptr)
+                        .map_err(|_| InterpreterError::InvalidStringPointer)?,
+                );
+
+                if self.opts.verbose {
+                    println!(
+                        "[LOG] as_ptr {:?}; Object {}",
+                        raw_ptr,
+                        self.operand_stack[self.operand_stack.len() - 1]
+                    )
+                };
+            }
+            _ => panic!("Unimplemented instruction {:?}", instr),
         };
 
         Ok(())
@@ -441,17 +482,12 @@ impl Interpreter {
         }
         println!("---------------- STACK END   --------------");
     }
-
-    fn dbgs(&self, msg: &str) {
-        if self.opts.verbose {
-            println!("{}", msg);
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::{ffi::CStr, ptr};
 
     /// Test minimal decoder functionality of translating bytecode to instructions
     #[test]
@@ -538,7 +574,7 @@ mod tests {
 
     /// Test minimal evaluation functionality of the interpreter
     #[test]
-    fn test_binops_minimal_eval() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_binops_eval() -> Result<(), Box<dyn std::error::Error>> {
         let mut programs = Vec::new();
         for i in 1u8..=13u8 {
             let program = vec![
@@ -607,10 +643,48 @@ mod tests {
         assert_eq!(programs.len(), expected_results.len());
 
         for (program, expected) in programs.into_iter().zip(expected_results) {
-            let interp = Interpreter::run_on_program(program)?;
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
+            interp.run_on_program(program)?;
 
-            assert_eq!(interp.operand_stack.len(), 1);
-            assert_eq!(interp.operand_stack[0].unwrap(), expected);
+            let top = interp.operand_stack.pop().unwrap();
+
+            assert_eq!(top.unwrap(), expected);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_string_eval() -> Result<(), Box<dyn std::error::Error>> {
+        let mut programs = Vec::new();
+
+        // "main"
+        programs.push(vec![Instruction::STRING { index: 0 }]);
+
+        // "Hello"
+        programs.push(vec![Instruction::STRING { index: 1 }]);
+
+        let expected_results = vec![CString::new("main")?, CString::new("Hello, world!")?];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
+
+            interp.bf.put_string(CString::new("main")?);
+            interp.bf.put_string(CString::new("Hello, world!")?);
+
+            println!("{}", interp.bf);
+
+            interp.run_on_program(program)?;
+
+            let obj = interp.operand_stack.pop().unwrap();
+            let ptr_again = obj.unwrap() as *const i8;
+            let c_string_again = unsafe { CStr::from_ptr(ptr_again) };
+
+            assert_eq!(*c_string_again, expected);
         }
 
         Ok(())

@@ -1,5 +1,7 @@
 //! Disassembler of Lama VM bytecode file
 
+#[cfg(test)]
+use std::ffi::CString;
 use std::fmt::Display;
 use std::fs::{File, write};
 use std::io::{BufRead, BufReader, Cursor, Read};
@@ -137,7 +139,7 @@ impl Bytefile {
         let mut reader = BufReader::new(Cursor::new(&self.string_table));
         let mut strings = Vec::new();
 
-        for i in 0..self.stringtab_size {
+        for _ in 0..self.stringtab_size {
             let mut buff = vec![];
             reader
                 .read_until(0x00, &mut buff)
@@ -156,13 +158,21 @@ impl Bytefile {
     #[cfg(test)]
     pub fn new_dummy() -> Self {
         Bytefile {
-            stringtab_size: 100,
+            stringtab_size: 0,
             global_area_size: 100,
             public_symbols_number: 100,
             code_section: vec![0; 100],
-            string_table: vec![0; 100],
+            string_table: vec![],
             public_symbols: vec![],
         }
+    }
+
+    /// Push an arbitrary string in string table
+    #[cfg(test)]
+    pub fn put_string(&mut self, str: CString) {
+        let slice = str.as_bytes_with_nul();
+        slice.iter().for_each(|b| self.string_table.push(*b));
+        self.stringtab_size += 1;
     }
 }
 
@@ -188,10 +198,8 @@ impl Display for Bytefile {
         }
 
         let str_table = String::from_utf8(self.string_table.clone()).unwrap();
+        write!(f, " - String table raw: {:?}\n", self.string_table)?;
         write!(f, " - String Table: {}\n", str_table)?;
-        // for s in &self.string_table {
-        //     write!(f, " {} ", s)?;
-        // }
 
         write!(f, " - Code Section:\n")?;
         for s in &self.code_section {

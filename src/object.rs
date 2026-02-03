@@ -55,6 +55,16 @@ impl Object {
     }
 }
 
+/// Create unboxed object from string pointer.
+/// Pointers come boxed by default due to alignment requirements.
+impl TryFrom<*const i8> for Object {
+    type Error = ();
+
+    fn try_from(ptr: *const i8) -> Result<Self, Self::Error> {
+        Ok(Object::Unboxed(ptr.addr() as i64))
+    }
+}
+
 impl Display for Object {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -67,6 +77,8 @@ impl Display for Object {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ffi::{CStr, CString};
+    use std::os::raw::c_char;
 
     /// Test creation of objects and that runtime will
     /// detect them either boxed or unboxed properly
@@ -92,5 +104,19 @@ mod tests {
             }
             assert_eq!(obj4.unwrap(), rtUnbox(rtBox(2)));
         }
+    }
+
+    #[test]
+    fn test_create_from_string() -> Result<(), Box<dyn std::error::Error>> {
+        let c_string = CString::new("main")?;
+        let raw_ptr: *const i8 = c_string.into_raw();
+        let obj = Object::try_from(raw_ptr).map_err(|_| "Error at Object::try_from(raw_ptr)")?;
+
+        let ptr_again = obj.unwrap() as *const i8;
+        let c_string_again = unsafe { CStr::from_ptr(ptr_again) };
+
+        assert_eq!(*c_string_again, CString::new("main")?);
+
+        Ok(())
     }
 }
