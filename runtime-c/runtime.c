@@ -12,11 +12,9 @@ extern size_t __gc_stack_top, __gc_stack_bottom;
   flag      = __gc_stack_top == 0;                                                                 \
   if (flag) { __gc_stack_top = (size_t)__builtin_frame_address(0); }                               \
   assert(__gc_stack_top != 0);                                                                     \
-  assert((__gc_stack_top & 0xF) == 0);                                                             \
-  assert(__builtin_frame_address(0) <= (void *)__gc_stack_top);
+  assert((__gc_stack_top & 0xF) == 0);
 
 #define POST_GC()                                                                                  \
-  assert(__builtin_frame_address(0) <= (void *)__gc_stack_top);                                    \
   if (flag) { __gc_stack_top = 0; }
 
 _Noreturn static void vfailure (char *s, va_list args) {
@@ -216,7 +214,7 @@ static char *chars = "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234
 
 extern char *de_hash (aint);
 
-extern aint LtagHash (char *s) {
+aint LtagHash (char *s) {
   char *p;
   aint   h = 0, limit = 0;
 
@@ -774,7 +772,7 @@ extern void *Lstringcat (aint *args /* void* p */) {
   return s;
 }
 
-extern void *Lstring (aint* args /* void *p */) {
+void *Lstring (aint* args /* void *p */) {
   void *s = (void *)BOX(NULL);
 
   PRE_GC();
@@ -823,7 +821,7 @@ extern void *Bclosure (aint* args, aint bn) {
 extern void *Barray (aint* args, aint bn) {
   data   *r;
   aint     n = UNBOX(bn);
-  
+
   PRE_GC();
 
   for (aint i = 0; i < n; i++) {
@@ -848,7 +846,7 @@ extern void *Barray (aint* args, aint bn) {
 extern memory_chunk heap;
 #endif
 
-extern void *Bsexp (aint* args, aint bn) {
+void *Bsexp (aint* args, aint bn) {
   sexp   *r;
   aint     n = UNBOX(bn);
 

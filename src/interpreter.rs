@@ -4,6 +4,7 @@ use crate::bytecode::{Builtin, Instruction, Op, PattKind, ValueRel};
 use crate::disasm::Bytefile;
 use crate::numeric::LeBytes;
 use crate::object::Object;
+use crate::{__gc_init, __init, LtagHash, gc_set_bottom, gc_set_top, new_sexp, rtToSexp};
 use std::convert::TryFrom;
 use std::ffi::CString;
 use std::panic;
@@ -21,6 +22,7 @@ pub enum InterpreterError {
     InvalidStringPointer,
     InvalidUtf8String,
     InvalidCString,
+    InvalidObjectPointer,
 }
 
 /// Convert a byte, that couldnt be incoded into an interpreter error.
@@ -55,6 +57,9 @@ impl std::fmt::Display for InterpreterError {
             }
             InterpreterError::InvalidCString => {
                 write!(f, "Invalid C string")
+            }
+            InterpreterError::InvalidObjectPointer => {
+                write!(f, "Invalid object pointer")
             }
         }
     }
@@ -122,6 +127,12 @@ impl Interpreter {
     /// emulated call to main
     pub fn new(bf: Bytefile, opts: InterpreterOpts) -> Self {
         let mut operand_stack = Vec::new();
+
+        unsafe {
+            __gc_init();
+            // gc_set_top(0);
+            // gc_set_bottom(0);
+        }
 
         // Emulating call to main
         operand_stack.push(Object::new_empty()); // FRAME_PTR
@@ -242,15 +253,15 @@ impl Interpreter {
             (0x10, 0x9) => Ok(Instruction::DUP),
             (0x10, 0xa) => Ok(Instruction::SWAP),
             (0x10, 0xb) => Ok(Instruction::ELEM),
-            (0x20, _) if subopcode >= 0x0 && subopcode <= 0x3 => Ok(Instruction::LOAD {
+            (0x20, _) if subopcode <= 0x3 => Ok(Instruction::LOAD {
                 rel: ValueRel::try_from(subopcode).map_err(|_| InterpreterError::from(byte))?,
                 index: self.next::<i32>()?,
             }),
-            (0x30, _) if subopcode >= 0x0 && subopcode <= 0x3 => Ok(Instruction::LOADREF {
+            (0x30, _) if subopcode <= 0x3 => Ok(Instruction::LOADREF {
                 rel: ValueRel::try_from(subopcode).map_err(|_| InterpreterError::from(byte))?,
                 index: self.next::<i32>()?,
             }),
-            (0x40, _) if subopcode >= 0x0 && subopcode <= 0x3 => Ok(Instruction::STORE {
+            (0x40, _) if subopcode <= 0x3 => Ok(Instruction::STORE {
                 rel: ValueRel::try_from(subopcode).map_err(|_| InterpreterError::from(byte))?,
                 index: self.next::<i32>()?,
             }),
@@ -308,10 +319,10 @@ impl Interpreter {
             (0x50, 0xa) => Ok(Instruction::LINE {
                 n: self.next::<i32>()?,
             }),
-            (0x60, _) if subopcode >= 0x0 && subopcode <= 0x6 => Ok(Instruction::PATT {
+            (0x60, _) if subopcode <= 0x6 => Ok(Instruction::PATT {
                 kind: PattKind::try_from(subopcode).map_err(|_| InterpreterError::from(byte))?,
             }),
-            (0x70, _) if subopcode >= 0x0 && subopcode <= 0x3 => Ok(Instruction::CALL {
+            (0x70, _) if subopcode <= 0x3 => Ok(Instruction::CALL {
                 offset: None,
                 n: None,
                 name: Some(Builtin::try_from(subopcode).map_err(|_| InterpreterError::from(byte))?),
@@ -435,6 +446,40 @@ impl Interpreter {
                     )
                 };
             }
+            Instruction::SEXP { s_index, n_members } => {
+                let tag_u8 = self
+                    .bf
+                    .get_string_at(*s_index as usize)
+                    .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
+
+                let c_string = CString::from_vec_with_nul(tag_u8)
+                    .map_err(|_| InterpreterError::InvalidCString)?;
+
+                if self.opts.verbose {
+                    println!(
+                        "[LOG][Instruction::SEXP] c_string: {}",
+                        c_string.to_str().unwrap()
+                    );
+                }
+
+                let mut args = Vec::with_capacity(*n_members as usize);
+                for _ in 0..*n_members {
+                    args.push(self.pop()?.unwrap());
+                }
+
+                // Reverse the arguments to match the order of the SEXP constructor
+                args.reverse();
+
+                let sexp = new_sexp(c_string, args);
+
+                unsafe {
+                    println!("{:#?}", rtToSexp(sexp));
+                }
+
+                self.push(
+                    Object::try_from(sexp).map_err(|_| InterpreterError::InvalidObjectPointer)?,
+                );
+            }
             _ => panic!("Unimplemented instruction {:?}", instr),
         };
 
@@ -448,6 +493,16 @@ impl Interpreter {
             println!("[LOG] STACK PUSH");
             self.print_stack();
         }
+
+        unsafe {
+            gc_set_top(
+                self.operand_stack
+                    .as_ptr()
+                    .add(self.operand_stack.len() - 1)
+                    .addr(),
+            );
+            gc_set_bottom(self.operand_stack.as_ptr().addr());
+        }
     }
 
     /// Pop from the operand stack
@@ -460,6 +515,17 @@ impl Interpreter {
             println!("[LOG] STACK POP");
             self.print_stack();
         }
+
+        unsafe {
+            gc_set_top(
+                self.operand_stack
+                    .as_ptr()
+                    .add(self.operand_stack.len() - 1)
+                    .addr(),
+            );
+            gc_set_bottom(self.operand_stack.as_ptr().addr());
+        }
+
         obj
     }
 
@@ -486,8 +552,13 @@ impl Interpreter {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        __gc_init, Bsexp, alloc_sexp, get_object_content_ptr, isUnboxed, new_sexp, rtBox, rtLen,
+        rtSexpEl, rtTag, rtToSexp, sexp,
+    };
+
     use super::*;
-    use std::{ffi::CStr, ptr};
+    use std::{ffi::CStr, os::raw::c_void, ptr};
 
     /// Test minimal decoder functionality of translating bytecode to instructions
     #[test]
@@ -647,7 +718,7 @@ mod tests {
                 Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
             interp.run_on_program(program)?;
 
-            let top = interp.operand_stack.pop().unwrap();
+            let top = interp.pop().unwrap();
 
             assert_eq!(top.unwrap(), expected);
         }
@@ -680,11 +751,105 @@ mod tests {
 
             interp.run_on_program(program)?;
 
-            let obj = interp.operand_stack.pop().unwrap();
+            let obj = interp.pop().unwrap();
             let ptr_again = obj.unwrap() as *const i8;
             let c_string_again = unsafe { CStr::from_ptr(ptr_again) };
 
             assert_eq!(*c_string_again, expected);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_sexp_cons_nil_eval() -> Result<(), Box<dyn std::error::Error>> {
+        unsafe {
+            __gc_init();
+        }
+
+        let mut programs = Vec::new();
+
+        programs.push(vec![
+            // Nil()
+            Instruction::SEXP {
+                s_index: 1,
+                n_members: 0,
+            },
+        ]);
+
+        programs.push(vec![
+            Instruction::CONST { index: 1 },
+            // Nil()
+            Instruction::SEXP {
+                s_index: 1,
+                n_members: 0,
+            },
+            // Cons(1, Nil())
+            Instruction::SEXP {
+                s_index: 0,
+                n_members: 2,
+            },
+        ]);
+
+        programs.push(vec![
+            Instruction::CONST { index: 1 },
+            // Nil()
+            Instruction::SEXP {
+                s_index: 1,
+                n_members: 0,
+            },
+            // Cons(1, Nil())
+            Instruction::SEXP {
+                s_index: 0,
+                n_members: 2,
+            },
+            Instruction::CONST { index: 2 },
+            // Cons(2, Cons(1, Nil()))
+            Instruction::SEXP {
+                s_index: 0,
+                n_members: 2,
+            },
+        ]);
+
+        // checking tags and contents
+        let expected_results = vec![
+            new_sexp(CString::new("Nil")?, vec![]),
+            new_sexp(
+                CString::new("Cons")?,
+                vec![1, new_sexp(CString::new("Nil")?, vec![]).addr() as i64],
+            ),
+            new_sexp(
+                CString::new("Cons")?,
+                vec![
+                    1,
+                    new_sexp(
+                        CString::new("Cons")?,
+                        vec![2, new_sexp(CString::new("Nil")?, vec![]).addr() as i64],
+                    )
+                    .addr() as i64,
+                ],
+            ),
+        ];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
+
+            interp.bf.put_string(CString::new("Cons")?);
+            interp.bf.put_string(CString::new("Nil")?);
+
+            println!("{}", interp.bf);
+
+            interp.run_on_program(program)?;
+
+            let obj = interp.pop().unwrap();
+            let sexp = obj.as_ptr_mut::<c_void>().unwrap();
+
+            unsafe {
+                assert_eq!(*rtToSexp(sexp), *rtToSexp(expected));
+            }
         }
 
         Ok(())

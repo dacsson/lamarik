@@ -237,4 +237,7 @@ void *alloc_array (auint len);
 void *alloc_sexp (auint members);
 void *alloc_closure (auint captured);
 
+void gc_set_top (size_t top);
+void gc_set_bottom (size_t bottom);
+
 #endif

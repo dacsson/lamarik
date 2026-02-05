@@ -2,6 +2,7 @@
 
 use crate::{get_obj_header_ptr, get_type_header_ptr, lama_type, rtBox, rtUnbox};
 use std::fmt::{Debug, Display, Formatter};
+use std::os::raw::c_void;
 use std::ptr;
 
 /// An element of operand stack in interpreter:
@@ -33,20 +34,28 @@ impl Object {
         }
     }
 
-    /// Data is stored as raw i64, hence we need to translate to pointer back
-    /// if it was created from pointer
-    pub fn as_mut_ptr(&mut self) -> Option<*mut i64> {
+    /// Data is stored as raw i64, hence we need to translate back to pointer
+    /// iff it was created from pointer
+    pub fn as_ptr<T>(&self) -> Option<*const T> {
         match self {
             Object::Boxed(_) => None,
-            Object::Unboxed(v) => Some(ptr::from_mut(v)),
+            Object::Unboxed(v) => Some(*v as *const T),
+        }
+    }
+
+    /// [`as_ptr`]
+    pub fn as_ptr_mut<T>(&self) -> Option<*mut T> {
+        match self {
+            Object::Boxed(_) => None,
+            Object::Unboxed(v) => Some(*v as *mut T),
         }
     }
 
     /// Get lama type of object
     fn lama_type(&mut self) -> Option<lama_type> {
         unsafe {
-            if let Some(as_ptr) = self.as_mut_ptr() {
-                let header_ptr = get_obj_header_ptr(as_ptr as *mut _);
+            if let Some(as_ptr) = self.as_ptr_mut::<c_void>() {
+                let header_ptr = get_obj_header_ptr(as_ptr);
                 Some(get_type_header_ptr(header_ptr))
             } else {
                 None
@@ -65,6 +74,16 @@ impl TryFrom<*const i8> for Object {
     }
 }
 
+/// Create unboxed object from pointer to aggreggate type contents.
+/// Pointers come boxed by default due to alignment requirements.
+impl TryFrom<*mut c_void> for Object {
+    type Error = ();
+
+    fn try_from(ptr: *mut c_void) -> Result<Self, Self::Error> {
+        Ok(Object::Unboxed(ptr.addr() as i64))
+    }
+}
+
 impl Display for Object {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -78,7 +97,6 @@ impl Display for Object {
 mod tests {
     use super::*;
     use std::ffi::{CStr, CString};
-    use std::os::raw::c_char;
 
     /// Test creation of objects and that runtime will
     /// detect them either boxed or unboxed properly

@@ -954,3 +954,11 @@ void *alloc_closure (auint captured) {
 #endif
   return obj;
 }
+
+void gc_set_top(size_t top) {
+    __gc_stack_top = top;
+}
+
+void gc_set_bottom(size_t bottom) {
+    __gc_stack_bottom = bottom;
+}
