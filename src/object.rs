@@ -3,11 +3,11 @@
 use crate::{get_obj_header_ptr, get_type_header_ptr, lama_type, rtBox, rtUnbox};
 use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::c_void;
-use std::ptr;
 
 /// An element of operand stack in interpreter:
 /// - Pointers (should be) are boxed due to alignment
 /// - Other objects get boxed on creation and unboxed on usage
+#[derive(Debug, Clone)]
 pub enum Object {
     Boxed(i64),
     Unboxed(i64),
@@ -22,6 +22,7 @@ impl Object {
         Object::Unboxed(value)
     }
 
+    /// Creates a new empty unboxed object with a default value of 0
     pub fn new_empty() -> Self {
         Object::Unboxed(0)
     }

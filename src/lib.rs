@@ -6,6 +6,7 @@ use std::{ffi::CString, os::raw::c_void};
 
 pub mod bytecode;
 pub mod disasm;
+mod frame;
 pub mod interpreter;
 mod numeric;
 pub mod object;

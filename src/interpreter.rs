@@ -2,6 +2,7 @@
 
 use crate::bytecode::{Builtin, Instruction, Op, PattKind, ValueRel};
 use crate::disasm::Bytefile;
+use crate::frame::FrameMetadata;
 use crate::numeric::LeBytes;
 use crate::object::Object;
 use crate::{__gc_init, __init, LtagHash, gc_set_bottom, gc_set_top, new_sexp, rtToSexp};
@@ -9,7 +10,7 @@ use std::convert::TryFrom;
 use std::ffi::CString;
 use std::panic;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum InterpreterError {
     StackUnderflow,
     EndOfCodeSection,
@@ -23,6 +24,10 @@ pub enum InterpreterError {
     InvalidUtf8String,
     InvalidCString,
     InvalidObjectPointer,
+    InvalidJumpOffset,
+    NotEnoughArguments(&'static str),
+    InvalidStoreIndex(ValueRel, i32, i64),
+    InvalidLoadIndex(ValueRel, i32, i64),
 }
 
 /// Convert a byte, that couldnt be incoded into an interpreter error.
@@ -61,38 +66,23 @@ impl std::fmt::Display for InterpreterError {
             InterpreterError::InvalidObjectPointer => {
                 write!(f, "Invalid object pointer")
             }
+            InterpreterError::InvalidJumpOffset => {
+                write!(f, "Invalid jump offset")
+            }
+            InterpreterError::NotEnoughArguments(instr) => {
+                write!(f, "Not enough arguments for instruction `{}`", instr)
+            }
+            InterpreterError::InvalidStoreIndex(rel, index, n) => {
+                write!(f, "Invalid store index {}/{} for {}", index, n, rel)
+            }
+            InterpreterError::InvalidLoadIndex(rel, index, n) => {
+                write!(f, "Invalid load index {}/{} for {}", index, n, rel)
+            }
         }
     }
 }
 
 impl std::error::Error for InterpreterError {}
-
-/// Frame metadata for the interpreter.
-/// Because we have only one stack, we keep index
-/// of the frame pointer.
-///
-/// In operand stack out frame looks like this:
-/// ```txt
-/// ... <- frame points to this index
-/// ARGS_COUNT
-/// LOCALS_COUNT
-/// OLD_FRAME_POINTER
-/// OLD_IP
-/// ARG1
-/// ARG2
-/// ...
-/// ARGN
-/// LOCAL1
-/// LOCAL2
-/// ...
-/// LOCALN
-/// ```
-struct FrameMetadata {
-    n_locals: i64,
-    n_args: i64,
-    ret_frame_pointer: usize,
-    ret_ip: usize,
-}
 
 pub struct InterpreterOpts {
     parse_only: bool,
@@ -233,7 +223,7 @@ impl Interpreter {
             }),
             (0x00, _) => Err(InterpreterError::from(byte)),
             (0x10, 0x0) => Ok(Instruction::CONST {
-                index: self.next::<i32>()?,
+                value: self.next::<i32>()?,
             }),
             (0x10, 0x1) => Ok(Instruction::STRING {
                 index: self.next::<i32>()?,
@@ -417,9 +407,9 @@ impl Interpreter {
                     println!("[LOG] {} {:?} {} = {}", right, op, left, result);
                 }
 
-                self.push(Object::new_boxed(result));
+                self.push(Object::new_boxed(result))?;
             }
-            Instruction::CONST { index } => self.push(Object::new_boxed(*index as i64)),
+            Instruction::CONST { value: index } => self.push(Object::new_boxed(*index as i64))?,
             Instruction::STRING { index } => {
                 let string = self
                     .bf
@@ -436,7 +426,7 @@ impl Interpreter {
                 self.push(
                     Object::try_from(raw_ptr)
                         .map_err(|_| InterpreterError::InvalidStringPointer)?,
-                );
+                )?;
 
                 if self.opts.verbose {
                     println!(
@@ -478,7 +468,206 @@ impl Interpreter {
 
                 self.push(
                     Object::try_from(sexp).map_err(|_| InterpreterError::InvalidObjectPointer)?,
-                );
+                )?;
+            }
+            Instruction::JMP { offset } => {
+                // NOTE: Frame shifting is delegated to `BEGIN` instruction
+
+                let offset_at = *offset as usize;
+
+                // verify offset is within bounds
+                if (*offset) < 0 || self.ip + offset_at >= self.bf.code_section.len() {
+                    return Err(InterpreterError::InvalidJumpOffset);
+                }
+
+                self.ip += offset_at;
+            }
+            Instruction::STI | Instruction::STA => panic!(
+                "Congratulations! Somehow, you emitted a STI or STA instruction, while the compiler itself never should have"
+            ),
+            Instruction::BEGIN { args, locals } => {
+                // Save previous ip (provided by `CALL`)
+                let ret_ip = self
+                    .pop()
+                    .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?;
+
+                // Collect callee provided arguments
+                let mut arguments = Vec::new();
+                for _ in 0..*args {
+                    arguments.push(
+                        self.pop()
+                            .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?,
+                    );
+                }
+
+                // Save previous frame pointer
+                let ret_frame_pointer = self.frame_pointer;
+
+                // Set new frame pointer as index into operand stack
+                if self.operand_stack.is_empty() {
+                    return Err(InterpreterError::NotEnoughArguments("BEGIN"));
+                }
+                self.frame_pointer = self.operand_stack.len() - 1;
+
+                // Push arg and local count
+                self.push(Object::new_unboxed(*args as i64))?;
+                self.push(Object::new_unboxed(*locals as i64))?;
+
+                // Push return frame pointer and ip
+                // 1. Where to return in sack operand
+                self.push(Object::new_unboxed(ret_frame_pointer as i64))?;
+                // 2. Where to return in the bytecode after this call
+                self.push(ret_ip)?;
+
+                // Re-push arguments
+                for arg in arguments.into_iter().rev() {
+                    self.push(arg)?;
+                }
+
+                // Initialize local variables with 0
+                // We create them as boxed objects
+                for _ in 0..*locals {
+                    self.push(Object::new_boxed(0))?;
+                }
+            }
+            Instruction::END | Instruction::RET => {
+                // Get procedures return value
+                let return_value = self
+                    .pop()
+                    .map_err(|_| InterpreterError::NotEnoughArguments("END"))?;
+
+                let FrameMetadata {
+                    n_locals,
+                    n_args,
+                    ret_frame_pointer,
+                    ret_ip,
+                } = FrameMetadata::get_from_stack(&self.operand_stack, self.frame_pointer)
+                    .ok_or(InterpreterError::NotEnoughArguments("END"))?;
+
+                // Return to callee's frame pointer
+                self.frame_pointer = ret_frame_pointer;
+
+                // Return to caller's instruction pointer
+                // NOTE: returning from main is not possible in this implementation
+                //       the program will exit after the main function returns
+                self.ip = ret_ip;
+
+                // Pop return ip
+                self.pop()?;
+                // Pop old frame pointer
+                self.pop()?;
+                // Pop local count
+                self.pop()?;
+                // Pop argument count
+                self.pop()?;
+
+                for _ in 0..n_args {
+                    self.pop()?;
+                }
+
+                for _ in 0..n_locals {
+                    self.pop()?;
+                }
+
+                // After removing current frames metadata,
+                // we can re-push the return value to send it back to the caller
+                self.push(return_value)?;
+            }
+            Instruction::STORE { rel, index } => {
+                let mut frame =
+                    FrameMetadata::get_from_stack(&self.operand_stack, self.frame_pointer)
+                        .ok_or(InterpreterError::NotEnoughArguments("STORE"))?;
+
+                let value = self.pop()?;
+
+                match rel {
+                    ValueRel::Arg => {
+                        frame
+                            .set_arg_at(
+                                &mut self.operand_stack,
+                                self.frame_pointer,
+                                *index as usize,
+                                value.clone(),
+                            )
+                            .map_err(|_| {
+                                InterpreterError::InvalidStoreIndex(
+                                    ValueRel::Arg,
+                                    *index,
+                                    frame.n_args,
+                                )
+                            })?;
+                    }
+                    ValueRel::Capture => panic!("Not implemented"),
+                    ValueRel::Global => {
+                        if (*index as usize) >= self.globals.len() {
+                            return Err(InterpreterError::InvalidStoreIndex(
+                                ValueRel::Global,
+                                *index,
+                                self.globals.len() as i64,
+                            ));
+                        } else {
+                            self.globals[*index as usize] = value.clone();
+                        }
+                    }
+                    ValueRel::Local => frame
+                        .set_local_at(
+                            &mut self.operand_stack,
+                            self.frame_pointer,
+                            *index as usize,
+                            value.clone(),
+                        )
+                        .map_err(|_| {
+                            InterpreterError::InvalidStoreIndex(
+                                ValueRel::Local,
+                                *index,
+                                frame.n_locals,
+                            )
+                        })?,
+                }
+
+                self.push(value)?;
+            }
+            Instruction::LOAD { rel, index } => {
+                let frame = FrameMetadata::get_from_stack(&self.operand_stack, self.frame_pointer)
+                    .ok_or(InterpreterError::NotEnoughArguments("STORE"))?;
+
+                match rel {
+                    ValueRel::Arg => {
+                        let value = frame
+                            .get_arg_at(&self.operand_stack, self.frame_pointer, *index as usize)
+                            .ok_or(InterpreterError::InvalidStoreIndex(
+                                ValueRel::Arg,
+                                *index,
+                                frame.n_args,
+                            ))?;
+
+                        self.push(value.clone())?;
+                    }
+                    ValueRel::Capture => panic!("Not implemented"),
+                    ValueRel::Global => {
+                        if (*index as usize) >= self.globals.len() {
+                            return Err(InterpreterError::InvalidStoreIndex(
+                                ValueRel::Global,
+                                *index,
+                                self.globals.len() as i64,
+                            ));
+                        } else {
+                            let value = self.globals[*index as usize].clone();
+                            self.push(value)?;
+                        }
+                    }
+                    ValueRel::Local => {
+                        let value = frame
+                            .get_local_at(&self.operand_stack, self.frame_pointer, *index as usize)
+                            .ok_or(InterpreterError::InvalidStoreIndex(
+                                ValueRel::Local,
+                                *index,
+                                frame.n_locals,
+                            ))?;
+
+                        self.push(value.clone())?;
+                    }
+                }
             }
             _ => panic!("Unimplemented instruction {:?}", instr),
         };
@@ -486,12 +675,9 @@ impl Interpreter {
         Ok(())
     }
 
-    /// Push to the operand stack
-    fn push(&mut self, obj: Object) {
-        self.operand_stack.push(obj);
-        if self.opts.verbose {
-            println!("[LOG] STACK PUSH");
-            self.print_stack();
+    unsafe fn gc_sync(&mut self) -> Result<(), InterpreterError> {
+        if self.operand_stack.is_empty() {
+            return Err(InterpreterError::StackUnderflow);
         }
 
         unsafe {
@@ -503,6 +689,23 @@ impl Interpreter {
             );
             gc_set_bottom(self.operand_stack.as_ptr().addr());
         }
+
+        Ok(())
+    }
+
+    /// Push to the operand stack
+    fn push(&mut self, obj: Object) -> Result<(), InterpreterError> {
+        self.operand_stack.push(obj);
+        if self.opts.verbose {
+            println!("[LOG] STACK PUSH");
+            self.print_stack();
+        }
+
+        unsafe {
+            self.gc_sync()?;
+        }
+
+        Ok(())
     }
 
     /// Pop from the operand stack
@@ -517,13 +720,7 @@ impl Interpreter {
         }
 
         unsafe {
-            gc_set_top(
-                self.operand_stack
-                    .as_ptr()
-                    .add(self.operand_stack.len() - 1)
-                    .addr(),
-            );
-            gc_set_bottom(self.operand_stack.as_ptr().addr());
+            self.gc_sync()?;
         }
 
         obj
@@ -611,8 +808,8 @@ mod tests {
             interp.instructions[0],
             Instruction::BEGIN { args: 2, locals: 0 }
         );
-        assert_eq!(interp.instructions[1], Instruction::CONST { index: 2 });
-        assert_eq!(interp.instructions[2], Instruction::CONST { index: 3 });
+        assert_eq!(interp.instructions[1], Instruction::CONST { value: 2 });
+        assert_eq!(interp.instructions[2], Instruction::CONST { value: 3 });
         assert_eq!(interp.instructions[3], Instruction::BINOP { op: Op::ADD });
         assert_eq!(
             interp.instructions[5],
@@ -649,8 +846,8 @@ mod tests {
         let mut programs = Vec::new();
         for i in 1u8..=13u8 {
             let program = vec![
-                Instruction::CONST { index: 2 },
-                Instruction::CONST { index: 3 },
+                Instruction::CONST { value: 2 },
+                Instruction::CONST { value: 3 },
                 Instruction::BINOP {
                     op: Op::try_from(i).unwrap(),
                 },
@@ -660,33 +857,33 @@ mod tests {
 
         // tests on 0
         programs.push(vec![
-            Instruction::CONST { index: 0 },
-            Instruction::CONST { index: 0 },
+            Instruction::CONST { value: 0 },
+            Instruction::CONST { value: 0 },
             Instruction::BINOP { op: Op::AND },
         ]);
 
         programs.push(vec![
-            Instruction::CONST { index: 0 },
-            Instruction::CONST { index: 1 },
+            Instruction::CONST { value: 0 },
+            Instruction::CONST { value: 1 },
             Instruction::BINOP { op: Op::OR },
         ]);
 
         programs.push(vec![
-            Instruction::CONST { index: 0 },
-            Instruction::CONST { index: 0 },
+            Instruction::CONST { value: 0 },
+            Instruction::CONST { value: 0 },
             Instruction::BINOP { op: Op::OR },
         ]);
 
         // equality
         programs.push(vec![
-            Instruction::CONST { index: 1 },
-            Instruction::CONST { index: 1 },
+            Instruction::CONST { value: 1 },
+            Instruction::CONST { value: 1 },
             Instruction::BINOP { op: Op::EQ },
         ]);
 
         programs.push(vec![
-            Instruction::CONST { index: 1 },
-            Instruction::CONST { index: 1 },
+            Instruction::CONST { value: 1 },
+            Instruction::CONST { value: 1 },
             Instruction::BINOP { op: Op::NEQ },
         ]);
 
@@ -778,7 +975,7 @@ mod tests {
         ]);
 
         programs.push(vec![
-            Instruction::CONST { index: 1 },
+            Instruction::CONST { value: 1 },
             // Nil()
             Instruction::SEXP {
                 s_index: 1,
@@ -792,7 +989,7 @@ mod tests {
         ]);
 
         programs.push(vec![
-            Instruction::CONST { index: 1 },
+            Instruction::CONST { value: 1 },
             // Nil()
             Instruction::SEXP {
                 s_index: 1,
@@ -803,7 +1000,7 @@ mod tests {
                 s_index: 0,
                 n_members: 2,
             },
-            Instruction::CONST { index: 2 },
+            Instruction::CONST { value: 2 },
             // Cons(2, Cons(1, Nil()))
             Instruction::SEXP {
                 s_index: 0,
@@ -850,6 +1047,326 @@ mod tests {
             unsafe {
                 assert_eq!(*rtToSexp(sexp), *rtToSexp(expected));
             }
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_invalid_jump_offset() -> Result<(), Box<dyn std::error::Error>> {
+        let mut programs = Vec::new();
+
+        // negative jump offset
+        programs.push(vec![Instruction::JMP { offset: -1 }]);
+
+        // out of bounds jump offset
+        programs.push(vec![Instruction::JMP { offset: 10000 }]);
+
+        let expected_results = vec![
+            Err(InterpreterError::InvalidJumpOffset),
+            Err(InterpreterError::InvalidJumpOffset),
+        ];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
+            let result = interp.run_on_program(program);
+
+            assert!(result.is_err());
+            assert_eq!(result, expected);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_invalid_frame_move() -> Result<(), Box<dyn std::error::Error>> {
+        let mut programs = Vec::new();
+
+        // End without begin
+        programs.push(vec![Instruction::CONST { value: 1 }, Instruction::END]);
+
+        // Not enough arguments for frame metadata
+        programs.push(vec![Instruction::BEGIN {
+            args: 10,
+            locals: 0,
+        }]);
+
+        let expected_results = vec![
+            Err(InterpreterError::NotEnoughArguments("END")),
+            Err(InterpreterError::NotEnoughArguments("BEGIN")),
+        ];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
+            interp.operand_stack.clear();
+            let result = interp.run_on_program(program);
+
+            assert!(result.is_err());
+            assert_eq!(result, expected);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_frame_move_args_and_locals() -> Result<(), Box<dyn std::error::Error>> {
+        let mut programs = Vec::new();
+
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 }, // return ip
+            Instruction::BEGIN { args: 2, locals: 2 },
+        ]);
+
+        // Local variables assignment
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 }, // return ip
+            Instruction::BEGIN { args: 2, locals: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::STORE {
+                rel: ValueRel::Local,
+                index: 0,
+            }, // store `3` in local variable at index 0
+            Instruction::CONST { value: 4 },
+            Instruction::STORE {
+                rel: ValueRel::Local,
+                index: 1,
+            }, // store `4` in local variable at index 1
+        ]);
+
+        // Arguments assignment
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::BEGIN { args: 2, locals: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::STORE {
+                rel: ValueRel::Arg,
+                index: 0,
+            }, // store `3` in function argument at index 0
+            Instruction::CONST { value: 4 },
+            Instruction::STORE {
+                rel: ValueRel::Arg,
+                index: 1,
+            }, // store `4` in function argument at index 1
+        ]);
+
+        struct ExpectValue {
+            metadata: FrameMetadata,
+            args: Vec<Object>,
+            locals: Vec<Object>,
+        }
+
+        let expected_results = vec![
+            ExpectValue {
+                metadata: FrameMetadata::new(2, 2, 0, 2),
+                args: vec![Object::new_boxed(2), Object::new_boxed(2)],
+                // un-initialized locals
+                locals: vec![Object::new_boxed(0), Object::new_boxed(0)],
+            },
+            ExpectValue {
+                metadata: FrameMetadata::new(2, 2, 0, 2),
+                args: vec![Object::new_boxed(2), Object::new_boxed(2)],
+                locals: vec![Object::new_boxed(3), Object::new_boxed(4)],
+            },
+            ExpectValue {
+                metadata: FrameMetadata::new(2, 2, 0, 2),
+                args: vec![Object::new_boxed(3), Object::new_boxed(4)],
+                locals: vec![Object::new_boxed(0), Object::new_boxed(0)],
+            },
+        ];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, false));
+
+            interp.run_on_program(program)?;
+
+            let frame = FrameMetadata::get_from_stack(&interp.operand_stack, interp.frame_pointer)
+                .ok_or(InterpreterError::StackUnderflow)?;
+
+            assert_eq!(frame, expected.metadata);
+            assert_eq!(
+                frame
+                    .get_local_at(&interp.operand_stack, interp.frame_pointer, 0)
+                    .unwrap()
+                    .unwrap(),
+                expected.locals[0].unwrap()
+            );
+            assert_eq!(
+                frame
+                    .get_local_at(&interp.operand_stack, interp.frame_pointer, 1)
+                    .unwrap()
+                    .unwrap(),
+                expected.locals[1].unwrap()
+            );
+            assert_eq!(
+                frame
+                    .get_arg_at(&interp.operand_stack, interp.frame_pointer, 0)
+                    .unwrap()
+                    .unwrap(),
+                expected.args[0].unwrap()
+            );
+            assert_eq!(
+                frame
+                    .get_arg_at(&interp.operand_stack, interp.frame_pointer, 1)
+                    .unwrap()
+                    .unwrap(),
+                expected.args[1].unwrap()
+            );
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_invalid_args_and_locals_assignment() -> Result<(), Box<dyn std::error::Error>> {
+        let mut programs = Vec::new();
+
+        // Local variables assignment
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 }, // return ip
+            Instruction::BEGIN { args: 2, locals: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::STORE {
+                rel: ValueRel::Local,
+                index: 3,
+            }, // invalid store `3` in local variable at index 3
+        ]);
+
+        // Arguments assignment
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::BEGIN { args: 2, locals: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::STORE {
+                rel: ValueRel::Arg,
+                index: 3,
+            }, // invalid store `3` in function argument at index 0
+        ]);
+
+        let expected_results = vec![
+            Err(InterpreterError::InvalidStoreIndex(ValueRel::Local, 3, 2)),
+            Err(InterpreterError::InvalidStoreIndex(ValueRel::Arg, 3, 2)),
+        ];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, false));
+
+            let result = interp.run_on_program(program);
+
+            assert!(result.is_err());
+            assert_eq!(result, expected);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_arg_and_local_load() -> Result<(), InterpreterError> {
+        let mut programs = Vec::new();
+
+        // Loading uninitialized local variable
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 }, // return ip
+            Instruction::BEGIN { args: 2, locals: 2 },
+            Instruction::LOAD {
+                rel: ValueRel::Local,
+                index: 0,
+            }, // load local variable at index 0
+        ]);
+
+        // Arguments load
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::CONST { value: 4 },
+            Instruction::CONST { value: 5 },
+            Instruction::CONST { value: 2 }, // ip
+            Instruction::BEGIN { args: 4, locals: 2 },
+            Instruction::LOAD {
+                rel: ValueRel::Arg,
+                index: 3,
+            }, // load function argument at index 3
+        ]);
+
+        // Load mutated argument
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 }, // ip
+            Instruction::BEGIN { args: 4, locals: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::STORE {
+                rel: ValueRel::Arg,
+                index: 0,
+            }, // store `3` in function argument at index 0
+            Instruction::LOAD {
+                rel: ValueRel::Arg,
+                index: 0,
+            }, // load function argument at index 0
+        ]);
+
+        // Load mutated local
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 2 },
+            Instruction::BEGIN { args: 2, locals: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::STORE {
+                rel: ValueRel::Local,
+                index: 0,
+            }, // invalid store `3` in function argument at index 0
+            Instruction::LOAD {
+                rel: ValueRel::Local,
+                index: 0,
+            }, // load function argument at index 0
+        ]);
+
+        let expected_results = vec![0, 5, 3, 3];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, false));
+
+            interp.run_on_program(program)?;
+
+            let obj = interp.pop()?;
+
+            assert_eq!(obj.unwrap(), expected);
         }
 
         Ok(())

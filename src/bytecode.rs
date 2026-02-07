@@ -1,5 +1,5 @@
 //! Descriptor of Lama bytecode
-use std::convert::TryFrom;
+use std::{convert::TryFrom, path::Display};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Op {
@@ -77,9 +77,9 @@ pub enum Instruction {
     BINOP {
         op: Op,
     },
-    /// Pushes the 𝑘th constant from the constant pool.
+    /// Pushes value in the operand stack.
     CONST {
-        index: i32,
+        value: i32,
     },
     /// Pushes the 𝑠th string from the string table.
     STRING {
@@ -290,6 +290,17 @@ impl TryFrom<u8> for Builtin {
             0x3 => Ok(Builtin::Lstring),
             0x4 => Ok(Builtin::Barray),
             _ => Err(()),
+        }
+    }
+}
+
+impl std::fmt::Display for ValueRel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ValueRel::Global => write!(f, "global variable"),
+            ValueRel::Local => write!(f, "local variable"),
+            ValueRel::Arg => write!(f, "function argument"),
+            ValueRel::Capture => write!(f, "captured variable"),
         }
     }
 }
