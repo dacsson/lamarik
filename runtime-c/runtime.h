@@ -20,6 +20,8 @@ _Noreturn void failure (char *s, ...);
 
 // Builders
 void *Bsexp (aint* args, aint bn);
+void *Barray (aint* args, aint bn);
+void *Bstring (aint* args/*void *p*/);
 
 // Builtin
 void *Lstring (aint* args /* void *p */);

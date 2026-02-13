@@ -733,7 +733,7 @@ extern void *LmakeString (aint length) {
   return r->contents;
 }
 
-extern void *Bstring (aint* args/*void *p*/) {
+void *Bstring (aint* args/*void *p*/) {
   size_t   n = strlen((char*)args[0]);
   void *s = NULL;
 
@@ -818,7 +818,7 @@ extern void *Bclosure (aint* args, aint bn) {
   return r->contents;
 }
 
-extern void *Barray (aint* args, aint bn) {
+void *Barray (aint* args, aint bn) {
   data   *r;
   aint     n = UNBOX(bn);
 

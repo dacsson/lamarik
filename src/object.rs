@@ -53,7 +53,7 @@ impl Object {
     }
 
     /// Get lama type of object
-    fn lama_type(&mut self) -> Option<lama_type> {
+    pub fn lama_type(&mut self) -> Option<lama_type> {
         unsafe {
             if let Some(as_ptr) = self.as_ptr_mut::<c_void>() {
                 let header_ptr = get_obj_header_ptr(as_ptr);

@@ -32,6 +32,39 @@ fn new_sexp(tag: CString, mut args: Vec<i64>) -> *mut c_void {
     }
 }
 
+/// Create a new lama string.
+fn new_string(bytes: Vec<u8>) -> Result<*mut c_void, Box<dyn std::error::Error>> {
+    unsafe {
+        let c_string = CString::from_vec_with_nul(bytes)?;
+        let as_ptr = c_string.into_raw();
+
+        let mut slice = vec![as_ptr as i64];
+
+        Ok(Bstring(slice.as_mut_ptr()))
+    }
+}
+
+/// Create array from given elements.
+/// Returns a pointer to *contents* of the array.
+/// To retrieve the actual array, use `rtToData`.
+fn new_array(mut elements: Vec<i64>) -> *mut c_void {
+    unsafe {
+        let mut contents = vec![];
+        contents.resize(elements.len(), 0);
+
+        contents.append(&mut elements);
+
+        Barray(
+            contents.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
+            rtBox(elements.len() as i64), /* n args */
+        )
+    }
+}
+
+fn get_array_el(arr: &data, index: usize) -> i64 {
+    unsafe { (arr.contents.as_ptr() as *const i64).add(index).read() }
+}
+
 fn get_sexp_el(sexp: &sexp, index: usize) -> i64 {
     unsafe { (sexp.contents.as_ptr() as *const i64).add(index).read() }
 }
@@ -73,6 +106,63 @@ impl PartialEq for sexp {
             }
 
             false
+        }
+    }
+}
+
+impl PartialEq for data {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe {
+            let self_header = self.data_header;
+            let other_header = other.data_header;
+
+            let self_tag = rtTag(self_header as u64);
+            let other_tag = rtTag(other_header as u64);
+
+            if self_tag != other_tag {
+                return false;
+            }
+
+            match self_tag as u32 {
+                STRING_TAG => strcmp(self.contents.as_ptr(), other.contents.as_ptr()) == 0,
+                // SEXP_TAG => {
+                //     let self_sexp = self as &sexp;
+                //     let other_sexp = rtToSexp(other_header as *mut c_void);
+                //     self_sexp == other_sexp
+                // }
+                ARRAY_TAG => {
+                    let self_len = rtLen(self_header);
+                    let other_len = rtLen(other_header);
+                    if self_len != other_len {
+                        return false;
+                    }
+                    for i in 0..self_len {
+                        let self_el = get_array_el(self, i as usize);
+                        let other_el = get_array_el(other, i as usize);
+
+                        let is_unboxed_self_el = isUnboxed(self_el);
+                        let is_unboxed_other_el = isUnboxed(other_el);
+
+                        if is_unboxed_self_el != is_unboxed_other_el {
+                            return false;
+                        }
+
+                        if is_unboxed_self_el {
+                            if self_el != other_el {
+                                return false;
+                            }
+                        } else {
+                            let self_el_as_ptr = self_el as *mut c_void;
+                            let other_el_as_ptr = other_el as *mut c_void;
+
+                            return *rtToData(self_el_as_ptr) == *rtToData(other_el_as_ptr);
+                        }
+                    }
+
+                    true
+                }
+                _ => panic!("Unsupported type for equality comparison"),
+            }
         }
     }
 }

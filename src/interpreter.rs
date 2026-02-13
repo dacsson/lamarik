@@ -5,7 +5,9 @@ use crate::disasm::Bytefile;
 use crate::frame::FrameMetadata;
 use crate::numeric::LeBytes;
 use crate::object::Object;
-use crate::{__gc_init, __init, LtagHash, gc_set_bottom, gc_set_top, new_sexp, rtToSexp};
+use crate::{
+    __gc_init, __init, LtagHash, gc_set_bottom, gc_set_top, new_sexp, new_string, rtToSexp,
+};
 use std::convert::TryFrom;
 use std::ffi::CString;
 use std::panic;
@@ -418,20 +420,23 @@ impl Interpreter {
 
                 println!("[LOG] string: {:?}", string);
 
-                let c_string = CString::from_vec_with_nul(string)
-                    .map_err(|_| InterpreterError::InvalidCString)?;
+                // let c_string = CString::from_vec_with_nul(string)
+                //     .map_err(|_| InterpreterError::InvalidCString)?;
 
-                let raw_ptr: *const i8 = c_string.into_raw();
+                // let raw_ptr: *const i8 = c_string.into_raw();
+
+                let lama_string =
+                    new_string(string).map_err(|_| InterpreterError::InvalidStringPointer)?;
 
                 self.push(
-                    Object::try_from(raw_ptr)
+                    Object::try_from(lama_string)
                         .map_err(|_| InterpreterError::InvalidStringPointer)?,
                 )?;
 
                 if self.opts.verbose {
                     println!(
                         "[LOG] as_ptr {:?}; Object {}",
-                        raw_ptr,
+                        lama_string,
                         self.operand_stack[self.operand_stack.len() - 1]
                     )
                 };
@@ -669,6 +674,54 @@ impl Interpreter {
                     }
                 }
             }
+            Instruction::DROP => {
+                self.pop()?;
+            }
+            Instruction::DUP => {
+                let value = self.pop()?;
+                self.push(value.clone())?;
+                self.push(value)?;
+            }
+            Instruction::SWAP => {
+                let value1 = self.pop()?;
+                let value2 = self.pop()?;
+                self.push(value1)?;
+                self.push(value2)?;
+            }
+            Instruction::CALL {
+                offset,
+                n,
+                name,
+                builtin,
+            } => {
+                if !builtin {
+                    // Push old instruction pointer
+                    // `BEGIN` instruction will collect it
+                    self.push(Object::new_unboxed(self.ip as i64))?;
+
+                    if let Some(offset) = offset {
+                        self.ip = *offset as usize;
+                    } else {
+                        panic!(
+                            "Calling user-provided function without offset, this should never be possible"
+                        );
+                    }
+                } else {
+                    if let Some(name) = name {
+                        match name {
+                            Builtin::Barray => {}
+                            Builtin::Llength => {}
+                            Builtin::Lread => {}
+                            Builtin::Lwrite => {}
+                            Builtin::Lstring => {}
+                        }
+                    } else {
+                        panic!(
+                            "Calling builtin function without name, this should never be possible"
+                        );
+                    }
+                }
+            }
             _ => panic!("Unimplemented instruction {:?}", instr),
         };
 
@@ -750,8 +803,8 @@ impl Interpreter {
 #[cfg(test)]
 mod tests {
     use crate::{
-        __gc_init, Bsexp, alloc_sexp, get_object_content_ptr, isUnboxed, new_sexp, rtBox, rtLen,
-        rtSexpEl, rtTag, rtToSexp, sexp,
+        __gc_init, Bsexp, alloc_sexp, get_object_content_ptr, isUnboxed, lama_type_STRING,
+        new_array, new_sexp, rtBox, rtLen, rtSexpEl, rtTag, rtToData, rtToSexp, sexp,
     };
 
     use super::*;
@@ -948,9 +1001,11 @@ mod tests {
 
             interp.run_on_program(program)?;
 
-            let obj = interp.pop().unwrap();
-            let ptr_again = obj.unwrap() as *const i8;
-            let c_string_again = unsafe { CStr::from_ptr(ptr_again) };
+            let mut obj = interp.pop().unwrap();
+
+            assert_eq!(obj.lama_type(), Some(lama_type_STRING));
+
+            let c_string_again = unsafe { CStr::from_ptr(obj.unwrap() as *const i8) };
 
             assert_eq!(*c_string_again, expected);
         }
@@ -1371,4 +1426,231 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_drop() -> Result<(), InterpreterError> {
+        let mut programs = Vec::new();
+
+        // Loading uninitialized local variable
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::DROP,
+        ]);
+
+        let expected_results = vec![2];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, false));
+
+            interp.run_on_program(program)?;
+
+            let obj = interp.pop()?;
+
+            assert_eq!(obj.unwrap(), expected);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_dup() -> Result<(), InterpreterError> {
+        let mut programs = Vec::new();
+
+        // Loading uninitialized local variable
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::DUP,
+        ]);
+
+        let expected_results = vec![(3, 3)];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, false));
+
+            interp.run_on_program(program)?;
+
+            let (obj1, obj2) = (interp.pop()?, interp.pop()?);
+
+            assert_eq!(obj1.unwrap(), expected.0);
+            assert_eq!(obj2.unwrap(), expected.1);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_swap() -> Result<(), InterpreterError> {
+        let mut programs = Vec::new();
+
+        // Loading uninitialized local variable
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::SWAP,
+        ]);
+
+        let expected_results = vec![(2, 3)];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, false));
+
+            interp.run_on_program(program)?;
+
+            let (obj1, obj2) = (interp.pop()?, interp.pop()?);
+
+            assert_eq!(obj1.unwrap(), expected.0);
+            assert_eq!(obj2.unwrap(), expected.1);
+        }
+
+        Ok(())
+    }
+
+    // #[test]
+    // fn test_array() -> Result<(), Box<dyn std::error::Error>> {
+    //     let mut programs = Vec::new();
+
+    //     // 0 length array
+    //     programs.push(vec![
+    //         Instruction::CONST { value: 2 },
+    //         Instruction::CONST { value: 3 },
+    //         Instruction::CALL {
+    //             offset: None,
+    //             n: Some(0),
+    //             name: Some(Builtin::Barray),
+    //             builtin: true,
+    //         },
+    //         Instruction::CALL {
+    //             offset: None,
+    //             n: None,
+    //             name: Some(Builtin::Llength),
+    //             builtin: true,
+    //         },
+    //     ]);
+
+    //     // 2 length array
+    //     programs.push(vec![
+    //         Instruction::CONST { value: 2 },
+    //         Instruction::CONST { value: 3 },
+    //         Instruction::CALL {
+    //             offset: None,
+    //             n: Some(2),
+    //             name: Some(Builtin::Barray),
+    //             builtin: true,
+    //         },
+    //         Instruction::CALL {
+    //             offset: None,
+    //             n: None,
+    //             name: Some(Builtin::Llength),
+    //             builtin: true,
+    //         },
+    //     ]);
+
+    //     // Array of different types of elements (this is allowed in Lama)
+    //     programs.push(vec![
+    //         Instruction::CONST { value: 1 },
+    //         Instruction::CONST { value: 2 },
+    //         Instruction::STRING { index: 0 }, // "main"
+    //         Instruction::CALL {
+    //             offset: None,
+    //             n: Some(3),
+    //             name: Some(Builtin::Barray),
+    //             builtin: true,
+    //         },
+    //         Instruction::CALL {
+    //             offset: None,
+    //             n: None,
+    //             name: Some(Builtin::Llength),
+    //             builtin: true,
+    //         },
+    //     ]);
+
+    //     let c_string = CString::new("main")?;
+    //     let raw_ptr = c_string.as_ptr();
+    //     let object = Object::try_from(raw_ptr).unwrap();
+
+    //     let expected_results = vec![
+    //         new_array(vec![]),
+    //         new_array(vec![2, 3]),
+    //         new_array(vec![1, 2, object.unwrap()]),
+    //     ];
+
+    //     assert_eq!(programs.len(), expected_results.len());
+
+    //     for (program, expected) in programs.into_iter().zip(expected_results) {
+    //         let mut interp =
+    //             Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, false));
+
+    //         interp.bf.put_string(CString::new("main")?);
+
+    //         interp.run_on_program(program)?;
+
+    //         let obj = interp.pop()?;
+
+    //         assert_eq!(obj, expected);
+    //     }
+
+    //     Ok(())
+    // }
+
+    // Note: no Lwrite/Lread testing
+    // #[test]
+    // fn test_builtin_functions() -> Result<(), InterpreterError> {
+    //     let mut programs = Vec::new();
+
+    //     // Llength of SEXP
+    //     programs.push(vec![
+    //         Instruction::CONST { value: 1 },
+    //         // Nil()
+    //         Instruction::SEXP {
+    //             s_index: 1,
+    //             n_members: 0,
+    //         },
+    //         // Cons(1, Nil())
+    //         Instruction::SEXP {
+    //             s_index: 0,
+    //             n_members: 2,
+    //         },
+    //         Instruction::CONST { value: 2 },
+    //         // Cons(2, Cons(1, Nil()))
+    //         Instruction::SEXP {
+    //             s_index: 0,
+    //             n_members: 2,
+    //         },
+    //         Instruction::CALL {
+    //             offset: None,
+    //             n: None,
+    //             name: Some(Builtin::Llength),
+    //             builtin: true,
+    //         },
+    //     ]);
+
+    //     let expected_results = vec![(5, 5)];
+
+    //     assert_eq!(programs.len(), expected_results.len());
+
+    //     for (program, expected) in programs.into_iter().zip(expected_results) {
+    //         let mut interp =
+    //             Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, false));
+
+    //         interp.run_on_program(program)?;
+
+    //         let (obj1, obj2) = (interp.pop()?, interp.pop()?);
+
+    //         assert_eq!(obj1.unwrap(), expected.0);
+    //         assert_eq!(obj2.unwrap(), expected.1);
+    //     }
+
+    //     Ok(())
+    // }
 }
