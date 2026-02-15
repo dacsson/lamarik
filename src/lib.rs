@@ -20,14 +20,11 @@ fn new_sexp(tag: CString, mut args: Vec<i64>) -> *mut c_void {
     unsafe {
         let tag_hash = LtagHash(tag.into_raw());
 
-        let mut contents = vec![tag_hash];
-        contents.resize(args.len() + 1, 0);
-
-        contents.append(&mut args);
+        args.push(tag_hash);
 
         Bsexp(
-            contents.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
-            rtBox(args.len() as i64) + 1, /* n args */
+            args.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
+            rtBox(args.len() as i64), /* n args */
         )
     }
 }
@@ -49,13 +46,8 @@ fn new_string(bytes: Vec<u8>) -> Result<*mut c_void, Box<dyn std::error::Error>>
 /// To retrieve the actual array, use `rtToData`.
 fn new_array(mut elements: Vec<i64>) -> *mut c_void {
     unsafe {
-        let mut contents = vec![];
-        contents.resize(elements.len(), 0);
-
-        contents.append(&mut elements);
-
         Barray(
-            contents.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
+            elements.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
             rtBox(elements.len() as i64), /* n args */
         )
     }

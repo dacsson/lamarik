@@ -4,9 +4,10 @@ use crate::bytecode::{Builtin, Instruction, Op, PattKind, ValueRel};
 use crate::disasm::Bytefile;
 use crate::frame::FrameMetadata;
 use crate::numeric::LeBytes;
-use crate::object::Object;
+use crate::object::{Object, ObjectError};
 use crate::{
-    __gc_init, __init, LtagHash, gc_set_bottom, gc_set_top, new_sexp, new_string, rtToSexp,
+    __gc_init, __init, Llength, LtagHash, gc_set_bottom, gc_set_top, get_object_content_ptr,
+    new_array, new_sexp, new_string, rtLen, rtToData, rtToSexp, rtUnbox,
 };
 use std::convert::TryFrom;
 use std::ffi::CString;
@@ -30,12 +31,20 @@ pub enum InterpreterError {
     NotEnoughArguments(&'static str),
     InvalidStoreIndex(ValueRel, i32, i64),
     InvalidLoadIndex(ValueRel, i32, i64),
+    InvalidLengthForArray,
+    ObjectError(ObjectError),
 }
 
 /// Convert a byte, that couldnt be incoded into an interpreter error.
 impl From<u8> for InterpreterError {
     fn from(opcode: u8) -> Self {
         InterpreterError::InvalidOpcode(opcode)
+    }
+}
+
+impl From<ObjectError> for InterpreterError {
+    fn from(err: ObjectError) -> Self {
+        InterpreterError::ObjectError(err)
     }
 }
 
@@ -79,6 +88,12 @@ impl std::fmt::Display for InterpreterError {
             }
             InterpreterError::InvalidLoadIndex(rel, index, n) => {
                 write!(f, "Invalid load index {}/{} for {}", index, n, rel)
+            }
+            InterpreterError::InvalidLengthForArray => {
+                write!(f, "Invalid length for array")
+            }
+            InterpreterError::ObjectError(err) => {
+                write!(f, "Object creation error: {}", err)
             }
         }
     }
@@ -467,8 +482,10 @@ impl Interpreter {
 
                 let sexp = new_sexp(c_string, args);
 
-                unsafe {
-                    println!("{:#?}", rtToSexp(sexp));
+                if self.opts.verbose {
+                    unsafe {
+                        println!("[Log][SEXP] {:#?}", *rtToSexp(sexp));
+                    }
                 }
 
                 self.push(
@@ -709,11 +726,41 @@ impl Interpreter {
                 } else {
                     if let Some(name) = name {
                         match name {
-                            Builtin::Barray => {}
-                            Builtin::Llength => {}
-                            Builtin::Lread => {}
-                            Builtin::Lwrite => {}
-                            Builtin::Lstring => {}
+                            Builtin::Barray => {
+                                let length =
+                                    n.ok_or(InterpreterError::InvalidLengthForArray)? as usize;
+
+                                let mut elements = Vec::with_capacity(length);
+                                for _ in 0..length {
+                                    let element = self.pop()?;
+                                    elements.push(element.unwrap());
+                                }
+
+                                elements.reverse();
+
+                                let array = new_array(elements);
+
+                                self.push(
+                                    Object::try_from(array)
+                                        .map_err(|_| InterpreterError::InvalidObjectPointer)?,
+                                )?;
+                            }
+                            Builtin::Llength => {
+                                let obj = self.pop()?;
+                                let as_ptr = obj
+                                    .as_ptr_mut()
+                                    .ok_or(InterpreterError::InvalidObjectPointer)?;
+
+                                unsafe {
+                                    // Llength returns a boxed length value
+                                    let length = Llength(as_ptr);
+                                    self.push(Object::new_boxed(rtUnbox(length)))?;
+                                }
+                            }
+                            // Builtin::Lread => {}
+                            // Builtin::Lwrite => {}
+                            // Builtin::Lstring => {}
+                            _ => panic!("Unimplemented builtin function"),
                         }
                     } else {
                         panic!(
@@ -803,8 +850,9 @@ impl Interpreter {
 #[cfg(test)]
 mod tests {
     use crate::{
-        __gc_init, Bsexp, alloc_sexp, get_object_content_ptr, isUnboxed, lama_type_STRING,
-        new_array, new_sexp, rtBox, rtLen, rtSexpEl, rtTag, rtToData, rtToSexp, sexp,
+        __gc_init, Bsexp, alloc_sexp, get_array_el, get_object_content_ptr, get_sexp_el, isUnboxed,
+        lama_type_SEXP, lama_type_STRING, new_array, new_sexp, rtBox, rtLen, rtSexpEl, rtTag,
+        rtToData, rtToSexp, sexp,
     };
 
     use super::*;
@@ -1005,9 +1053,13 @@ mod tests {
 
             assert_eq!(obj.lama_type(), Some(lama_type_STRING));
 
-            let c_string_again = unsafe { CStr::from_ptr(obj.unwrap() as *const i8) };
+            unsafe {
+                let as_ptr = obj.as_ptr_mut().ok_or("Failed to get pointer")?;
+                let contents = (*rtToData(as_ptr)).contents.as_ptr();
+                let c_string_again = CStr::from_ptr(contents);
 
-            assert_eq!(*c_string_again, expected);
+                assert_eq!(*c_string_again, expected);
+            }
         }
 
         Ok(())
@@ -1045,6 +1097,7 @@ mod tests {
 
         programs.push(vec![
             Instruction::CONST { value: 1 },
+            Instruction::CONST { value: 2 },
             // Nil()
             Instruction::SEXP {
                 s_index: 1,
@@ -1055,7 +1108,6 @@ mod tests {
                 s_index: 0,
                 n_members: 2,
             },
-            Instruction::CONST { value: 2 },
             // Cons(2, Cons(1, Nil()))
             Instruction::SEXP {
                 s_index: 0,
@@ -1063,24 +1115,25 @@ mod tests {
             },
         ]);
 
+        struct Expect {
+            tag: i64,
+            contents: Vec<i64>,
+        }
+
         // checking tags and contents
         let expected_results = vec![
-            new_sexp(CString::new("Nil")?, vec![]),
-            new_sexp(
-                CString::new("Cons")?,
-                vec![1, new_sexp(CString::new("Nil")?, vec![]).addr() as i64],
-            ),
-            new_sexp(
-                CString::new("Cons")?,
-                vec![
-                    1,
-                    new_sexp(
-                        CString::new("Cons")?,
-                        vec![2, new_sexp(CString::new("Nil")?, vec![]).addr() as i64],
-                    )
-                    .addr() as i64,
-                ],
-            ),
+            Expect {
+                tag: unsafe { rtUnbox(LtagHash(CString::new("Nil")?.into_raw())) },
+                contents: vec![],
+            },
+            Expect {
+                tag: unsafe { rtUnbox(LtagHash(CString::new("Cons")?.into_raw())) },
+                contents: vec![1],
+            },
+            Expect {
+                tag: unsafe { rtUnbox(LtagHash(CString::new("Cons")?.into_raw())) },
+                contents: vec![1, 2],
+            },
         ];
 
         assert_eq!(programs.len(), expected_results.len());
@@ -1096,11 +1149,21 @@ mod tests {
 
             interp.run_on_program(program)?;
 
-            let obj = interp.pop().unwrap();
+            let mut obj = interp.pop().unwrap();
             let sexp = obj.as_ptr_mut::<c_void>().unwrap();
 
+            assert_eq!(obj.lama_type(), Some(lama_type_SEXP));
+
             unsafe {
-                assert_eq!(*rtToSexp(sexp), *rtToSexp(expected));
+                assert_eq!((*rtToSexp(sexp)).tag, expected.tag as u64);
+
+                for (i, el) in expected.contents.iter().enumerate() {
+                    // skip tags
+                    if i % 2 != 0 {
+                        continue;
+                    }
+                    assert_eq!(get_sexp_el(&*rtToSexp(sexp), i), *el);
+                }
             }
         }
 
@@ -1516,141 +1579,177 @@ mod tests {
         Ok(())
     }
 
-    // #[test]
-    // fn test_array() -> Result<(), Box<dyn std::error::Error>> {
-    //     let mut programs = Vec::new();
+    #[test]
+    fn test_array() -> Result<(), Box<dyn std::error::Error>> {
+        let mut programs = Vec::new();
 
-    //     // 0 length array
-    //     programs.push(vec![
-    //         Instruction::CONST { value: 2 },
-    //         Instruction::CONST { value: 3 },
-    //         Instruction::CALL {
-    //             offset: None,
-    //             n: Some(0),
-    //             name: Some(Builtin::Barray),
-    //             builtin: true,
-    //         },
-    //         Instruction::CALL {
-    //             offset: None,
-    //             n: None,
-    //             name: Some(Builtin::Llength),
-    //             builtin: true,
-    //         },
-    //     ]);
+        // 0 length array
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::CALL {
+                offset: None,
+                n: Some(0),
+                name: Some(Builtin::Barray),
+                builtin: true,
+            },
+            Instruction::DUP,
+            Instruction::CALL {
+                offset: None,
+                n: None,
+                name: Some(Builtin::Llength),
+                builtin: true,
+            },
+        ]);
 
-    //     // 2 length array
-    //     programs.push(vec![
-    //         Instruction::CONST { value: 2 },
-    //         Instruction::CONST { value: 3 },
-    //         Instruction::CALL {
-    //             offset: None,
-    //             n: Some(2),
-    //             name: Some(Builtin::Barray),
-    //             builtin: true,
-    //         },
-    //         Instruction::CALL {
-    //             offset: None,
-    //             n: None,
-    //             name: Some(Builtin::Llength),
-    //             builtin: true,
-    //         },
-    //     ]);
+        // 2 length array
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::CALL {
+                offset: None,
+                n: Some(2),
+                name: Some(Builtin::Barray),
+                builtin: true,
+            },
+            Instruction::DUP,
+            Instruction::CALL {
+                offset: None,
+                n: None,
+                name: Some(Builtin::Llength),
+                builtin: true,
+            },
+        ]);
 
-    //     // Array of different types of elements (this is allowed in Lama)
-    //     programs.push(vec![
-    //         Instruction::CONST { value: 1 },
-    //         Instruction::CONST { value: 2 },
-    //         Instruction::STRING { index: 0 }, // "main"
-    //         Instruction::CALL {
-    //             offset: None,
-    //             n: Some(3),
-    //             name: Some(Builtin::Barray),
-    //             builtin: true,
-    //         },
-    //         Instruction::CALL {
-    //             offset: None,
-    //             n: None,
-    //             name: Some(Builtin::Llength),
-    //             builtin: true,
-    //         },
-    //     ]);
+        // TODO: Array of different types of elements (this is allowed in Lama)
+        // programs.push(vec![
+        //     Instruction::CONST { value: 1 },
+        //     Instruction::CONST { value: 2 },
+        //     Instruction::STRING { index: 0 }, // "main"
+        //     Instruction::CALL {
+        //         offset: None,
+        //         n: Some(3),
+        //         name: Some(Builtin::Barray),
+        //         builtin: true,
+        //     },
+        //     Instruction::DUP,
+        //     Instruction::CALL {
+        //         offset: None,
+        //         n: None,
+        //         name: Some(Builtin::Llength),
+        //         builtin: true,
+        //     },
+        // ]);
 
-    //     let c_string = CString::new("main")?;
-    //     let raw_ptr = c_string.as_ptr();
-    //     let object = Object::try_from(raw_ptr).unwrap();
+        let c_string = CString::new("main")?;
+        let raw_ptr = c_string.as_ptr();
+        let object = Object::try_from(raw_ptr).unwrap();
 
-    //     let expected_results = vec![
-    //         new_array(vec![]),
-    //         new_array(vec![2, 3]),
-    //         new_array(vec![1, 2, object.unwrap()]),
-    //     ];
+        let expected_results = vec![vec![], vec![2, 3]];
 
-    //     assert_eq!(programs.len(), expected_results.len());
+        assert_eq!(programs.len(), expected_results.len());
 
-    //     for (program, expected) in programs.into_iter().zip(expected_results) {
-    //         let mut interp =
-    //             Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, false));
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
 
-    //         interp.bf.put_string(CString::new("main")?);
+            interp.bf.put_string(CString::new("main")?);
 
-    //         interp.run_on_program(program)?;
+            interp.run_on_program(program)?;
 
-    //         let obj = interp.pop()?;
+            let (len, obj) = (interp.pop()?, interp.pop()?);
 
-    //         assert_eq!(obj, expected);
-    //     }
+            unsafe {
+                assert_eq!(len.unwrap() as usize, expected.len());
+                for (i, &value) in expected.iter().enumerate() {
+                    assert_eq!(
+                        get_array_el(
+                            &*rtToData(
+                                obj.as_ptr_mut()
+                                    .ok_or(InterpreterError::OutOfBoundsAccess)?
+                            ),
+                            i
+                        ),
+                        value
+                    );
+                }
+            }
+        }
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
     // Note: no Lwrite/Lread testing
-    // #[test]
-    // fn test_builtin_functions() -> Result<(), InterpreterError> {
-    //     let mut programs = Vec::new();
+    #[test]
+    fn test_builtin_functions() -> Result<(), Box<dyn std::error::Error>> {
+        unsafe {
+            __gc_init();
+        }
 
-    //     // Llength of SEXP
-    //     programs.push(vec![
-    //         Instruction::CONST { value: 1 },
-    //         // Nil()
-    //         Instruction::SEXP {
-    //             s_index: 1,
-    //             n_members: 0,
-    //         },
-    //         // Cons(1, Nil())
-    //         Instruction::SEXP {
-    //             s_index: 0,
-    //             n_members: 2,
-    //         },
-    //         Instruction::CONST { value: 2 },
-    //         // Cons(2, Cons(1, Nil()))
-    //         Instruction::SEXP {
-    //             s_index: 0,
-    //             n_members: 2,
-    //         },
-    //         Instruction::CALL {
-    //             offset: None,
-    //             n: None,
-    //             name: Some(Builtin::Llength),
-    //             builtin: true,
-    //         },
-    //     ]);
+        let mut programs = Vec::new();
 
-    //     let expected_results = vec![(5, 5)];
+        // Llength of SEXP
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::CONST { value: 1 },
+            // Nil()
+            Instruction::SEXP {
+                s_index: 1,
+                n_members: 0,
+            },
+            // Cons(1, Nil())
+            Instruction::SEXP {
+                s_index: 0,
+                n_members: 2,
+            },
+            // Cons(3, Cons(1, Nil()))
+            Instruction::SEXP {
+                s_index: 0,
+                n_members: 2,
+            },
+            Instruction::DUP,
+            Instruction::CALL {
+                offset: None,
+                n: None,
+                name: Some(Builtin::Llength),
+                builtin: true,
+            },
+        ]);
 
-    //     assert_eq!(programs.len(), expected_results.len());
+        // Llength of string
+        programs.push(vec![
+            Instruction::STRING {
+                index: 0, // "Cons"
+            },
+            Instruction::CALL {
+                offset: None,
+                n: None,
+                name: Some(Builtin::Llength),
+                builtin: true,
+            },
+        ]);
 
-    //     for (program, expected) in programs.into_iter().zip(expected_results) {
-    //         let mut interp =
-    //             Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, false));
+        // TODO: Llength of closure
 
-    //         interp.run_on_program(program)?;
+        let expected_results = vec![2, 4];
 
-    //         let (obj1, obj2) = (interp.pop()?, interp.pop()?);
+        assert_eq!(programs.len(), expected_results.len());
 
-    //         assert_eq!(obj1.unwrap(), expected.0);
-    //         assert_eq!(obj2.unwrap(), expected.1);
-    //     }
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
 
-    //     Ok(())
-    // }
+            interp.bf.put_string(CString::new("Cons")?);
+            interp.bf.put_string(CString::new("Nil")?);
+
+            interp.run_on_program(program)?;
+
+            let obj = interp.pop()?;
+
+            assert_eq!(obj.unwrap(), expected);
+        }
+
+        Ok(())
+    }
 }

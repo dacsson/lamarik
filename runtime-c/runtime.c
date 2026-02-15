@@ -200,7 +200,7 @@ aint Ls__Infix_37 (void *p, void *q) {
   return BOX(UNBOX(p) % UNBOX(q));
 }
 
-extern aint Llength (void *p) {
+aint Llength (void *p) {
   ASSERT_BOXED(".length", p);
   return BOX(LEN(TO_DATA(p)->data_header));
 }

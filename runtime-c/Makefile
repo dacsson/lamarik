@@ -18,14 +18,13 @@ all: gc.o runtime.o printf.o
 	ar rc liblamart.a runtime.o gc.o printf.o
 
 gc.o: gc.c gc.h
-	$(CC) $(PROD_FLAGS) -c gc.c -o gc.o -fPIC
+	$(CC) $(PROD_FLAGS) -g -c gc.c -o gc.o -fPIC
 
 runtime.o: runtime.c runtime.h
-	$(CC) $(PROD_FLAGS) -c runtime.c -o runtime.o -fPIC
+	$(CC) $(PROD_FLAGS) -g -c runtime.c -o runtime.o -fPIC
 
 printf.o: printf.S
-	$(CC) $(PROD_FLAGS) -Wa,--noexecstack -x assembler-with-cpp -c -g printf.S -o printf.o -fPIC
+	$(CC) $(PROD_FLAGS) -g -Wa,--noexecstack -x assembler-with-cpp -c -g printf.S -o printf.o -fPIC
 
 clean:
 	$(RM) *.a *.o *~ negative_scenarios/*.err
-

@@ -25,6 +25,7 @@ void *Bstring (aint* args/*void *p*/);
 
 // Builtin
 void *Lstring (aint* args /* void *p */);
+aint Llength (void *p);
 
 char *de_hash (aint n);
 aint LtagHash (char *s);

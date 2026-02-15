@@ -1,6 +1,6 @@
 //! Interpreter Objet type description
 
-use crate::{get_obj_header_ptr, get_type_header_ptr, lama_type, rtBox, rtUnbox};
+use crate::{get_obj_header_ptr, get_type_header_ptr, isUnboxed, lama_type, rtBox, rtUnbox};
 use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::c_void;
 
@@ -12,6 +12,27 @@ pub enum Object {
     Boxed(i64),
     Unboxed(i64),
 }
+
+#[derive(Debug, PartialEq)]
+pub enum ObjectError {
+    CreatingUnboxedObjectWithBoxedValue,
+    CreatingBoxedObjectWithAlreadyBoxedValue,
+}
+
+impl Display for ObjectError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ObjectError::CreatingUnboxedObjectWithBoxedValue => {
+                write!(f, "Creating unboxed object with boxed value")
+            }
+            ObjectError::CreatingBoxedObjectWithAlreadyBoxedValue => {
+                write!(f, "Creating boxed object with already boxed value")
+            }
+        }
+    }
+}
+
+impl std::error::Error for ObjectError {}
 
 impl Object {
     pub fn new_boxed(value: i64) -> Self {
@@ -39,16 +60,16 @@ impl Object {
     /// iff it was created from pointer
     pub fn as_ptr<T>(&self) -> Option<*const T> {
         match self {
-            Object::Boxed(_) => None,
-            Object::Unboxed(v) => Some(*v as *const T),
+            Object::Boxed(v) => Some(*v as *const T),
+            Object::Unboxed(_) => None,
         }
     }
 
     /// [`as_ptr`]
     pub fn as_ptr_mut<T>(&self) -> Option<*mut T> {
         match self {
-            Object::Boxed(_) => None,
-            Object::Unboxed(v) => Some(*v as *mut T),
+            Object::Boxed(v) => Some(*v as *mut T),
+            Object::Unboxed(_) => None,
         }
     }
 
@@ -71,7 +92,7 @@ impl TryFrom<*const i8> for Object {
     type Error = ();
 
     fn try_from(ptr: *const i8) -> Result<Self, Self::Error> {
-        Ok(Object::Unboxed(ptr.addr() as i64))
+        Ok(Object::Boxed(ptr.addr() as i64))
     }
 }
 
@@ -81,7 +102,7 @@ impl TryFrom<*mut c_void> for Object {
     type Error = ();
 
     fn try_from(ptr: *mut c_void) -> Result<Self, Self::Error> {
-        Ok(Object::Unboxed(ptr.addr() as i64))
+        Ok(Object::Boxed(ptr.addr() as i64))
     }
 }
 
@@ -97,6 +118,7 @@ impl Display for Object {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rtToData;
     use std::ffi::{CStr, CString};
 
     /// Test creation of objects and that runtime will
@@ -131,10 +153,13 @@ mod tests {
         let raw_ptr: *const i8 = c_string.into_raw();
         let obj = Object::try_from(raw_ptr).map_err(|_| "Error at Object::try_from(raw_ptr)")?;
 
-        let ptr_again = obj.unwrap() as *const i8;
-        let c_string_again = unsafe { CStr::from_ptr(ptr_again) };
+        unsafe {
+            let as_ptr = obj.as_ptr_mut().ok_or("Failed to get pointer")?;
+            let contents = (*rtToData(as_ptr)).contents.as_ptr();
+            let c_string_again = CStr::from_ptr(contents);
 
-        assert_eq!(*c_string_again, CString::new("main")?);
+            assert_eq!(*c_string_again, CString::new("main")?);
+        }
 
         Ok(())
     }
