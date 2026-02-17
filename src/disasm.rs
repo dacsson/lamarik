@@ -4,7 +4,7 @@
 use std::ffi::CString;
 use std::fmt::Display;
 use std::fs::{File, write};
-use std::io::{BufRead, BufReader, Cursor, Read};
+use std::io::{BufRead, BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ pub enum BytefileError {
 // +------------------------------------+
 pub struct Bytefile {
     stringtab_size: u32,
-    global_area_size: u32,
+    pub global_area_size: u32,
     public_symbols_number: u32,
     public_symbols: Vec<(u32, u32)>,
     string_table: Vec<u8>,
@@ -152,6 +152,21 @@ impl Bytefile {
         } else {
             Ok(strings[index].to_vec())
         }
+    }
+
+    /// Given a strings as array of bytes (including null terminators), read string to null-terminator at offset `offset`
+    pub fn get_string_at_offset(&self, offset: usize) -> Result<Vec<u8>, BytefileError> {
+        let mut reader = BufReader::new(Cursor::new(&self.string_table));
+
+        let mut buff = vec![];
+        reader
+            .seek(SeekFrom::Start(offset as u64))
+            .map_err(|_| BytefileError::InvalidStringIndexInStringTable)?;
+        reader
+            .read_until(0x00, &mut buff)
+            .map_err(|_| BytefileError::InvalidStringIndexInStringTable)?;
+
+        Ok(buff)
     }
 
     /// Create a dummy Bytefile for testing purposes

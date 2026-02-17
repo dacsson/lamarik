@@ -1,18 +1,20 @@
 //! VM Interpreter
 
-use crate::bytecode::{Builtin, Instruction, Op, PattKind, ValueRel};
+use crate::bytecode::{Builtin, CompareJumpKind, Instruction, Op, PattKind, ValueRel};
 use crate::disasm::Bytefile;
 use crate::frame::FrameMetadata;
 use crate::numeric::LeBytes;
 use crate::object::{Object, ObjectError};
 use crate::{
-    __gc_init, __init, Llength, LtagHash, gc_set_bottom, gc_set_top, get_object_content_ptr,
-    new_array, new_sexp, new_string, rtLen, rtToData, rtToSexp, rtUnbox,
+    __gc_init, Llength, Lread, Lstring, Lwrite, gc_set_bottom, gc_set_top, get_array_el,
+    get_object_content_ptr, get_sexp_el, lama_type_SEXP, lama_type_STRING, new_array, new_sexp,
+    new_string, rtBox, rtLen, rtToData, rtToSexp, rtUnbox, set_array_el, set_sexp_el,
 };
 use std::convert::TryFrom;
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 use std::panic;
 
+// TODO: add `LINE` diagnostic to all errors
 #[derive(Debug, PartialEq)]
 pub enum InterpreterError {
     StackUnderflow,
@@ -20,14 +22,14 @@ pub enum InterpreterError {
     ReadingMoreThenCodeSection,
     InvalidOpcode(u8),
     InvalidType(String),
-    OutOfBoundsAccess,
+    OutOfBoundsAccess(usize, usize),
     InvalidByteSequence(usize),
     StringIndexOutOfBounds,
     InvalidStringPointer,
     InvalidUtf8String,
     InvalidCString,
     InvalidObjectPointer,
-    InvalidJumpOffset,
+    InvalidJumpOffset(usize, i32, usize),
     NotEnoughArguments(&'static str),
     InvalidStoreIndex(ValueRel, i32, i64),
     InvalidLoadIndex(ValueRel, i32, i64),
@@ -58,7 +60,11 @@ impl std::fmt::Display for InterpreterError {
             }
             InterpreterError::InvalidOpcode(opcode) => write!(f, "Invalid opcode: {:#x}", opcode),
             InterpreterError::InvalidType(name) => write!(f, "Invalid type: {}", name),
-            InterpreterError::OutOfBoundsAccess => write!(f, "Out of bounds access"),
+            InterpreterError::OutOfBoundsAccess(index, length) => write!(
+                f,
+                "Out of bounds access at index {} with length {}",
+                index, length
+            ),
             InterpreterError::InvalidByteSequence(ip) => {
                 write!(f, "Invalid byte sequence at index {}", ip)
             }
@@ -77,8 +83,12 @@ impl std::fmt::Display for InterpreterError {
             InterpreterError::InvalidObjectPointer => {
                 write!(f, "Invalid object pointer")
             }
-            InterpreterError::InvalidJumpOffset => {
-                write!(f, "Invalid jump offset")
+            InterpreterError::InvalidJumpOffset(ip, offset, code_len) => {
+                write!(
+                    f,
+                    "Invalid jump offset: current ip at {}, offset is {}, but code length is {}",
+                    ip, offset, code_len
+                )
             }
             InterpreterError::NotEnoughArguments(instr) => {
                 write!(f, "Not enough arguments for instruction `{}`", instr)
@@ -151,6 +161,8 @@ impl Interpreter {
         operand_stack.push(Object::new_empty()); // ARGC
         operand_stack.push(Object::new_empty()); // CURR_IP
 
+        let global_areas_size = bf.global_area_size as usize;
+
         Interpreter {
             operand_stack,
             frame_pointer: 0,
@@ -158,7 +170,7 @@ impl Interpreter {
             ip: 0,
             opts,
             instructions: Vec::new(),
-            globals: Vec::new(),
+            globals: vec![Object::new_empty(); global_areas_size],
         }
     }
 
@@ -430,15 +442,12 @@ impl Interpreter {
             Instruction::STRING { index } => {
                 let string = self
                     .bf
-                    .get_string_at(*index as usize)
+                    .get_string_at_offset(*index as usize)
                     .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
 
-                println!("[LOG] string: {:?}", string);
-
-                // let c_string = CString::from_vec_with_nul(string)
-                //     .map_err(|_| InterpreterError::InvalidCString)?;
-
-                // let raw_ptr: *const i8 = c_string.into_raw();
+                if self.opts.verbose {
+                    println!("[LOG][STRING] string: {:?}", string);
+                }
 
                 let lama_string =
                     new_string(string).map_err(|_| InterpreterError::InvalidStringPointer)?;
@@ -459,8 +468,15 @@ impl Interpreter {
             Instruction::SEXP { s_index, n_members } => {
                 let tag_u8 = self
                     .bf
-                    .get_string_at(*s_index as usize)
+                    .get_string_at_offset(*s_index as usize)
                     .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
+
+                if self.opts.verbose {
+                    println!(
+                        "[LOG][Instruction::SEXP] tag_u8: {:#?}, index {}",
+                        tag_u8, s_index
+                    );
+                }
 
                 let c_string = CString::from_vec_with_nul(tag_u8)
                     .map_err(|_| InterpreterError::InvalidCString)?;
@@ -474,7 +490,7 @@ impl Interpreter {
 
                 let mut args = Vec::with_capacity(*n_members as usize);
                 for _ in 0..*n_members {
-                    args.push(self.pop()?.unwrap());
+                    args.push(self.pop()?.raw());
                 }
 
                 // Reverse the arguments to match the order of the SEXP constructor
@@ -498,14 +514,61 @@ impl Interpreter {
                 let offset_at = *offset as usize;
 
                 // verify offset is within bounds
-                if (*offset) < 0 || self.ip + offset_at >= self.bf.code_section.len() {
-                    return Err(InterpreterError::InvalidJumpOffset);
+                if (*offset) < 0 || offset_at >= self.bf.code_section.len() {
+                    return Err(InterpreterError::InvalidJumpOffset(
+                        self.ip,
+                        *offset,
+                        self.bf.code_section.len(),
+                    ));
                 }
 
-                self.ip += offset_at;
+                self.ip = offset_at;
             }
-            Instruction::STI | Instruction::STA => panic!(
-                "Congratulations! Somehow, you emitted a STI or STA instruction, while the compiler itself never should have"
+            Instruction::STA => {
+                let value_obj = self.pop()?;
+                let index_obj = self.pop()?;
+                let mut aggregate = self.pop()?;
+
+                let index = index_obj.unwrap() as usize;
+                let value = value_obj.unwrap();
+
+                // check for aggregate
+                if aggregate.lama_type().is_none() {
+                    return Err(InterpreterError::InvalidType(String::from(
+                        "Expected an aggregate type in STA instruction",
+                    )));
+                }
+
+                unsafe {
+                    let length = rtUnbox(Llength(aggregate.as_ptr_mut().unwrap())) as usize;
+
+                    // check for out of bounds access
+                    if (index_obj.unwrap()) < 0 || index >= length {
+                        return Err(InterpreterError::OutOfBoundsAccess(index, length));
+                    }
+
+                    let as_ptr = aggregate
+                        .as_ptr_mut()
+                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+
+                    if aggregate.lama_type().unwrap() == lama_type_SEXP {
+                        let sexp = rtToSexp(as_ptr);
+                        set_sexp_el(&mut *sexp, index, value);
+                    } else if aggregate.lama_type().unwrap() == lama_type_STRING {
+                        let contents = (*rtToData(as_ptr)).contents.as_mut_ptr();
+
+                        contents.add(index).write(value as i8);
+                    } else {
+                        let array = rtToData(as_ptr);
+                        // NOTE: array stores raw values, no need to unwrap object (i.e. unbox)
+                        set_array_el(&mut *array, index, value_obj.raw());
+                    }
+                }
+
+                self.push(aggregate)?;
+            }
+            Instruction::STI => panic!(
+                "Congratulations! Somehow, you emitted a STI instruction, while the compiler itself never should have"
             ),
             Instruction::BEGIN { args, locals } => {
                 // Save previous ip (provided by `CALL`)
@@ -705,6 +768,11 @@ impl Interpreter {
                 self.push(value1)?;
                 self.push(value2)?;
             }
+            Instruction::LINE { n } => {
+                if self.opts.verbose {
+                    println!("[LOG][DEBUG] Line {}", n);
+                }
+            }
             Instruction::CALL {
                 offset,
                 n,
@@ -733,7 +801,7 @@ impl Interpreter {
                                 let mut elements = Vec::with_capacity(length);
                                 for _ in 0..length {
                                     let element = self.pop()?;
-                                    elements.push(element.unwrap());
+                                    elements.push(element.raw());
                                 }
 
                                 elements.reverse();
@@ -757,15 +825,125 @@ impl Interpreter {
                                     self.push(Object::new_boxed(rtUnbox(length)))?;
                                 }
                             }
-                            // Builtin::Lread => {}
-                            // Builtin::Lwrite => {}
-                            // Builtin::Lstring => {}
-                            _ => panic!("Unimplemented builtin function"),
+                            Builtin::Lread => unsafe {
+                                let val = Lread();
+
+                                // Returns BOXED value
+                                self.push(Object::new_boxed(rtUnbox(val)))?;
+                            },
+                            Builtin::Lwrite => {
+                                let obj = self.pop()?;
+
+                                unsafe {
+                                    // Lwrite takes a boxed value
+                                    Lwrite(rtBox(obj.unwrap()));
+                                }
+
+                                self.push(obj)?;
+                            }
+                            Builtin::Lstring => {
+                                let obj = self.pop()?;
+
+                                let mut slice = vec![obj.raw()];
+
+                                unsafe {
+                                    let ptr = Lstring(slice.as_mut_ptr());
+                                    let contents = (*rtToData(ptr)).contents.as_ptr();
+
+                                    if self.opts.verbose {
+                                        let c_str = CStr::from_ptr(contents);
+                                        let string = c_str
+                                            .to_str()
+                                            .map_err(|_| InterpreterError::InvalidStringPointer)?;
+                                        println!(
+                                            "[LOG][Lstring] Created string: {} from {}",
+                                            string.to_string(),
+                                            obj.unwrap()
+                                        );
+                                    }
+
+                                    self.push(
+                                        Object::try_from(contents)
+                                            .map_err(|_| InterpreterError::InvalidStringPointer)?,
+                                    )?;
+                                }
+                            }
                         }
                     } else {
                         panic!(
                             "Calling builtin function without name, this should never be possible"
                         );
+                    }
+                }
+            }
+            Instruction::CJMP { offset, kind } => match kind {
+                CompareJumpKind::ISNONZERO => {
+                    let obj = self.pop()?;
+                    let value = obj.unwrap();
+
+                    if value != 0 {
+                        self.ip = *offset as usize;
+                    }
+                }
+                CompareJumpKind::ISZERO => {
+                    let obj = self.pop()?;
+                    let value = obj.unwrap();
+
+                    if value == 0 {
+                        self.ip = *offset as usize;
+                    }
+                }
+            },
+            Instruction::ELEM => {
+                let index_obj = self.pop()?;
+                let mut obj = self.pop()?;
+
+                let index = index_obj.unwrap() as usize;
+
+                // check for aggregate
+                if obj.lama_type().is_none() {
+                    return Err(InterpreterError::InvalidType(String::from(
+                        "indexing into a type that is not an aggregate",
+                    )));
+                }
+
+                unsafe {
+                    let length = rtUnbox(Llength(obj.as_ptr_mut().unwrap())) as usize;
+
+                    // check for out of bounds access
+                    if (index_obj.unwrap()) < 0 || index >= length {
+                        return Err(InterpreterError::OutOfBoundsAccess(index, length));
+                    }
+
+                    let as_ptr = obj
+                        .as_ptr_mut()
+                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+
+                    if obj.lama_type().unwrap() == lama_type_SEXP {
+                        let sexp = rtToSexp(as_ptr);
+                        let element = get_sexp_el(&*sexp, index);
+
+                        // push the boxed element onto the stack
+                        self.push(Object::new_boxed(element))?;
+                    } else if obj.lama_type().unwrap() == lama_type_STRING {
+                        let contents = (*rtToData(as_ptr)).contents.as_ptr();
+
+                        let el = contents.add(index);
+
+                        if self.opts.verbose {
+                            println!(
+                                "[LOG][ELEM] Accessing string element at index {}: {}",
+                                index, *el
+                            );
+                        }
+
+                        self.push(Object::new_boxed(*el as i64))?;
+                    } else {
+                        let array = rtToData(as_ptr);
+                        let element = get_array_el(&*array, index);
+
+                        // push the boxed element onto the stack
+                        self.push(Object::new_boxed(rtUnbox(element)))?;
                     }
                 }
             }
@@ -850,9 +1028,9 @@ impl Interpreter {
 #[cfg(test)]
 mod tests {
     use crate::{
-        __gc_init, Bsexp, alloc_sexp, get_array_el, get_object_content_ptr, get_sexp_el, isUnboxed,
-        lama_type_SEXP, lama_type_STRING, new_array, new_sexp, rtBox, rtLen, rtSexpEl, rtTag,
-        rtToData, rtToSexp, sexp,
+        __gc_init, Bsexp, LtagHash, alloc_sexp, get_array_el, get_object_content_ptr, get_sexp_el,
+        isUnboxed, lama_type_SEXP, lama_type_STRING, new_array, new_sexp, rtBox, rtLen, rtSexpEl,
+        rtTag, rtToData, rtToSexp, sexp,
     };
 
     use super::*;
@@ -1032,7 +1210,7 @@ mod tests {
         programs.push(vec![Instruction::STRING { index: 0 }]);
 
         // "Hello"
-        programs.push(vec![Instruction::STRING { index: 1 }]);
+        programs.push(vec![Instruction::STRING { index: 5 }]);
 
         let expected_results = vec![CString::new("main")?, CString::new("Hello, world!")?];
 
@@ -1076,7 +1254,7 @@ mod tests {
         programs.push(vec![
             // Nil()
             Instruction::SEXP {
-                s_index: 1,
+                s_index: 5,
                 n_members: 0,
             },
         ]);
@@ -1085,7 +1263,7 @@ mod tests {
             Instruction::CONST { value: 1 },
             // Nil()
             Instruction::SEXP {
-                s_index: 1,
+                s_index: 5,
                 n_members: 0,
             },
             // Cons(1, Nil())
@@ -1100,7 +1278,7 @@ mod tests {
             Instruction::CONST { value: 2 },
             // Nil()
             Instruction::SEXP {
-                s_index: 1,
+                s_index: 5,
                 n_members: 0,
             },
             // Cons(1, Nil())
@@ -1162,7 +1340,7 @@ mod tests {
                     if i % 2 != 0 {
                         continue;
                     }
-                    assert_eq!(get_sexp_el(&*rtToSexp(sexp), i), *el);
+                    assert_eq!(rtUnbox(get_sexp_el(&*rtToSexp(sexp), i)), *el);
                 }
             }
         }
@@ -1181,8 +1359,8 @@ mod tests {
         programs.push(vec![Instruction::JMP { offset: 10000 }]);
 
         let expected_results = vec![
-            Err(InterpreterError::InvalidJumpOffset),
-            Err(InterpreterError::InvalidJumpOffset),
+            Err(InterpreterError::InvalidJumpOffset(0, -1, 100)),
+            Err(InterpreterError::InvalidJumpOffset(0, 10000, 100)),
         ];
 
         assert_eq!(programs.len(), expected_results.len());
@@ -1663,13 +1841,13 @@ mod tests {
                 assert_eq!(len.unwrap() as usize, expected.len());
                 for (i, &value) in expected.iter().enumerate() {
                     assert_eq!(
-                        get_array_el(
+                        rtUnbox(get_array_el(
                             &*rtToData(
                                 obj.as_ptr_mut()
-                                    .ok_or(InterpreterError::OutOfBoundsAccess)?
+                                    .ok_or(InterpreterError::InvalidLengthForArray)?
                             ),
                             i
-                        ),
+                        )),
                         value
                     );
                 }
@@ -1695,7 +1873,7 @@ mod tests {
             Instruction::CONST { value: 1 },
             // Nil()
             Instruction::SEXP {
-                s_index: 1,
+                s_index: 5,
                 n_members: 0,
             },
             // Cons(1, Nil())
@@ -1748,6 +1926,183 @@ mod tests {
             let obj = interp.pop()?;
 
             assert_eq!(obj.unwrap(), expected);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_conditional_jump() -> Result<(), Box<dyn std::error::Error>> {
+        let mut programs = Vec::new();
+
+        programs.push(vec![
+            Instruction::CONST { value: 1 },
+            Instruction::CJMP {
+                offset: 10,
+                kind: CompareJumpKind::ISNONZERO,
+            },
+            Instruction::CONST { value: 1 },
+        ]);
+
+        programs.push(vec![
+            Instruction::CONST { value: 0 },
+            Instruction::CJMP {
+                offset: 10,
+                kind: CompareJumpKind::ISNONZERO,
+            },
+            Instruction::CONST { value: 1 },
+        ]);
+
+        programs.push(vec![
+            Instruction::CONST { value: 1 },
+            Instruction::CJMP {
+                offset: 10,
+                kind: CompareJumpKind::ISZERO,
+            },
+            Instruction::CONST { value: 1 },
+        ]);
+
+        programs.push(vec![
+            Instruction::CONST { value: 0 },
+            Instruction::CJMP {
+                offset: 10,
+                kind: CompareJumpKind::ISZERO,
+            },
+            Instruction::CONST { value: 1 },
+        ]);
+
+        // expected ip
+        let expected_results = vec![10, 0, 0, 10];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
+            interp.run_on_program(program)?;
+
+            let ip = interp.ip;
+
+            assert_eq!(ip, expected);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_elem() -> Result<(), Box<dyn std::error::Error>> {
+        let mut programs = Vec::new();
+
+        // 2 length array
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::CALL {
+                offset: None,
+                n: Some(2),
+                name: Some(Builtin::Barray),
+                builtin: true,
+            },
+            Instruction::DUP,
+            Instruction::CONST { value: 1 }, // array[1] => 3
+            Instruction::ELEM,
+        ]);
+
+        // 2 length array
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::CALL {
+                offset: None,
+                n: Some(2),
+                name: Some(Builtin::Barray),
+                builtin: true,
+            },
+            Instruction::DUP,
+            Instruction::CONST { value: 0 }, // array[0] => 2
+            Instruction::ELEM,
+        ]);
+
+        // string
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::STRING { index: 0 }, // "main"
+            Instruction::DUP,
+            Instruction::CONST { value: 0 }, // 'm'
+            Instruction::ELEM,
+        ]);
+
+        let expected_results = vec![3, 2, 109];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
+
+            interp.bf.put_string(CString::new("main")?);
+
+            interp.run_on_program(program)?;
+
+            let obj = interp.pop()?;
+            assert_eq!(obj.unwrap(), expected);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_invalid_elem() -> Result<(), Box<dyn std::error::Error>> {
+        let mut programs = Vec::new();
+
+        // 0 length array
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::CALL {
+                offset: None,
+                n: Some(0),
+                name: Some(Builtin::Barray),
+                builtin: true,
+            },
+            Instruction::DUP,
+            Instruction::CONST { value: 1 },
+            Instruction::ELEM,
+        ]);
+
+        // 2 length array
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::CALL {
+                offset: None,
+                n: Some(2),
+                name: Some(Builtin::Barray),
+                builtin: true,
+            },
+            Instruction::DUP,
+            Instruction::CONST { value: 3 }, // array[3]
+            Instruction::ELEM,
+        ]);
+
+        let expected_results = vec![
+            InterpreterError::OutOfBoundsAccess(1, 0),
+            InterpreterError::OutOfBoundsAccess(3, 2),
+        ];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
+
+            interp.bf.put_string(CString::new("main")?);
+
+            let result = interp.run_on_program(program);
+
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err(), expected);
         }
 
         Ok(())

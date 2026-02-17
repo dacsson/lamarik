@@ -1,5 +1,6 @@
 //! Interpreter Objet type description
 
+use crate::printValue;
 use crate::{get_obj_header_ptr, get_type_header_ptr, isUnboxed, lama_type, rtBox, rtUnbox};
 use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::c_void;
@@ -53,6 +54,13 @@ impl Object {
         match self {
             Object::Boxed(v) => unsafe { rtUnbox(*v) },
             Object::Unboxed(v) => *v,
+        }
+    }
+
+    /// Retrieve objects raw underlying value, without any translation
+    pub fn raw(&self) -> i64 {
+        match self {
+            Object::Boxed(v) | Object::Unboxed(v) => *v,
         }
     }
 
@@ -112,6 +120,7 @@ impl Display for Object {
             Object::Boxed(v) => write!(f, "Boxed({})", unsafe { rtUnbox(*v) }),
             Object::Unboxed(v) => write!(f, "Unboxed({})", *v),
         }
+        // printValue(self.as_ptr_mut().ok_or(std::fmt::Error)?)
     }
 }
 

@@ -26,6 +26,8 @@ void *Bstring (aint* args/*void *p*/);
 // Builtin
 void *Lstring (aint* args /* void *p */);
 aint Llength (void *p);
+aint Lread ();
+aint Lwrite (aint n);
 
 char *de_hash (aint n);
 aint LtagHash (char *s);
@@ -65,5 +67,7 @@ int rtTag(auint ptr) {
 aint rtSexpEl(sexp* sexp) {
     return ((aint *)sexp->contents)[0];
 }
+
+void printValue (void *p);
 
 #endif

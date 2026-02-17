@@ -39,7 +39,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         InterpreterOpts::new(args.parse_only, args.verbose),
     );
 
-    interp.run()?;
+    let _ = interp.run().or_else(|err| {
+        eprintln!("{}", err);
+        Err(err)
+    });
 
     Ok(())
 }

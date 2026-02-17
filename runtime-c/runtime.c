@@ -308,7 +308,7 @@ static void printStringBuf (char *fmt, ...) {
   vprintStringBuf(fmt, args);
 }
 
-static void printValue (void *p) {
+void printValue (void *p) {
   data *a = (data *)BOX(NULL);
   aint   i = BOX(0);
   if (UNBOXED(p)) {
@@ -1258,7 +1258,7 @@ extern void *Lhd (void *v) { return Belem(v, BOX(0)); }
 extern void *Ltl (void *v) { return Belem(v, BOX(1)); }
 
 /* Lread is an implementation of the "read" construct */
-extern aint Lread () {
+aint Lread () {
   // int result = BOX(0);
   aint result = BOX(0);
 
@@ -1280,7 +1280,7 @@ extern int Lbinoperror2 (void) {
 }
 
 /* Lwrite is an implementation of the "write" construct */
-extern aint Lwrite (aint n) {
+aint Lwrite (aint n) {
   printf("%" PRIdAI "\n", UNBOX(n));
   fflush(stdout);
 

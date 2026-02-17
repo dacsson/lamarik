@@ -53,12 +53,28 @@ fn new_array(mut elements: Vec<i64>) -> *mut c_void {
     }
 }
 
+/// Remember that arrays store raw values, meaning callee is responsible for unboxing them.
 fn get_array_el(arr: &data, index: usize) -> i64 {
     unsafe { (arr.contents.as_ptr() as *const i64).add(index).read() }
 }
 
+/// Callee is responsible for ensuring that index is within bounds.
+fn set_array_el(arr: &mut data, index: usize, value: i64) {
+    unsafe {
+        (arr.contents.as_ptr() as *mut i64).add(index).write(value);
+    }
+}
+
+/// Remember that S-expressions store raw values, meaning callee is responsible for unboxing them.
 fn get_sexp_el(sexp: &sexp, index: usize) -> i64 {
     unsafe { (sexp.contents.as_ptr() as *const i64).add(index).read() }
+}
+
+/// Callee is responsible for ensuring that index is within bounds.
+fn set_sexp_el(sexp: &mut sexp, index: usize, value: i64) {
+    unsafe {
+        (sexp.contents.as_ptr() as *mut i64).add(index).write(value);
+    }
 }
 
 impl PartialEq for sexp {
