@@ -7,8 +7,9 @@ use crate::numeric::LeBytes;
 use crate::object::{Object, ObjectError};
 use crate::{
     __gc_init, Llength, Lread, Lstring, Lwrite, gc_set_bottom, gc_set_top, get_array_el,
-    get_object_content_ptr, get_sexp_el, lama_type_SEXP, lama_type_STRING, new_array, new_sexp,
-    new_string, rtBox, rtLen, rtToData, rtToSexp, rtUnbox, set_array_el, set_sexp_el,
+    get_object_content_ptr, get_sexp_el, isUnboxed, lama_type_ARRAY, lama_type_SEXP,
+    lama_type_STRING, new_array, new_sexp, new_string, rtBox, rtLen, rtToData, rtToSexp, rtUnbox,
+    set_array_el, set_sexp_el,
 };
 use std::convert::TryFrom;
 use std::ffi::{CStr, CString};
@@ -947,6 +948,31 @@ impl Interpreter {
                     }
                 }
             }
+            Instruction::ARRAY { n } => unsafe {
+                let mut obj = self.pop()?;
+
+                if let Some(lama_type) = obj.lama_type() {
+                    // check aggregate type
+                    if lama_type != lama_type_ARRAY {
+                        self.push(Object::new_boxed(0))?;
+                    } else {
+                        // get length of array
+                        let length = Llength(
+                            obj.as_ptr_mut()
+                                .ok_or(InterpreterError::InvalidObjectPointer)?,
+                        );
+
+                        // check length
+                        if rtUnbox(length) as i32 == *n {
+                            self.push(Object::new_boxed(1))?;
+                        } else {
+                            self.push(Object::new_boxed(0))?;
+                        }
+                    }
+                } else {
+                    self.push(Object::new_boxed(0))?;
+                }
+            },
             _ => panic!("Unimplemented instruction {:?}", instr),
         };
 
@@ -2103,6 +2129,78 @@ mod tests {
 
             assert!(result.is_err());
             assert_eq!(result.unwrap_err(), expected);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_array_tag() -> Result<(), Box<dyn std::error::Error>> {
+        let mut programs = Vec::new();
+
+        // 0 length array
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::CALL {
+                offset: None,
+                n: Some(0),
+                name: Some(Builtin::Barray),
+                builtin: true,
+            },
+            Instruction::DUP,
+            Instruction::ARRAY { n: 0 }, // => 1
+        ]);
+
+        // 2 length array
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::CALL {
+                offset: None,
+                n: Some(2),
+                name: Some(Builtin::Barray),
+                builtin: true,
+            },
+            Instruction::DUP,
+            Instruction::ARRAY { n: 2 }, // => 1
+        ]);
+
+        // 2 length array
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::CALL {
+                offset: None,
+                n: Some(2),
+                name: Some(Builtin::Barray),
+                builtin: true,
+            },
+            Instruction::DUP,
+            Instruction::ARRAY { n: 3 }, // => 0
+        ]);
+
+        programs.push(vec![
+            Instruction::CONST { value: 2 },
+            Instruction::CONST { value: 3 },
+            Instruction::ARRAY { n: 0 }, // => 0
+        ]);
+
+        let expected_results = vec![1, 1, 0, 0];
+
+        assert_eq!(programs.len(), expected_results.len());
+
+        for (program, expected) in programs.into_iter().zip(expected_results) {
+            let mut interp =
+                Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
+
+            interp.bf.put_string(CString::new("main")?);
+
+            interp.run_on_program(program)?;
+
+            let obj = interp.pop()?;
+
+            assert_eq!(obj.unwrap(), expected);
         }
 
         Ok(())
