@@ -1,7 +1,7 @@
 use crate::{
     __gc_init, Bsexp, LtagHash, alloc_sexp, get_array_el, get_object_content_ptr, get_sexp_el,
-    isUnboxed, lama_type_SEXP, lama_type_STRING, new_array, new_sexp, rtBox, rtLen, rtSexpEl,
-    rtTag, rtToData, rtToSexp, sexp,
+    isUnboxed, lama_type_CLOSURE, lama_type_SEXP, lama_type_STRING, new_array, new_sexp, rtBox,
+    rtLen, rtSexpEl, rtTag, rtToData, rtToSexp, sexp,
 };
 
 use super::*;
@@ -1134,6 +1134,209 @@ fn test_array_tag() -> Result<(), Box<dyn std::error::Error>> {
         let obj = interp.pop()?;
 
         assert_eq!(obj.unwrap(), expected);
+    }
+
+    Ok(())
+}
+
+// #[test]
+// fn test_reusing_aggregate_as_element() -> Result<(), Box<dyn std::error::Error>> {
+//     let mut programs = Vec::new();
+
+//     programs.push(vec![
+//         Instruction::CONST { value: 1 },
+//         Instruction::CONST { value: 2 },
+//         // Nil()
+//         Instruction::SEXP {
+//             s_index: 5,
+//             n_members: 0,
+//         },
+//         // Cons(1, Nil())
+//         Instruction::SEXP {
+//             s_index: 0,
+//             n_members: 2,
+//         },
+//         Instruction::DUP,
+//         // Cons(2, Cons(1, Nil()))
+//         Instruction::SEXP {
+//             s_index: 0,
+//             n_members: 2,
+//         },
+//     ]);
+
+//     let expected_results = vec![1, 1, 0, 0];
+
+//     assert_eq!(programs.len(), expected_results.len());
+
+//     for (program, expected) in programs.into_iter().zip(expected_results) {
+//         let mut interp = Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
+
+//         interp.bf.put_string(CString::new("main")?);
+
+//         interp.run_on_program(program)?;
+
+//         let obj = interp.pop()?;
+
+//         assert_eq!(obj.unwrap(), expected);
+//     }
+
+//     Ok(())
+// }
+
+#[test]
+fn test_sexp_tag() -> Result<(), Box<dyn std::error::Error>> {
+    unsafe {
+        __gc_init();
+    }
+
+    let mut programs = Vec::new();
+
+    programs.push(vec![
+        // Nil()
+        Instruction::SEXP {
+            s_index: 5,
+            n_members: 0,
+        },
+        Instruction::TAG { index: 5, n: 0 }, // => 1 (true)
+    ]);
+
+    programs.push(vec![
+        // Nil()
+        Instruction::SEXP {
+            s_index: 5,
+            n_members: 0,
+        },
+        Instruction::TAG { index: 0, n: 0 }, // => 0 (false)
+    ]);
+
+    programs.push(vec![
+        // Nil()
+        Instruction::SEXP {
+            s_index: 5,
+            n_members: 0,
+        },
+        Instruction::TAG { index: 5, n: 1 }, // => 0 (false)
+    ]);
+
+    programs.push(vec![
+        Instruction::CONST { value: 1 },
+        // Nil()
+        Instruction::SEXP {
+            s_index: 5,
+            n_members: 0,
+        },
+        // Cons(1, Nil())
+        Instruction::SEXP {
+            s_index: 0,
+            n_members: 2,
+        },
+        Instruction::TAG { index: 0, n: 2 }, // => 1 (true)
+    ]);
+
+    programs.push(vec![
+        Instruction::CONST { value: 1 },
+        // Nil()
+        Instruction::SEXP {
+            s_index: 5,
+            n_members: 0,
+        },
+        // Cons(1, Nil())
+        Instruction::SEXP {
+            s_index: 0,
+            n_members: 2,
+        },
+        Instruction::TAG { index: 5, n: 2 }, // => 0 (false)
+    ]);
+
+    programs.push(vec![
+        Instruction::CONST { value: 1 },
+        // Nil()
+        Instruction::SEXP {
+            s_index: 5,
+            n_members: 0,
+        },
+        // Cons(1, Nil())
+        Instruction::SEXP {
+            s_index: 0,
+            n_members: 2,
+        },
+        Instruction::TAG { index: 5, n: 0 }, // => 0 (false)
+    ]);
+
+    // checking tags and contents
+    let expected_results = vec![1, 0, 0, 1, 0, 0];
+
+    assert_eq!(programs.len(), expected_results.len());
+
+    for (program, expected) in programs.into_iter().zip(expected_results) {
+        let mut interp = Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
+
+        interp.bf.put_string(CString::new("Cons")?);
+        interp.bf.put_string(CString::new("Nil")?);
+
+        println!("{}", interp.bf);
+
+        interp.run_on_program(program)?;
+
+        let obj = interp.pop()?;
+
+        assert_eq!(obj.unwrap(), expected);
+    }
+
+    Ok(())
+}
+
+#[test]
+fn test_closure_creation() -> Result<(), Box<dyn std::error::Error>> {
+    let mut programs = Vec::new();
+
+    programs.push(vec![
+        Instruction::BEGIN { args: 0, locals: 1 },
+        Instruction::CONST { value: 1 },
+        Instruction::STORE {
+            rel: ValueRel::Local,
+            index: 0,
+        },
+        Instruction::CLOSURE {
+            offset: 10,
+            arity: 1,
+            captured: vec![CapturedVar {
+                rel: ValueRel::Local,
+                index: 0,
+            }],
+        },
+    ]);
+
+    struct Expect {
+        offset: i64,
+        captured: Vec<i64>,
+    }
+
+    let expected_results = vec![Expect {
+        offset: 10,
+        captured: vec![1],
+    }];
+
+    assert_eq!(programs.len(), expected_results.len());
+
+    for (program, expected) in programs.into_iter().zip(expected_results) {
+        let mut interp = Interpreter::new(Bytefile::new_dummy(), InterpreterOpts::new(false, true));
+
+        interp.run_on_program(program)?;
+
+        let mut obj = interp.pop()?;
+
+        assert_eq!(obj.lama_type(), Some(lama_type_CLOSURE));
+
+        unsafe {
+            let as_ptr = obj.as_ptr_mut().ok_or("Failed to get pointer")?;
+            let contents = (*rtToData(as_ptr)).contents.as_ptr() as *const i64;
+            let first_el = contents.read();
+            let second_el = contents.add(1).read();
+
+            assert_eq!(first_el, expected.offset);
+            assert_eq!(rtUnbox(second_el), expected.captured[0]);
+        }
     }
 
     Ok(())

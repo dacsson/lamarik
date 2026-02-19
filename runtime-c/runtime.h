@@ -28,6 +28,16 @@ void *Lstring (aint* args /* void *p */);
 aint Llength (void *p);
 aint Lread ();
 aint Lwrite (aint n);
+void *Bclosure (aint* args, aint bn);
+
+aint Bstring_patt (void *x, void *y);
+aint Barray_patt (void *d, aint n);
+aint Bclosure_tag_patt (void *x);
+aint Bboxed_patt (void *x);
+aint Bunboxed_patt (void *x);
+aint Barray_tag_patt (void *x);
+aint Bstring_tag_patt (void *x);
+aint Bsexp_tag_patt (void *x);
 
 char *de_hash (aint n);
 aint LtagHash (char *s);

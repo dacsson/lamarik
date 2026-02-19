@@ -58,6 +58,36 @@ fn get_array_el(arr: &data, index: usize) -> i64 {
     unsafe { (arr.contents.as_ptr() as *const i64).add(index).read() }
 }
 
+/// Create a new closure object
+/// Returns a pointer to *contents* of the closure.
+/// To retrieve the actual closure, use `rtToData`.
+fn new_closure(mut args: Vec<i64>) -> *mut c_void {
+    unsafe {
+        Bclosure(
+            args.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
+            rtBox(args.len() as i64), /* n args */
+        )
+    }
+}
+
+fn get_captured_variable(closure: &data, index: usize) -> i64 {
+    unsafe {
+        // index + 1 because the first element is the offset
+        (closure.contents.as_ptr() as *const i64)
+            .add(index + 1)
+            .read()
+    }
+}
+
+fn set_captured_variable(closure: &mut data, index: usize, value: i64) {
+    unsafe {
+        // index + 1 because the first element is the offset
+        (closure.contents.as_ptr() as *mut i64)
+            .add(index + 1)
+            .write(value);
+    }
+}
+
 /// Callee is responsible for ensuring that index is within bounds.
 fn set_array_el(arr: &mut data, index: usize, value: i64) {
     unsafe {

@@ -1,15 +1,17 @@
 //! VM Interpreter
 
-use crate::bytecode::{Builtin, CompareJumpKind, Instruction, Op, PattKind, ValueRel};
+use crate::bytecode::{Builtin, CapturedVar, CompareJumpKind, Instruction, Op, PattKind, ValueRel};
 use crate::disasm::Bytefile;
 use crate::frame::FrameMetadata;
 use crate::numeric::LeBytes;
 use crate::object::{Object, ObjectError};
 use crate::{
-    __gc_init, Llength, Lread, Lstring, Lwrite, gc_set_bottom, gc_set_top, get_array_el,
-    get_object_content_ptr, get_sexp_el, isUnboxed, lama_type_ARRAY, lama_type_SEXP,
-    lama_type_STRING, new_array, new_sexp, new_string, rtBox, rtLen, rtToData, rtToSexp, rtUnbox,
-    set_array_el, set_sexp_el,
+    __gc_init, Barray_patt, Barray_tag_patt, Bboxed_patt, Bclosure, Bclosure_tag_patt,
+    Bsexp_tag_patt, Bstring_patt, Bstring_tag_patt, Bunboxed_patt, Llength, Lread, Lstring,
+    LtagHash, Lwrite, gc_set_bottom, gc_set_top, get_array_el, get_captured_variable,
+    get_object_content_ptr, get_sexp_el, isUnboxed, lama_type_ARRAY, lama_type_CLOSURE,
+    lama_type_SEXP, lama_type_STRING, new_array, new_closure, new_sexp, new_string, rtBox, rtLen,
+    rtToData, rtToSexp, rtUnbox, set_array_el, set_captured_variable, set_sexp_el,
 };
 use std::convert::TryFrom;
 use std::ffi::{CStr, CString};
@@ -36,6 +38,12 @@ pub enum InterpreterError {
     InvalidLoadIndex(ValueRel, i32, i64),
     InvalidLengthForArray,
     ObjectError(ObjectError),
+    Fail {
+        line: usize,
+        column: usize,
+        obj: String,
+    },
+    InvalidValueRel,
 }
 
 /// Convert a byte, that couldnt be incoded into an interpreter error.
@@ -106,6 +114,19 @@ impl std::fmt::Display for InterpreterError {
             InterpreterError::ObjectError(err) => {
                 write!(f, "Object creation error: {}", err)
             }
+            InterpreterError::Fail { line, column, obj } => {
+                write!(
+                    f,
+                    "Failed matching at line {} column {}: {}",
+                    line, column, obj
+                )
+            }
+            InterpreterError::InvalidValueRel => {
+                write!(
+                    f,
+                    "Invalid value relation, there is only: Global(0), Local(1), Argument(2) and Captured(3), encountered something else"
+                )
+            }
         }
     }
 }
@@ -154,6 +175,7 @@ impl Interpreter {
 
         // Emulating call to main
         operand_stack.push(Object::new_empty()); // FRAME_PTR
+        operand_stack.push(Object::new_empty()); // CLOSURE_OBJ
         operand_stack.push(Object::new_unboxed(2)); // ARGS_COUNT
         operand_stack.push(Object::new_empty()); // LOCALS_COUNT
         operand_stack.push(Object::new_empty()); // OLD_FRAME_POINTER
@@ -307,7 +329,11 @@ impl Interpreter {
 
                 let mut captured = Vec::with_capacity(arity as usize);
                 for _ in 0..arity {
-                    captured.push(self.next::<i32>()?);
+                    captured.push(CapturedVar {
+                        rel: ValueRel::try_from(self.next::<u8>()?)
+                            .map_err(|_| InterpreterError::InvalidValueRel)?,
+                        index: self.next::<i32>()?,
+                    });
                 }
 
                 Ok(Instruction::CLOSURE {
@@ -571,11 +597,29 @@ impl Interpreter {
             Instruction::STI => panic!(
                 "Congratulations! Somehow, you emitted a STI instruction, while the compiler itself never should have"
             ),
-            Instruction::BEGIN { args, locals } => {
-                // Save previous ip (provided by `CALL`)
-                let ret_ip = self
+            Instruction::BEGIN { args, locals } | Instruction::CBEGIN { args, locals } => {
+                let mut closure_obj = Object::new_empty();
+                let mut ret_ip = Object::new_empty();
+
+                // Top object is either return_ip or a closure obj
+                let mut obj = self
                     .pop()
-                    .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?;
+                    .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?; // must be a closure
+
+                // check for closure
+                if let Some(lama_type) = obj.lama_type() {
+                    // check for closure type
+                    if lama_type == lama_type_CLOSURE {
+                        closure_obj = obj;
+
+                        // Save previous ip (provided by `CALL`)
+                        ret_ip = self
+                            .pop()
+                            .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?;
+                    }
+                } else {
+                    ret_ip = obj;
+                }
 
                 // Collect callee provided arguments
                 let mut arguments = Vec::new();
@@ -594,6 +638,9 @@ impl Interpreter {
                     return Err(InterpreterError::NotEnoughArguments("BEGIN"));
                 }
                 self.frame_pointer = self.operand_stack.len() - 1;
+
+                // Push closure object onto operand stack
+                self.push(closure_obj)?;
 
                 // Push arg and local count
                 self.push(Object::new_unboxed(*args as i64))?;
@@ -623,6 +670,7 @@ impl Interpreter {
                     .map_err(|_| InterpreterError::NotEnoughArguments("END"))?;
 
                 let FrameMetadata {
+                    closure_obj,
                     n_locals,
                     n_args,
                     ret_frame_pointer,
@@ -638,6 +686,8 @@ impl Interpreter {
                 //       the program will exit after the main function returns
                 self.ip = ret_ip;
 
+                // Pop closure object
+                self.pop()?;
                 // Pop return ip
                 self.pop()?;
                 // Pop old frame pointer
@@ -683,7 +733,21 @@ impl Interpreter {
                                 )
                             })?;
                     }
-                    ValueRel::Capture => panic!("Not implemented"),
+                    ValueRel::Capture => unsafe {
+                        let closure = frame
+                            .get_closure(&mut self.operand_stack, self.frame_pointer)
+                            .map_err(|_| {
+                                InterpreterError::InvalidStoreIndex(ValueRel::Capture, *index, 1)
+                            })?;
+
+                        let to_data = rtToData(
+                            closure
+                                .as_ptr_mut()
+                                .ok_or(InterpreterError::InvalidObjectPointer)?,
+                        );
+
+                        set_captured_variable(&mut *to_data, *index as usize, value.raw());
+                    },
                     ValueRel::Global => {
                         if (*index as usize) >= self.globals.len() {
                             return Err(InterpreterError::InvalidStoreIndex(
@@ -714,8 +778,9 @@ impl Interpreter {
                 self.push(value)?;
             }
             Instruction::LOAD { rel, index } => {
-                let frame = FrameMetadata::get_from_stack(&self.operand_stack, self.frame_pointer)
-                    .ok_or(InterpreterError::NotEnoughArguments("STORE"))?;
+                let mut frame =
+                    FrameMetadata::get_from_stack(&self.operand_stack, self.frame_pointer)
+                        .ok_or(InterpreterError::NotEnoughArguments("STORE"))?;
 
                 match rel {
                     ValueRel::Arg => {
@@ -729,7 +794,23 @@ impl Interpreter {
 
                         self.push(value.clone())?;
                     }
-                    ValueRel::Capture => panic!("Not implemented"),
+                    ValueRel::Capture => unsafe {
+                        let closure = frame
+                            .get_closure(&mut self.operand_stack, self.frame_pointer)
+                            .map_err(|_| {
+                                InterpreterError::InvalidStoreIndex(ValueRel::Capture, *index, 1)
+                            })?;
+
+                        let to_data = rtToData(
+                            closure
+                                .as_ptr_mut()
+                                .ok_or(InterpreterError::InvalidObjectPointer)?,
+                        );
+
+                        let element = get_captured_variable(&*to_data, *index as usize);
+
+                        self.push(Object::Boxed(element))?;
+                    },
                     ValueRel::Global => {
                         if (*index as usize) >= self.globals.len() {
                             return Err(InterpreterError::InvalidStoreIndex(
@@ -925,7 +1006,7 @@ impl Interpreter {
                         let element = get_sexp_el(&*sexp, index);
 
                         // push the boxed element onto the stack
-                        self.push(Object::new_boxed(element))?;
+                        self.push(Object::Boxed(element))?;
                     } else if obj.lama_type().unwrap() == lama_type_STRING {
                         let contents = (*rtToData(as_ptr)).contents.as_ptr();
 
@@ -944,34 +1025,325 @@ impl Interpreter {
                         let element = get_array_el(&*array, index);
 
                         // push the boxed element onto the stack
-                        self.push(Object::new_boxed(rtUnbox(element)))?;
+                        self.push(Object::Boxed(element))?;
                     }
                 }
             }
             Instruction::ARRAY { n } => unsafe {
                 let mut obj = self.pop()?;
 
-                if let Some(lama_type) = obj.lama_type() {
-                    // check aggregate type
-                    if lama_type != lama_type_ARRAY {
-                        self.push(Object::new_boxed(0))?;
+                let Some(lama_type) = obj.lama_type() else {
+                    self.push(Object::new_boxed(0))?;
+                    return Ok(());
+                };
+
+                // check aggregate type
+                if lama_type != lama_type_ARRAY {
+                    self.push(Object::new_boxed(0))?;
+                } else {
+                    // get length of array
+                    let length = Llength(
+                        obj.as_ptr_mut()
+                            .ok_or(InterpreterError::InvalidObjectPointer)?,
+                    );
+
+                    // check length
+                    if rtUnbox(length) as i32 == *n {
+                        self.push(Object::new_boxed(1))?;
                     } else {
-                        // get length of array
-                        let length = Llength(
+                        self.push(Object::new_boxed(0))?;
+                    }
+                }
+            },
+            Instruction::TAG { index, n } => unsafe {
+                let mut obj = self.pop()?;
+
+                let Some(lama_type) = obj.lama_type() else {
+                    self.push(Object::new_boxed(0))?;
+                    return Ok(());
+                };
+
+                // check aggregate type
+                if lama_type != lama_type_SEXP {
+                    self.push(Object::new_boxed(0))?;
+                } else {
+                    // get length of sexp
+                    let length = Llength(
+                        obj.as_ptr_mut()
+                            .ok_or(InterpreterError::InvalidObjectPointer)?,
+                    );
+
+                    // check length
+                    if rtUnbox(length) as i32 == *n {
+                        let sexp = rtToSexp(
                             obj.as_ptr_mut()
                                 .ok_or(InterpreterError::InvalidObjectPointer)?,
                         );
 
-                        // check length
-                        if rtUnbox(length) as i32 == *n {
+                        let tag_u8 = self
+                            .bf
+                            .get_string_at_offset(*index as usize)
+                            .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
+
+                        let c_string = CString::from_vec_with_nul(tag_u8)
+                            .map_err(|_| InterpreterError::InvalidCString)?;
+
+                        let hashed_string = LtagHash(c_string.into_raw());
+
+                        if rtBox((*sexp).tag as i64) == hashed_string {
                             self.push(Object::new_boxed(1))?;
                         } else {
                             self.push(Object::new_boxed(0))?;
                         }
+                    } else {
+                        self.push(Object::new_boxed(0))?;
                     }
-                } else {
-                    self.push(Object::new_boxed(0))?;
                 }
+            },
+            Instruction::FAIL { line, column } => unsafe {
+                let obj = self.pop()?;
+
+                let ptr = Lstring(vec![obj.raw()].as_mut_ptr());
+                let contents = (*rtToData(ptr)).contents.as_ptr();
+                let c_str = CStr::from_ptr(contents);
+                let string = c_str
+                    .to_str()
+                    .map_err(|_| InterpreterError::InvalidStringPointer)?;
+
+                return Err(InterpreterError::Fail {
+                    line: *line as usize,
+                    column: *column as usize,
+                    obj: String::from(string),
+                });
+            },
+            Instruction::CLOSURE {
+                offset,
+                arity,
+                captured,
+            } => unsafe {
+                let offset_at = *offset as usize;
+
+                // verify offset is within bounds
+                if (*offset) < 0 || offset_at >= self.bf.code_section.len() {
+                    return Err(InterpreterError::InvalidJumpOffset(
+                        self.ip,
+                        *offset,
+                        self.bf.code_section.len(),
+                    ));
+                }
+
+                // Collect captured variables
+                let mut args: Vec<i64> = captured
+                    .iter()
+                    .map(|desc| match desc.rel {
+                        ValueRel::Arg => {
+                            let frame = FrameMetadata::get_from_stack(
+                                &self.operand_stack,
+                                self.frame_pointer,
+                            )
+                            .ok_or(
+                                InterpreterError::NotEnoughArguments(
+                                    "trying to create closure frame",
+                                ),
+                            )?;
+                            let obj = frame
+                                .get_arg_at(
+                                    &self.operand_stack,
+                                    self.frame_pointer,
+                                    desc.index as usize,
+                                )
+                                .ok_or(InterpreterError::NotEnoughArguments(
+                                    "trying to create closure frame",
+                                ))?;
+                            Ok::<i64, InterpreterError>(obj.raw())
+                        }
+                        ValueRel::Capture => {
+                            let mut frame = FrameMetadata::get_from_stack(
+                                &self.operand_stack,
+                                self.frame_pointer,
+                            )
+                            .ok_or(
+                                InterpreterError::NotEnoughArguments(
+                                    "trying to create closure frame",
+                                ),
+                            )?;
+
+                            let closure = frame
+                                .get_closure(&mut self.operand_stack, self.frame_pointer)
+                                .map_err(|_| {
+                                    InterpreterError::InvalidLoadIndex(
+                                        ValueRel::Capture,
+                                        desc.index,
+                                        1,
+                                    )
+                                })?;
+
+                            let to_data = rtToData(
+                                closure
+                                    .as_ptr_mut()
+                                    .ok_or(InterpreterError::InvalidObjectPointer)?,
+                            );
+
+                            let element = get_captured_variable(&*to_data, desc.index as usize);
+
+                            Ok(element)
+                        }
+                        ValueRel::Global => {
+                            let value = self.globals.get(desc.index as usize).ok_or(
+                                InterpreterError::NotEnoughArguments(
+                                    "trying to create closure frame",
+                                ),
+                            )?;
+                            Ok(value.raw())
+                        }
+                        ValueRel::Local => {
+                            let frame = FrameMetadata::get_from_stack(
+                                &self.operand_stack,
+                                self.frame_pointer,
+                            )
+                            .ok_or(
+                                InterpreterError::NotEnoughArguments(
+                                    "trying to create closure frame",
+                                ),
+                            )?;
+
+                            let obj = frame
+                                .get_local_at(
+                                    &self.operand_stack,
+                                    self.frame_pointer,
+                                    desc.index as usize,
+                                )
+                                .ok_or(InterpreterError::NotEnoughArguments(
+                                    "trying to create closure frame",
+                                ))?;
+                            Ok(obj.raw())
+                        }
+                    })
+                    .into_iter()
+                    .collect::<Result<_, _>>()?;
+
+                args.insert(0, *offset as i64);
+
+                // Create a new closure object
+                let closure = new_closure(args);
+
+                // Copy to save in a frame
+                let closure_obj_copy = Object::try_from(closure)
+                    .map_err(|_| InterpreterError::InvalidObjectPointer)?;
+
+                self.push(
+                    Object::try_from(closure)
+                        .map_err(|_| InterpreterError::InvalidObjectPointer)?,
+                )?;
+            },
+            Instruction::CALLC { arity } => {
+                let mut obj = self.take(*arity as usize)?; // must be a closure
+
+                // check for closure
+                let Some(lama_type) = obj.lama_type() else {
+                    return Err(InterpreterError::InvalidObjectPointer);
+                };
+
+                // check for closure type
+                if lama_type != lama_type_CLOSURE {
+                    return Err(InterpreterError::InvalidType(
+                        "expected closure object at top of the stack to call a closure".into(),
+                    ));
+                }
+
+                // Push old instruction pointer
+                // `CBEGIN` instruction will collect it
+                self.push(Object::new_unboxed(self.ip as i64))?;
+
+                // Re-push closure object
+                // `CBEGIN` instruction will collect it
+                self.push(obj.clone())?;
+
+                unsafe {
+                    let to_data = rtToData(
+                        obj.as_ptr_mut()
+                            .ok_or(InterpreterError::InvalidObjectPointer)?,
+                    );
+                    // First element in closure object is the offset
+                    self.ip = get_array_el(&*to_data, 0) as usize;
+                }
+            }
+            Instruction::PATT { kind } => match kind {
+                PattKind::BothAreStr => unsafe {
+                    let x = self.pop()?;
+                    let y = self.pop()?;
+
+                    let x_ptr = x
+                        .as_ptr_mut()
+                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+                    let y_ptr = y
+                        .as_ptr_mut()
+                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+
+                    let res = Bstring_patt(x_ptr, y_ptr);
+
+                    self.push(Object::Boxed(res))?;
+                },
+                PattKind::IsStr => unsafe {
+                    let obj = self.pop()?;
+                    let ptr = obj
+                        .as_ptr_mut()
+                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+
+                    let res = Bstring_tag_patt(ptr);
+
+                    self.push(Object::Boxed(res))?;
+                },
+                PattKind::IsArray => unsafe {
+                    let obj = self.pop()?;
+                    let ptr = obj
+                        .as_ptr_mut()
+                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+
+                    let res = Barray_tag_patt(ptr);
+
+                    self.push(Object::Boxed(res))?;
+                },
+                PattKind::IsSExp => unsafe {
+                    let obj = self.pop()?;
+                    let ptr = obj
+                        .as_ptr_mut()
+                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+
+                    let res = Bsexp_tag_patt(ptr);
+
+                    self.push(Object::Boxed(res))?;
+                },
+                PattKind::IsRef => unsafe {
+                    let obj = self.pop()?;
+                    let ptr = obj
+                        .as_ptr_mut()
+                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+
+                    let res = Bboxed_patt(ptr);
+
+                    self.push(Object::Boxed(res))?;
+                },
+                PattKind::IsVal => unsafe {
+                    let obj = self.pop()?;
+                    let ptr = obj
+                        .as_ptr_mut()
+                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+
+                    let res = Bunboxed_patt(ptr);
+
+                    self.push(Object::Boxed(res))?;
+                },
+                PattKind::IsLambda => unsafe {
+                    let obj = self.pop()?;
+                    let ptr = obj
+                        .as_ptr_mut()
+                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+
+                    let res = Bclosure_tag_patt(ptr);
+
+                    self.push(Object::Boxed(res))?;
+                },
             },
             _ => panic!("Unimplemented instruction {:?}", instr),
         };
@@ -1030,18 +1402,43 @@ impl Interpreter {
         obj
     }
 
+    /// Take from the operand stack at `index`, relative to the top of the stack
+    /// removes the element and returns it
+    fn take(&mut self, index: usize) -> Result<Object, InterpreterError> {
+        let relative_index = self.operand_stack.len() - index - 1;
+
+        if relative_index >= self.operand_stack.len() {
+            return Err(InterpreterError::StackUnderflow);
+        }
+
+        let obj = self.operand_stack.remove(relative_index);
+
+        if self.opts.verbose {
+            println!("[LOG] STACK TAKE {}", index);
+            self.print_stack();
+        }
+
+        unsafe {
+            self.gc_sync()?;
+        }
+
+        Ok(obj)
+    }
+
     fn print_stack(&self) {
         println!("---------------- STACK BEGIN --------------");
         for (i, obj) in self.operand_stack.iter().enumerate() {
             if i == self.frame_pointer {
                 println!("[{}] {} <- frame_pointer", i, obj);
             } else if i == self.frame_pointer + 1 {
-                println!("[{}] {} <- argn", i, obj);
+                println!("[{}] {} <- closure", i, obj);
             } else if i == self.frame_pointer + 2 {
-                println!("[{}] {} <- localn", i, obj);
+                println!("[{}] {} <- argn", i, obj);
             } else if i == self.frame_pointer + 3 {
-                println!("[{}] {} <- old frame pointer", i, obj);
+                println!("[{}] {} <- localn", i, obj);
             } else if i == self.frame_pointer + 4 {
+                println!("[{}] {} <- old frame pointer", i, obj);
+            } else if i == self.frame_pointer + 5 {
                 println!("[{}] {} <- return ip", i, obj);
             } else {
                 println!("[{}] {}", i, obj);

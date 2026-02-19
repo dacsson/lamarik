@@ -792,7 +792,7 @@ void *Lstring (aint* args /* void *p */) {
   return s;
 }
 
-extern void *Bclosure (aint* args, aint bn) {
+void *Bclosure (aint* args, aint bn) {
   data         *r;
   aint           n = UNBOX(bn);
 
@@ -890,7 +890,7 @@ aint get_tag (data *d) { return TAG(d->data_header); }
 
 aint get_len (data *d) { return LEN(d->data_header); }
 
-extern aint Barray_patt (void *d, aint n) {
+aint Barray_patt (void *d, aint n) {
   data *r;
 
   if (UNBOXED(d)) return BOX(0);
@@ -900,7 +900,7 @@ extern aint Barray_patt (void *d, aint n) {
   }
 }
 
-extern aint Bstring_patt (void *x, void *y) {
+aint Bstring_patt (void *x, void *y) {
   data *rx = (data *)BOX(NULL), *ry = (data *)BOX(NULL);
 
   ASSERT_STRING(".string_patt:2", y);
@@ -916,29 +916,29 @@ extern aint Bstring_patt (void *x, void *y) {
   }
 }
 
-extern aint Bclosure_tag_patt (void *x) {
+aint Bclosure_tag_patt (void *x) {
   if (UNBOXED(x)) return BOX(0);
 
   return BOX(TAG(TO_DATA(x)->data_header) == CLOSURE_TAG);
 }
 
-extern aint Bboxed_patt (void *x) { return BOX(UNBOXED(x) ? 0 : 1); }
+aint Bboxed_patt (void *x) { return BOX(UNBOXED(x) ? 0 : 1); }
 
-extern aint Bunboxed_patt (void *x) { return BOX(UNBOXED(x) ? 1 : 0); }
+aint Bunboxed_patt (void *x) { return BOX(UNBOXED(x) ? 1 : 0); }
 
-extern aint Barray_tag_patt (void *x) {
+aint Barray_tag_patt (void *x) {
   if (UNBOXED(x)) return BOX(0);
 
   return BOX(TAG(TO_DATA(x)->data_header) == ARRAY_TAG);
 }
 
-extern aint Bstring_tag_patt (void *x) {
+aint Bstring_tag_patt (void *x) {
   if (UNBOXED(x)) return BOX(0);
 
   return BOX(TAG(TO_DATA(x)->data_header) == STRING_TAG);
 }
 
-extern aint Bsexp_tag_patt (void *x) {
+aint Bsexp_tag_patt (void *x) {
   if (UNBOXED(x)) return BOX(0);
 
   return BOX(TAG(TO_DATA(x)->data_header) == SEXP_TAG);

@@ -63,6 +63,13 @@ pub enum PattKind {
     IsLambda, // "#fun"
 }
 
+/// A description of the captured variables of a closure.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CapturedVar {
+    pub rel: ValueRel,
+    pub index: i32,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Instruction {
     NOP,
@@ -114,7 +121,7 @@ pub enum Instruction {
         offset: i32,
         arity: i32,
         /// A description of each captured variable.
-        captured: Vec<i32>,
+        captured: Vec<CapturedVar>,
     },
     /// Store a value somewhere, depending on ValueRel
     ///

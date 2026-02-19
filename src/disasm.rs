@@ -116,13 +116,9 @@ impl Bytefile {
 
         // Read code section
         let mut code_section = Vec::new();
-        while byte[0] != 0xff {
-            byte.fill(0);
-            reader
-                .read_exact(&mut byte)
-                .map_err(|_| BytefileError::UnexpectedEOF)?;
-            code_section.push(byte[0]);
-        }
+        reader
+            .read_to_end(&mut code_section)
+            .map_err(|_| BytefileError::UnexpectedEOF)?;
 
         Ok(Bytefile {
             stringtab_size,

@@ -7,6 +7,7 @@ use crate::object::Object;
 /// In operand stack out frame data looks like this:
 /// ```txt
 /// ... <- frame points to this index
+/// CLOSURE_OBJ // possibly none
 /// ARGS_COUNT
 /// LOCALS_COUNT
 /// OLD_FRAME_POINTER
@@ -22,6 +23,7 @@ use crate::object::Object;
 /// ```
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct FrameMetadata {
+    pub closure_obj: i64,
     pub n_locals: i64,
     pub n_args: i64,
     pub ret_frame_pointer: usize,
@@ -32,12 +34,14 @@ impl<'a> FrameMetadata {
     /// Given an operand stack, construct a new frame metadata.
     /// Accompanies the `BEGIN` instruction.
     pub fn get_from_stack(stack: &Vec<Object>, frame_pointer: usize) -> Option<FrameMetadata> {
-        let n_args = stack.get(frame_pointer + 1)?.unwrap();
-        let n_locals = stack.get(frame_pointer + 2)?.unwrap();
-        let ret_frame_pointer = stack.get(frame_pointer + 3)?.unwrap() as usize;
-        let ret_ip = stack.get(frame_pointer + 4)?.unwrap() as usize;
+        let closure_obj = stack.get(frame_pointer + 1)?.raw();
+        let n_args = stack.get(frame_pointer + 2)?.unwrap();
+        let n_locals = stack.get(frame_pointer + 3)?.unwrap();
+        let ret_frame_pointer = stack.get(frame_pointer + 4)?.unwrap() as usize;
+        let ret_ip = stack.get(frame_pointer + 5)?.unwrap() as usize;
 
         Some(FrameMetadata {
+            closure_obj,
             n_locals,
             n_args,
             ret_frame_pointer,
@@ -51,7 +55,7 @@ impl<'a> FrameMetadata {
         frame_pointer: usize,
         index: usize,
     ) -> Option<&'a Object> {
-        let arg_index = frame_pointer + 5 + index;
+        let arg_index = frame_pointer + 6 + index;
         stack.get(arg_index)
     }
 
@@ -61,7 +65,7 @@ impl<'a> FrameMetadata {
         frame_pointer: usize,
         index: usize,
     ) -> Option<&'a Object> {
-        let local_index = frame_pointer + 5 + self.n_args as usize + index;
+        let local_index = frame_pointer + 6 + self.n_args as usize + index;
         stack.get(local_index)
     }
 
@@ -72,7 +76,7 @@ impl<'a> FrameMetadata {
         index: usize,
         value: Object,
     ) -> Result<(), String> {
-        let local_index = frame_pointer + 5 + self.n_args as usize + index;
+        let local_index = frame_pointer + 6 + self.n_args as usize + index;
 
         if local_index >= stack.len() || index > self.n_locals as usize {
             return Err("Index out of bounds".into());
@@ -89,7 +93,7 @@ impl<'a> FrameMetadata {
         index: usize,
         value: Object,
     ) -> Result<(), String> {
-        let arg_index = frame_pointer + 5 + index;
+        let arg_index = frame_pointer + 6 + index;
 
         if arg_index >= stack.len() || index > self.n_args as usize {
             return Err("Index out of bounds".into());
@@ -97,6 +101,36 @@ impl<'a> FrameMetadata {
 
         stack[arg_index] = value;
         Ok(())
+    }
+
+    pub fn save_closure(
+        &'a mut self,
+        stack: &'a mut Vec<Object>,
+        frame_pointer: usize,
+        closure_obj: Object,
+    ) -> Result<(), String> {
+        let closure_index = frame_pointer + 1;
+
+        if closure_index >= stack.len() {
+            return Err("Index out of bounds".into());
+        }
+
+        stack[closure_index] = closure_obj;
+        Ok(())
+    }
+
+    pub fn get_closure(
+        &'a mut self,
+        stack: &'a mut Vec<Object>,
+        frame_pointer: usize,
+    ) -> Result<&Object, String> {
+        let closure_index = frame_pointer + 1;
+
+        if closure_index >= stack.len() {
+            return Err("Index out of bounds".into());
+        }
+
+        Ok(&stack[closure_index])
     }
 
     #[cfg(test)]
@@ -107,6 +141,7 @@ impl<'a> FrameMetadata {
         ret_ip: usize,
     ) -> FrameMetadata {
         FrameMetadata {
+            closure_obj: 0,
             n_locals,
             n_args,
             ret_frame_pointer,
