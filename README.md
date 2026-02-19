@@ -61,9 +61,14 @@ test tests::runtime_link_smoke_test ... ok
 test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 ```
 
-# Regression
+# Regression Tests
 
 You can see the regression tests in the `doc` directory. Currently this interpreter passes all 75 tests, and 4 tests failed as expected.
+
+Running regression tests:
+```
+./regression.py {LAMA_DIR}/regression/
+```
 
 # Project structure
 ```
