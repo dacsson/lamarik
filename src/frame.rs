@@ -33,7 +33,7 @@ pub struct FrameMetadata {
 impl<'a> FrameMetadata {
     /// Given an operand stack, construct a new frame metadata.
     /// Accompanies the `BEGIN` instruction.
-    pub fn get_from_stack(stack: &Vec<Object>, frame_pointer: usize) -> Option<FrameMetadata> {
+    pub fn get_from_stack(stack: &[Object], frame_pointer: usize) -> Option<FrameMetadata> {
         let closure_obj = stack.get(frame_pointer + 1)?.raw();
         let n_args = stack.get(frame_pointer + 2)?.unwrap();
         let n_locals = stack.get(frame_pointer + 3)?.unwrap();
@@ -51,7 +51,7 @@ impl<'a> FrameMetadata {
 
     pub fn get_arg_at(
         &'a self,
-        stack: &'a Vec<Object>,
+        stack: &'a [Object],
         frame_pointer: usize,
         index: usize,
     ) -> Option<&'a Object> {
@@ -61,7 +61,7 @@ impl<'a> FrameMetadata {
 
     pub fn get_local_at(
         &'a self,
-        stack: &'a Vec<Object>,
+        stack: &'a [Object],
         frame_pointer: usize,
         index: usize,
     ) -> Option<&'a Object> {
@@ -71,13 +71,14 @@ impl<'a> FrameMetadata {
 
     pub fn set_local_at(
         &'a mut self,
-        stack: &'a mut Vec<Object>,
+        stack: &'a mut [Object],
         frame_pointer: usize,
         index: usize,
         value: Object,
     ) -> Result<(), String> {
         let local_index = frame_pointer + 6 + self.n_args as usize + index;
 
+        #[cfg(feature = "runtime_checks")]
         if local_index >= stack.len() || index > self.n_locals as usize {
             return Err("Index out of bounds".into());
         }
@@ -88,13 +89,14 @@ impl<'a> FrameMetadata {
 
     pub fn set_arg_at(
         &'a mut self,
-        stack: &'a mut Vec<Object>,
+        stack: &'a mut [Object],
         frame_pointer: usize,
         index: usize,
         value: Object,
     ) -> Result<(), String> {
         let arg_index = frame_pointer + 6 + index;
 
+        #[cfg(feature = "runtime_checks")]
         if arg_index >= stack.len() || index > self.n_args as usize {
             return Err("Index out of bounds".into());
         }
@@ -105,12 +107,13 @@ impl<'a> FrameMetadata {
 
     pub fn save_closure(
         &'a mut self,
-        stack: &'a mut Vec<Object>,
+        stack: &'a mut [Object],
         frame_pointer: usize,
         closure_obj: Object,
     ) -> Result<(), String> {
         let closure_index = frame_pointer + 1;
 
+        #[cfg(feature = "runtime_checks")]
         if closure_index >= stack.len() {
             return Err("Index out of bounds".into());
         }
@@ -123,9 +126,10 @@ impl<'a> FrameMetadata {
         &'a mut self,
         stack: &'a mut Vec<Object>,
         frame_pointer: usize,
-    ) -> Result<&Object, String> {
+    ) -> Result<&'a Object, String> {
         let closure_index = frame_pointer + 1;
 
+        #[cfg(feature = "runtime_checks")]
         if closure_index >= stack.len() {
             return Err("Index out of bounds".into());
         }

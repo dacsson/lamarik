@@ -14,6 +14,8 @@
 #include <sys/mman.h>
 #include <time.h>
 
+extern size_t __gc_stack_top, __gc_stack_bottom;
+
 #define WORD_SIZE (CHAR_BIT * sizeof(ptrt))
 
 _Noreturn void failure (char *s, ...);

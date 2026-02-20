@@ -1,0 +1,96 @@
+#1 (test074)
+- added panic="abort"
+real    0m2.132s
+user    0m2.129s
+sys     0m0.002s
+#2
+ - `next` without ok_or
+real    0m2.186s
+user    0m2.179s
+sys     0m0.002s
+- second try
+real    0m1.967s
+user    0m1.965s
+sys     0m0.002s
+#3
+ - no `verbose` checking in `push`
+real    0m2.019s
+user    0m2.018s
+sys     0m0.001s
+#4
+ - no `verbose` checking at all
+real    0m1.969s
+user    0m1.965s
+sys     0m0.002s
+#5
+ - memorized code section length, redundant check in `next`
+real    0m1.794s
+user    0m1.790s
+sys     0m0.001s
+#6
+ - no runtime checks
+real    0m1.706s
+user    0m1.703s
+sys     0m0.002s
+ - second run
+real    0m1.702s
+user    0m1.699s
+sys     0m0.001s
+#7
+ - clippy suggestions
+real    0m1.692s
+user    0m1.684s
+sys     0m0.003s
+#8
+ - inline operand stack push and pop
+real    0m1.655s
+user    0m1.651s
+sys     0m0.004s
+#9
+ - reserver vector length
+real    0m1.651s
+user    0m1.648s
+sys     0m0.003s
+
+
+#1 (Sort)
+- initial
+real    6m42.614s
+user    6m32.963s
+sys     0m7.864s
+
+#2
+- smth
+real    5m39.969s
+user    5m33.084s
+sys     0m6.754s
+
+#3
+ - smth
+real    5m23.557s
+user    5m18.071s
+sys     0m5.457s
+
+#4
+ - LtagHash memorization of cons and nil hashes
+real    4m53.964s
+user    4m50.184s
+sys     0m3.749s
+
+#5
+ - Bytecode string read without `reader::new(cursor)`
+real    4m37.062s
+user    4m33.247s
+sys     0m3.759s
+
+#6
+ - Parser vector pre-sizing
+real    4m25.613s
+user    4m21.553s
+sys     0m3.942s
+
+#7
+ - __gc_stack_top bindings; no function calling for updating them
+real    3m30.809s
+user    3m26.757s
+sys     0m3.981s

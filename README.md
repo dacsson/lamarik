@@ -30,8 +30,10 @@ You can run a `*.bc` file with the following commands:
 
 ## Testing
 
+You can run internal tests, but be sure to enable the `runtime_checks` feature:
+
 ```
-=> cargo test
+=> cargo test --features "runtime_checks" -- --test-threads=1
 running 24 tests
 test disasm::tests::parse_minimal_file ... ok
 test interpreter::tests::test_arg_and_local_load ... ok

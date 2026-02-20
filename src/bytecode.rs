@@ -1,5 +1,5 @@
 //! Descriptor of Lama bytecode
-use std::{convert::TryFrom, path::Display};
+use std::convert::TryFrom;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Op {

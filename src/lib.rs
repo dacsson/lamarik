@@ -13,12 +13,22 @@ pub mod object;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
+const CONS_TAG_HASH: i64 = 1697575;
+const NIL_TAG_HASH: i64 = 115865;
+
 /// Create a new S-expression with the given tag and arguments.
 /// Returns a pointer to *contents* of the S-expression.
 /// To retrieve the actual S-expression, use `rtToSexp`.
+#[inline(always)]
 fn new_sexp(tag: CString, mut args: Vec<i64>) -> *mut c_void {
     unsafe {
-        let tag_hash = LtagHash(tag.into_raw());
+        let tag_hash = if tag.to_bytes() == "cons".as_bytes() {
+            CONS_TAG_HASH
+        } else if tag.to_bytes() == "nil".as_bytes() {
+            NIL_TAG_HASH
+        } else {
+            LtagHash(tag.into_raw())
+        };
 
         args.push(tag_hash);
 
@@ -30,6 +40,7 @@ fn new_sexp(tag: CString, mut args: Vec<i64>) -> *mut c_void {
 }
 
 /// Create a new lama string.
+#[inline(always)]
 fn new_string(bytes: Vec<u8>) -> Result<*mut c_void, Box<dyn std::error::Error>> {
     unsafe {
         let c_string = CString::from_vec_with_nul(bytes)?;
@@ -44,6 +55,7 @@ fn new_string(bytes: Vec<u8>) -> Result<*mut c_void, Box<dyn std::error::Error>>
 /// Create array from given elements.
 /// Returns a pointer to *contents* of the array.
 /// To retrieve the actual array, use `rtToData`.
+#[inline(always)]
 fn new_array(mut elements: Vec<i64>) -> *mut c_void {
     unsafe {
         Barray(
@@ -54,6 +66,7 @@ fn new_array(mut elements: Vec<i64>) -> *mut c_void {
 }
 
 /// Remember that arrays store raw values, meaning callee is responsible for unboxing them.
+#[inline(always)]
 fn get_array_el(arr: &data, index: usize) -> i64 {
     unsafe { (arr.contents.as_ptr() as *const i64).add(index).read() }
 }
@@ -61,6 +74,7 @@ fn get_array_el(arr: &data, index: usize) -> i64 {
 /// Create a new closure object
 /// Returns a pointer to *contents* of the closure.
 /// To retrieve the actual closure, use `rtToData`.
+#[inline(always)]
 fn new_closure(mut args: Vec<i64>) -> *mut c_void {
     unsafe {
         Bclosure(
@@ -70,6 +84,7 @@ fn new_closure(mut args: Vec<i64>) -> *mut c_void {
     }
 }
 
+#[inline(always)]
 fn get_captured_variable(closure: &data, index: usize) -> i64 {
     unsafe {
         // index + 1 because the first element is the offset
@@ -79,6 +94,7 @@ fn get_captured_variable(closure: &data, index: usize) -> i64 {
     }
 }
 
+#[inline(always)]
 fn set_captured_variable(closure: &mut data, index: usize, value: i64) {
     unsafe {
         // index + 1 because the first element is the offset
@@ -89,6 +105,7 @@ fn set_captured_variable(closure: &mut data, index: usize, value: i64) {
 }
 
 /// Callee is responsible for ensuring that index is within bounds.
+#[inline(always)]
 fn set_array_el(arr: &mut data, index: usize, value: i64) {
     unsafe {
         (arr.contents.as_ptr() as *mut i64).add(index).write(value);
@@ -96,11 +113,13 @@ fn set_array_el(arr: &mut data, index: usize, value: i64) {
 }
 
 /// Remember that S-expressions store raw values, meaning callee is responsible for unboxing them.
+#[inline(always)]
 fn get_sexp_el(sexp: &sexp, index: usize) -> i64 {
     unsafe { (sexp.contents.as_ptr() as *const i64).add(index).read() }
 }
 
 /// Callee is responsible for ensuring that index is within bounds.
+#[inline(always)]
 fn set_sexp_el(sexp: &mut sexp, index: usize, value: i64) {
     unsafe {
         (sexp.contents.as_ptr() as *mut i64).add(index).write(value);
@@ -154,8 +173,8 @@ impl PartialEq for data {
             let self_header = self.data_header;
             let other_header = other.data_header;
 
-            let self_tag = rtTag(self_header as u64);
-            let other_tag = rtTag(other_header as u64);
+            let self_tag = rtTag(self_header);
+            let other_tag = rtTag(other_header);
 
             if self_tag != other_tag {
                 return false;

@@ -5,8 +5,6 @@
 # include "runtime.h"
 # include "gc.h"
 
-extern size_t __gc_stack_top, __gc_stack_bottom;
-
 #define PRE_GC()                                                                                   \
   bool flag = false;                                                                               \
   flag      = __gc_stack_top == 0;                                                                 \

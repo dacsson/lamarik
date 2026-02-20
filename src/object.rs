@@ -1,6 +1,5 @@
 //! Interpreter Objet type description
 
-use crate::printValue;
 use crate::{get_obj_header_ptr, get_type_header_ptr, isUnboxed, lama_type, rtBox, rtUnbox};
 use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::c_void;

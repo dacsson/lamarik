@@ -12,7 +12,7 @@ struct Args {
     #[arg(short, long)]
     lama_file: String,
 
-    /// Verbose output
+    /// DEPRECATED, please compile with `--features verbose` to enable verbose output
     #[arg(short, long, default_value_t = false)]
     verbose: bool,
 
@@ -39,9 +39,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         InterpreterOpts::new(args.parse_only, args.verbose),
     );
 
-    let _ = interp.run().or_else(|err| {
+    let _ =interp.run().map_err(|err| {
         eprintln!("{}", err);
-        Err(err)
+        err
     });
 
     Ok(())

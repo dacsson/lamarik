@@ -1,0 +1,30 @@
+test803.lama:
+---- Target output ----
+1
+2
+3
+4
+5
+6
+68372586489908
+8
+
+---- Golden answers ----
+[]
+---- Lamarik answres ----
+[1, 2, 3, 4, 5, 6, 68372586489908, 8]
+test110.lama: EXCEPTION
+Compilation failed for /home/safonoff/Uni/VirtualMachines/Lama/regression/test110.lama
+Fatal error: exception Failure("Indirect assignment is not supported yet: If (Const (1), Scope ([], ElemRef (Var (\"x\"), Const (0))), Scope ([], ElemRef (Var (\"y\"), Const (0))))")
+
+
+test111.lama: EXCEPTION
+Compilation failed for /home/safonoff/Uni/VirtualMachines/Lama/regression/test111.lama
+Fatal error: exception Failure("ERROR: undefined label 'Lstringcat'")
+
+
+test054.lama: EXCEPTION
+Compilation failed for /home/safonoff/Uni/VirtualMachines/Lama/regression/test054.lama
+Fatal error: exception Failure("Indirect assignment is not supported yet: If (Var (\"z\"), Scope ([], Ref (\"x\")), Scope ([], Ref (\"y\")))")
+
+

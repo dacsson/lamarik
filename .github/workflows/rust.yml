@@ -15,16 +15,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Install build essentials (for make/gcc)
       run: sudo apt-get update && sudo apt-get install -y build-essential
-    
+
     - name: Build C runtime
       working-directory: ./runtime-c
       run: make
-    
+
     - name: Build Rust project
       run: cargo build --verbose
-    
+
     - name: Run tests
-      run: cargo test --verbose -- --test-threads=1
+      run: cargo test --features "runtime_checks" -- --test-threads=1

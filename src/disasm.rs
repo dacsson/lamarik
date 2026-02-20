@@ -3,9 +3,7 @@
 #[cfg(test)]
 use std::ffi::CString;
 use std::fmt::Display;
-use std::fs::{File, write};
 use std::io::{BufRead, BufReader, Cursor, Read, Seek, SeekFrom};
-use std::path::Path;
 
 #[derive(Debug)]
 pub enum BytefileError {
@@ -67,6 +65,7 @@ impl Bytefile {
     /// Leaves code section raw (as raw bytes) to be interpreted later,
     /// while all other sections are parsed and stored to be easily accessed.
     pub fn parse(source: Vec<u8>) -> Result<Bytefile, BytefileError> {
+        let source_len = source.len();
         let mut reader = BufReader::new(Cursor::new(source));
 
         let mut buf = [0u8; 4];
@@ -89,7 +88,7 @@ impl Bytefile {
 
         // Read public symbol table
         // P × (int32, int32) | 8 bytes each
-        let mut public_symbols = Vec::new();
+        let mut public_symbols = Vec::with_capacity(public_symbols_number as usize);
         for _ in 0..public_symbols_number {
             buf.fill(0);
             reader
@@ -105,7 +104,7 @@ impl Bytefile {
 
         // Read string table
         let mut byte = [0u8; 1];
-        let mut string_table = Vec::new();
+        let mut string_table = Vec::with_capacity(stringtab_size as usize);
         for _ in 0..stringtab_size {
             buf.fill(0);
             reader
@@ -115,7 +114,8 @@ impl Bytefile {
         }
 
         // Read code section
-        let mut code_section = Vec::new();
+        let bytes_till_end = source_len - reader.buffer().len();
+        let mut code_section = Vec::with_capacity(bytes_till_end as usize);
         reader
             .read_to_end(&mut code_section)
             .map_err(|_| BytefileError::UnexpectedEOF)?;
@@ -143,24 +143,27 @@ impl Bytefile {
             strings.push(buff);
         }
 
+        #[cfg(feature = "runtime_checks")]
         if index >= strings.len() {
-            Err(BytefileError::InvalidStringIndexInStringTable)
-        } else {
-            Ok(strings[index].to_vec())
+            return Err(BytefileError::InvalidStringIndexInStringTable);
         }
+
+        Ok(strings[index].to_vec())
     }
 
     /// Given a strings as array of bytes (including null terminators), read string to null-terminator at offset `offset`
     pub fn get_string_at_offset(&self, offset: usize) -> Result<Vec<u8>, BytefileError> {
-        let mut reader = BufReader::new(Cursor::new(&self.string_table));
+        #[cfg(feature = "runtime_checks")]
+        if offset >= self.string_table.len() {
+            return Err(BytefileError::InvalidStringIndexInStringTable);
+        }
 
-        let mut buff = vec![];
-        reader
-            .seek(SeekFrom::Start(offset as u64))
-            .map_err(|_| BytefileError::InvalidStringIndexInStringTable)?;
-        reader
-            .read_until(0x00, &mut buff)
-            .map_err(|_| BytefileError::InvalidStringIndexInStringTable)?;
+        let slice = &self.string_table[offset..];
+        let first_null = slice
+            .iter()
+            .position(|&b| b == 0)
+            .ok_or(BytefileError::InvalidStringIndexInStringTable)?;
+        let buff = slice[..=first_null].to_vec();
 
         Ok(buff)
     }

@@ -7,3 +7,11 @@ edition = "2024"
 clap = { version = "4.5.55", features = ["derive"] }
 [build-dependencies]
 bindgen = "0.72.1"
+
+[features]
+default = []
+verbose = []
+runtime_checks = []
+
+[profile.release]
+panic = 'abort'
