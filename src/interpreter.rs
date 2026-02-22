@@ -5,7 +5,14 @@ use crate::disasm::Bytefile;
 use crate::frame::FrameMetadata;
 use crate::numeric::LeBytes;
 use crate::object::{Object, ObjectError};
-use crate::{__gc_init, Barray_tag_patt, Bboxed_patt, Bclosure_tag_patt, Bsexp_tag_patt, Bstring_patt, Bstring_tag_patt, Bunboxed_patt, Llength, Lread, Lstring, LtagHash, Lwrite, gc_set_bottom, gc_set_top, get_array_el, get_captured_variable, get_sexp_el, lama_type_ARRAY, lama_type_CLOSURE, lama_type_SEXP, lama_type_STRING, new_array, new_closure, new_sexp, new_string, rtBox, rtToData, rtToSexp, rtUnbox, set_array_el, set_captured_variable, set_sexp_el, CONS_TAG_HASH, NIL_TAG_HASH, __gc_stack_top, __gc_stack_bottom};
+use crate::{
+    __gc_init, __gc_stack_bottom, __gc_stack_top, Barray_tag_patt, Bboxed_patt, Bclosure_tag_patt,
+    Bsexp_tag_patt, Bstring_patt, Bstring_tag_patt, Bunboxed_patt, CONS_TAG_HASH, Llength, Lread,
+    Lstring, LtagHash, Lwrite, NIL_TAG_HASH, gc_set_bottom, gc_set_top, get_array_el,
+    get_captured_variable, get_sexp_el, lama_type_ARRAY, lama_type_CLOSURE, lama_type_SEXP,
+    lama_type_STRING, new_array, new_closure, new_sexp, new_string, rtBox, rtToData, rtToSexp,
+    rtUnbox, set_array_el, set_captured_variable, set_sexp_el,
+};
 use std::convert::TryFrom;
 use std::ffi::{CStr, CString};
 use std::panic;
@@ -126,18 +133,10 @@ impl std::fmt::Display for InterpreterError {
 
 impl std::error::Error for InterpreterError {}
 
-pub struct InterpreterOpts {
-    parse_only: bool,
-    verbose: bool,
-}
-
-impl InterpreterOpts {
-    pub fn new(parse_only: bool, verbose: bool) -> Self {
-        Self {
-            parse_only,
-            verbose,
-        }
-    }
+#[derive(Debug, Clone)]
+pub struct InstructionTrace {
+    pub instruction: Instruction,
+    pub offset: usize,
 }
 
 pub struct Interpreter {
@@ -147,9 +146,8 @@ pub struct Interpreter {
     bf: Bytefile,
     /// Instruction pointer, moves along code section in `bf`
     ip: usize,
-    opts: InterpreterOpts,
     /// Collect found instructions, only when `parse_only` is true
-    instructions: Vec<Instruction>,
+    instructions: Vec<InstructionTrace>,
     /// Global variables
     globals: Vec<Object>,
     /// Code section length
@@ -161,7 +159,7 @@ const MAX_OPERAND_STACK_SIZE: usize = 0xffff;
 impl Interpreter {
     /// Create a new interpreter with operand stack filled with
     /// emulated call to main
-    pub fn new(bf: Bytefile, opts: InterpreterOpts) -> Self {
+    pub fn new(bf: Bytefile) -> Self {
         let mut operand_stack = Vec::with_capacity(MAX_OPERAND_STACK_SIZE);
 
         unsafe {
@@ -187,7 +185,6 @@ impl Interpreter {
             frame_pointer: 0,
             bf,
             ip: 0,
-            opts,
             instructions: Vec::new(),
             globals: vec![Object::new_empty(); global_areas_size],
             code_section_len,
@@ -222,6 +219,31 @@ impl Interpreter {
         Ok(T::from_le_bytes(bytes.try_into().unwrap()))
     }
 
+    pub fn collect_instructions(&mut self) -> Result<&Vec<InstructionTrace>, InterpreterError> {
+        while self.ip < self.code_section_len {
+            let opcode_offset = self.ip;
+
+            let encoding = self.next::<u8>()?;
+
+            if encoding == 0xff {
+                break;
+            }
+
+            let instr = self.decode(encoding)?;
+
+            if cfg!(feature = "verbose") {
+                println!("[LOG] IP {} BYTE {} INSTR {:?}", self.ip, encoding, instr);
+            }
+
+            self.instructions.push(InstructionTrace {
+                instruction: instr,
+                offset: opcode_offset,
+            });
+        }
+
+        Ok(&self.instructions)
+    }
+
     /// Main interpreter loop
     pub fn run(&mut self) -> Result<(), InterpreterError> {
         while self.ip < self.code_section_len {
@@ -232,11 +254,7 @@ impl Interpreter {
                 println!("[LOG] IP {} BYTE {} INSTR {:?}", self.ip, encoding, instr);
             }
 
-            // if self.opts.parse_only {
-            //     self.instructions.push(instr.clone());
-            // } else {
             self.eval(&instr)?;
-            // }
 
             // HACK: if we encounter END instruction, while in frame 0
             //       (a.k.a main function) we exit the interpreter
@@ -501,13 +519,17 @@ impl Interpreter {
                     );
                 }
 
-                let mut args = Vec::with_capacity(*n_members as usize);
-                for _ in 0..*n_members {
-                    args.push(self.pop()?.raw());
+                let mut args = vec![0; *n_members as usize];
+                //Vec::with_capacity(*n_members as usize);
+                // args.resize(*n_members as usize, 0);
+
+                for i in (0..*n_members).rev() {
+                    // args.push(self.pop()?.raw());
+                    args[i as usize] = self.pop()?.raw();
                 }
 
                 // Reverse the arguments to match the order of the SEXP constructor
-                args.reverse();
+                // args.reverse();
 
                 let sexp = new_sexp(c_string, args);
 
@@ -567,10 +589,12 @@ impl Interpreter {
                         .as_ptr_mut()
                         .ok_or(InterpreterError::InvalidObjectPointer)?;
 
-                    if aggregate.lama_type().unwrap() == lama_type_SEXP {
+                    let lama_type = aggregate.lama_type().unwrap();
+
+                    if lama_type == lama_type_SEXP {
                         let sexp = rtToSexp(as_ptr);
                         set_sexp_el(&mut *sexp, index, value);
-                    } else if aggregate.lama_type().unwrap() == lama_type_STRING {
+                    } else if lama_type == lama_type_STRING {
                         let contents = (*rtToData(as_ptr)).contents.as_mut_ptr();
 
                         contents.add(index).write(value as i8);
@@ -871,13 +895,12 @@ impl Interpreter {
                                 let length =
                                     n.ok_or(InterpreterError::InvalidLengthForArray)? as usize;
 
-                                let mut elements = Vec::with_capacity(length);
-                                for _ in 0..length {
-                                    let element = self.pop()?;
-                                    elements.push(element.raw());
+                                let mut elements = vec![0; length];
+                                for i in (0..length).rev() {
+                                    elements[i as usize] = self.pop()?.raw();
                                 }
 
-                                elements.reverse();
+                                // elements.reverse();
 
                                 let array = new_array(elements);
 
@@ -994,13 +1017,15 @@ impl Interpreter {
                         .as_ptr_mut()
                         .ok_or(InterpreterError::InvalidObjectPointer)?;
 
-                    if obj.lama_type().unwrap() == lama_type_SEXP {
+                    let lama_type = obj.lama_type().unwrap();
+
+                    if lama_type == lama_type_SEXP {
                         let sexp = rtToSexp(as_ptr);
                         let element = get_sexp_el(&*sexp, index);
 
                         // push the boxed element onto the stack
                         self.push(Object::Boxed(element))?;
-                    } else if obj.lama_type().unwrap() == lama_type_STRING {
+                    } else if lama_type == lama_type_STRING {
                         let contents = (*rtToData(as_ptr)).contents.as_ptr();
 
                         let el = contents.add(index);
@@ -1081,14 +1106,13 @@ impl Interpreter {
                         let c_string = CString::from_vec_with_nul(tag_u8)
                             .map_err(|_| InterpreterError::InvalidCString)?;
 
-                        let hashed_string =
-                            if c_string.to_bytes() == "cons".as_bytes() {
-                                CONS_TAG_HASH
-                            } else if c_string.to_bytes() == "nil".as_bytes() {
-                                NIL_TAG_HASH
-                            } else {
-                                LtagHash(c_string.into_raw())
-                            };
+                        let hashed_string = if c_string.to_bytes() == "cons".as_bytes() {
+                            CONS_TAG_HASH
+                        } else if c_string.to_bytes() == "nil".as_bytes() {
+                            NIL_TAG_HASH
+                        } else {
+                            LtagHash(c_string.into_raw())
+                        };
 
                         if rtBox((*sexp).tag as i64) == hashed_string {
                             self.push(Object::new_boxed(1))?;
@@ -1364,8 +1388,7 @@ impl Interpreter {
                     .addr();
             // );
             // gc_set_bottom(
-            __gc_stack_bottom =
-                self.operand_stack.as_ptr().addr()
+            __gc_stack_bottom = self.operand_stack.as_ptr().addr()
             // );
         }
 

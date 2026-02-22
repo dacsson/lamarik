@@ -94,3 +94,33 @@ sys     0m3.942s
 real    3m30.809s
 user    3m26.757s
 sys     0m3.981s
+
+#8
+ - lama_type() to a variable
+real    3m25.141s
+user    3m21.068s
+sys     0m3.925s
+
+#9
+ - FrameMetadata methods inlining
+real    3m23.050s
+user    3m19.222s
+sys     0m3.793s
+
+#10
+ - Some runtime functions rewriting by hand
+real    3m5.204s
+user    3m0.815s
+sys     0m4.214s
+
+#11
+ - no vector reversing
+real    3m1.512s
+user    2m56.902s
+sys     0m4.067s
+
+#12
+ - decrease GC heap size to 64 from 128
+real    2m58.577s
+user    2m54.537s
+sys     0m4.031s

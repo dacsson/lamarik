@@ -33,6 +33,7 @@ pub struct FrameMetadata {
 impl<'a> FrameMetadata {
     /// Given an operand stack, construct a new frame metadata.
     /// Accompanies the `BEGIN` instruction.
+    #[inline(always)]
     pub fn get_from_stack(stack: &[Object], frame_pointer: usize) -> Option<FrameMetadata> {
         let closure_obj = stack.get(frame_pointer + 1)?.raw();
         let n_args = stack.get(frame_pointer + 2)?.unwrap();
@@ -49,6 +50,7 @@ impl<'a> FrameMetadata {
         })
     }
 
+    #[inline(always)]
     pub fn get_arg_at(
         &'a self,
         stack: &'a [Object],
@@ -59,6 +61,7 @@ impl<'a> FrameMetadata {
         stack.get(arg_index)
     }
 
+    #[inline(always)]
     pub fn get_local_at(
         &'a self,
         stack: &'a [Object],
@@ -69,6 +72,7 @@ impl<'a> FrameMetadata {
         stack.get(local_index)
     }
 
+    #[inline(always)]
     pub fn set_local_at(
         &'a mut self,
         stack: &'a mut [Object],
@@ -87,6 +91,7 @@ impl<'a> FrameMetadata {
         Ok(())
     }
 
+    #[inline(always)]
     pub fn set_arg_at(
         &'a mut self,
         stack: &'a mut [Object],
@@ -122,6 +127,7 @@ impl<'a> FrameMetadata {
         Ok(())
     }
 
+    #[inline(always)]
     pub fn get_closure(
         &'a mut self,
         stack: &'a mut Vec<Object>,

@@ -28,38 +28,29 @@ You can run a `*.bc` file with the following commands:
 ./target/release/lama-rs -l <path/to/file.bc> [-v]
 ```
 
+## Options
+
+```
+Lama VM bytecode interpreter
+
+Usage: lama-rs [OPTIONS] --lama-file <LAMA_FILE>
+
+Options:
+  -l, --lama-file <LAMA_FILE>  Source bytecode file
+      --dump-bytefile          Dump parsed bytefile metadata
+  -f, --frequency              Analyse opcodes frequency in the input file without execution
+      --dump-cfg               Dump control flow graph of the bytecode file
+  -h, --help                   Print help
+```
+
 ## Testing
 
 You can run internal tests, but be sure to enable the `runtime_checks` feature:
 
 ```
 => cargo test --features "runtime_checks" -- --test-threads=1
-running 24 tests
-test disasm::tests::parse_minimal_file ... ok
-test interpreter::tests::test_arg_and_local_load ... ok
-test interpreter::tests::test_array ... ok
-test interpreter::tests::test_array_tag ... ok
-test interpreter::tests::test_binops_eval ... ok
-test interpreter::tests::test_builtin_functions ... ok
-test interpreter::tests::test_closure_creation ... ok
-test interpreter::tests::test_conditional_jump ... ok
-test interpreter::tests::test_decoder_minimal ... ok
-test interpreter::tests::test_drop ... ok
-test interpreter::tests::test_dup ... ok
-test interpreter::tests::test_elem ... ok
-test interpreter::tests::test_frame_move_args_and_locals ... ok
-test interpreter::tests::test_invalid_args_and_locals_assignment ... ok
-test interpreter::tests::test_invalid_elem ... ok
-test interpreter::tests::test_invalid_frame_move ... ok
-test interpreter::tests::test_invalid_jump_offset ... ok
-test interpreter::tests::test_sexp_cons_nil_eval ... ok
-test interpreter::tests::test_sexp_tag ... ok
-test interpreter::tests::test_string_eval ... ok
-test interpreter::tests::test_swap ... ok
-test object::tests::test_create_from_string ... ok
-test object::tests::test_creation ... ok
-test tests::runtime_link_smoke_test ... ok
-
+running 23 tests
+...
 test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 ```
 
@@ -67,10 +58,27 @@ test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
 You can see the regression tests in the `doc` directory. Currently this interpreter passes all 75 tests, and 4 tests failed as expected.
 
+> [!WARNING] To run the regression tests, you need to set heap size to at least 128, instead of the default 64:
+```
+// in `runtime-c/gc.h`
+#define MINIMUM_HEAP_CAPACITY (128)
+```
+
 Running regression tests:
 ```
 ./regression.py {LAMA_DIR}/regression/
 ```
+
+# Performance
+
+Performance has been tested on a `perfomance/Sort.lama` file with default heap size (see section above) using `time` linux command.
+
+| Target   | Bytecode verifyer | Real time (s) | User time (s) | Sys time (s) |
+|----------|-------------------|---------------|---------------|--------------|
+| lamac -s | -                 | 2m32.840s     | 2m29.347s     | 0m3.345s     |
+| lamac -i | -                 | 8m37.099s     | 8m30.830s     | 0m4.446s     |
+| lama-rs  | None              | 2m58.577s     | 2m54.537s     | 0m4.031s     |
+| lama-rs  | Runtime checks    | 3m18.140s     | 3m14.462s     | 0m3.669s     |
 
 # Project structure
 ```

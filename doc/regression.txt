@@ -2,29 +2,29 @@
 Testing 79 file(s)...
 
 Running dump/test105.bc
-test105.lama                   [PASS]  target:0.002s
+test105.lama                   [PASS]  target:0.001s
 Running dump/test018.bc
 test018.lama                   [PASS]  target:0.001s
 Running dump/test013.bc
 test013.lama                   [PASS]  target:0.001s
 Running dump/test082.bc
-test082.lama                   [PASS]  target:0.003s
+test082.lama                   [PASS]  target:0.001s
 Running dump/test085.bc
-test085.lama                   [PASS]  target:0.002s
+test085.lama                   [PASS]  target:0.001s
 Running dump/test100.bc
-test100.lama                   [PASS]  target:0.003s
+test100.lama                   [PASS]  target:0.001s
 Running dump/test095.bc
-test095.lama                   [PASS]  target:0.003s
+test095.lama                   [PASS]  target:0.001s
 Running dump/test022.bc
-test022.lama                   [PASS]  target:0.002s
+test022.lama                   [PASS]  target:0.001s
 Running dump/test103.bc
-test103.lama                   [PASS]  target:0.004s
+test103.lama                   [PASS]  target:0.001s
 Running dump/test086.bc
-test086.lama                   [PASS]  target:0.003s
+test086.lama                   [PASS]  target:0.001s
 Running dump/test102.bc
-test102.lama                   [PASS]  target:0.003s
+test102.lama                   [PASS]  target:0.001s
 Running dump/test003.bc
-test003.lama                   [PASS]  target:0.005s
+test003.lama                   [PASS]  target:0.001s
 Running dump/test084.bc
 test084.lama                   [PASS]  target:0.001s
 Running dump/test088.bc
@@ -54,13 +54,13 @@ test083.lama                   [PASS]  target:0.001s
 Running dump/test012.bc
 test012.lama                   [PASS]  target:0.001s
 Running dump/test096.bc
-test096.lama                   [PASS]  target:0.002s
+test096.lama                   [PASS]  target:0.001s
 Running dump/test023.bc
 test023.lama                   [PASS]  target:0.001s
 Running dump/test097.bc
 test097.lama                   [PASS]  target:0.001s
 Running dump/test020.bc
-test020.lama                   [PASS]  target:0.064s
+test020.lama                   [PASS]  target:0.024s
 Running dump/test802.bc
 test802.lama                   [PASS]  target:0.001s
 Running dump/test091.bc
@@ -79,7 +79,7 @@ test045.lama                   [PASS]  target:0.001s
 Running dump/test063.bc
 test063.lama                   [PASS]  target:0.001s
 Running dump/test001.bc
-test001.lama                   [PASS]  target:0.002s
+test001.lama                   [PASS]  target:0.001s
 Running dump/test094.bc
 test094.lama                   [PASS]  target:0.001s
 Running dump/test106.bc
@@ -103,15 +103,15 @@ test050.lama                   [PASS]  target:0.001s
 Running dump/test059.bc
 test059.lama                   [PASS]  target:0.001s
 Running dump/test040.bc
-test040.lama                   [PASS]  target:0.002s
+test040.lama                   [PASS]  target:0.001s
 Running dump/test072.bc
-test072.lama                   [PASS]  target:0.002s
+test072.lama                   [PASS]  target:0.001s
 Running dump/test080.bc
 test080.lama                   [PASS]  target:0.001s
 Running dump/test098.bc
 test098.lama                   [PASS]  target:0.001s
 Running dump/test010.bc
-test010.lama                   [PASS]  target:0.009s
+test010.lama                   [PASS]  target:0.003s
 Running dump/test026.bc
 test026.lama                   [PASS]  target:0.001s
 Running dump/test008.bc
@@ -126,7 +126,7 @@ test801.lama                   [PASS]  target:0.001s
 Running dump/test107.bc
 test107.lama                   [PASS]  target:0.001s
 Running dump/test015.bc
-test015.lama                   [PASS]  target:0.069s
+test015.lama                   [PASS]  target:0.023s
 test054.lama                   [ERROR] Compilation failed for /home/safonoff/Uni/VirtualMachines/Lama/regression/test054.lama
 Fatal error: exception Failure("Indirect assignment is not supported yet: If (Var (\"z\"), Scope ([], Ref (\"x\")), Scope ([], Ref (\"y\")))")
 
@@ -135,9 +135,9 @@ test092.lama                   [PASS]  target:0.001s
 Running dump/test090.bc
 test090.lama                   [PASS]  target:0.001s
 Running dump/test019.bc
-test019.lama                   [PASS]  target:0.006s
+test019.lama                   [PASS]  target:0.003s
 Running dump/test074.bc
-test074.lama                   [PASS]  target:2.488s
+test074.lama                   [PASS]  target:0.782s
 Running dump/test041.bc
 test041.lama                   [PASS]  target:0.001s
 Running dump/test021.bc
@@ -169,6 +169,6 @@ Summary
 Total   : 79
 Passed  : 75
 Failed  : 4
-Target  : 2.735s
+Target  : 0.898s
 
 Details of failures are stored in failures.log

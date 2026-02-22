@@ -44,41 +44,41 @@ aint Bsexp_tag_patt (void *x);
 char *de_hash (aint n);
 aint LtagHash (char *s);
 
-bool isUnboxed(aint v) {
-    return UNBOXED(v);
-}
+// bool isUnboxed(aint v) {
+//     return UNBOXED(v);
+// }
 
-aint rtBox(aint v) {
-    return BOX(v);
-}
+// aint rtBox(aint v) {
+//     return BOX(v);
+// }
 
-aint rtUnbox(aint v) {
-    return UNBOX(v);
-}
+// aint rtUnbox(aint v) {
+//     return UNBOX(v);
+// }
 
 // #define TO_DATA(x) ((data *)((char *)(x)-DATA_HEADER_SZ))
-data* rtToData(void* ptr) {
-    return TO_DATA(ptr);
-}
+// data* rtToData(void* ptr) {
+//     return TO_DATA(ptr);
+// }
 
 // #define TO_SEXP(x) ((sexp *)((char *)(x)-DATA_HEADER_SZ))
-sexp* rtToSexp(void* ptr) {
-    return TO_SEXP(ptr);
-}
+// sexp* rtToSexp(void* ptr) {
+//     return TO_SEXP(ptr);
+// }
 
 // #define LEN(x) (ptrt)(((ptrt)x & LEN_MASK) >> 3)
-int rtLen(auint ptr) {
-    return LEN(ptr);
-}
+// int rtLen(auint ptr) {
+//     return LEN(ptr);
+// }
 
 // #define TAG(x) (x & 7)
-int rtTag(auint ptr) {
-    return TAG(ptr);
-}
+// int rtTag(auint ptr) {
+//     return TAG(ptr);
+// }
 
-aint rtSexpEl(sexp* sexp) {
-    return ((aint *)sexp->contents)[0];
-}
+// aint rtSexpEl(sexp* sexp) {
+//     return ((aint *)sexp->contents)[0];
+// }
 
 void printValue (void *p);
 
