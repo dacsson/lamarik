@@ -53,6 +53,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if args.dump_cfg {
             let cfg = analyzer.cfg_to_dot();
             println!("{}", cfg);
+        } else {
+            let frequency = analyzer.get_frequency();
+            println!("{}", frequency);
         }
     } else {
         let _ = interp.run().map_err(|err| {

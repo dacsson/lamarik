@@ -1,10 +1,8 @@
 //! Implements static analysis of Lama VM bytecode, for frequency analysis of instructions.
 
-use crate::{bytecode::Instruction, disasm::Bytefile, interpreter::InstructionTrace};
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::Write,
-};
+use crate::{bytecode::Instruction, interpreter::InstructionTrace};
+use std::collections::{HashMap, HashSet};
+use std::fmt::{Debug, Display, Formatter, Write};
 
 #[derive(Debug, Clone)]
 pub struct Function {
@@ -227,6 +225,49 @@ impl Analyzer {
         &self.functions
     }
 
+    pub fn get_frequency(&self) -> Frequency {
+        let mut frequencies = Frequency::new();
+
+        // Frequency analysis for a single opcode
+        for func in &self.functions {
+            for block in &func.blocks {
+                let names = &block
+                    .instructions
+                    .iter()
+                    .map(|instr| instr.instruction.get_opcode_name())
+                    .collect::<Vec<String>>();
+
+                for name in names {
+                    frequencies.add_instruction(name.clone());
+                }
+            }
+        }
+
+        // Frequency analysis for a sequence of two opcodes
+        for func in &self.functions {
+            for block in &func.blocks {
+                let names = &block
+                    .instructions
+                    .iter()
+                    .map(|instr| instr.instruction.get_opcode_name())
+                    .collect::<Vec<String>>();
+
+                let instr_seq = names
+                    .iter()
+                    .cloned()
+                    .zip(names.iter().skip(1).cloned())
+                    .map(|(f, s)| format!("{}; {}", f, s))
+                    .collect::<Vec<_>>();
+
+                for seq in instr_seq {
+                    frequencies.add_instruction(seq);
+                }
+            }
+        }
+
+        frequencies
+    }
+
     pub fn cfg_to_dot(&self) -> String {
         // 1 – start the digraph and set a few nice defaults.
         let mut dot = String::new();
@@ -362,5 +403,42 @@ impl Analyzer {
 
         writeln!(&mut dot, "}}").unwrap();
         dot
+    }
+}
+
+pub struct Frequency {
+    frequency: HashMap<String, u32>,
+}
+
+impl Frequency {
+    pub fn new() -> Self {
+        Frequency {
+            frequency: HashMap::new(),
+        }
+    }
+
+    pub fn add_instruction(&mut self, opcode_name: String) {
+        *self.frequency.entry(opcode_name).or_insert(0) += 1;
+    }
+}
+
+impl Display for Frequency {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut to_vec = self.frequency.iter().collect::<Vec<_>>();
+        to_vec.sort_by(|a, b| b.1.cmp(&a.1));
+
+        for (opcode, count) in &to_vec {
+            writeln!(f, "{}: {}", opcode, count)?;
+        }
+        Ok(())
+    }
+}
+
+impl Debug for Frequency {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for (opcode, count) in &self.frequency {
+            writeln!(f, "{}: {}", opcode, count)?;
+        }
+        Ok(())
     }
 }

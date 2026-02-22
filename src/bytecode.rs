@@ -311,3 +311,50 @@ impl std::fmt::Display for ValueRel {
         }
     }
 }
+
+impl Instruction {
+    pub fn get_opcode_name(&self) -> String {
+        match self {
+            Instruction::NOP => String::from("NOP"),
+            Instruction::END => String::from("END"),
+            Instruction::RET => String::from("RET"),
+            Instruction::BINOP { op } => format!("BINOP {:#?}", op),
+            Instruction::CONST { value } => format!("CONST {}", value),
+            Instruction::STRING { .. } => String::from("STRING"),
+            Instruction::BEGIN { .. } => String::from("BEGIN"),
+            Instruction::CBEGIN { .. } => String::from("CBEGIN"),
+            Instruction::CLOSURE { .. } => String::from("CLOSURE"),
+            Instruction::STORE { .. } => String::from("STORE"),
+            Instruction::LOAD { rel, .. } => format!("LOAD {}", rel),
+            Instruction::LOADREF { rel, .. } => format!("LDA {}", rel),
+            Instruction::CALL {
+                offset,
+                n,
+                name,
+                builtin,
+            } => {
+                if let Some(name) = name {
+                    format!("CALL {:#?}", name)
+                } else {
+                    format!("CALL",)
+                }
+            }
+            Instruction::CALLC { .. } => String::from("CALLC"),
+            Instruction::FAIL { .. } => String::from("FAIL"),
+            Instruction::LINE { .. } => String::from("LINE"),
+            Instruction::DROP => String::from("DROP"),
+            Instruction::DUP => String::from("DUP"),
+            Instruction::SWAP => String::from("SWAP"),
+            Instruction::JMP { .. } => String::from("JMP"),
+            Instruction::CJMP { .. } => String::from("CJMP"),
+            Instruction::ELEM => String::from("ELEM"),
+            Instruction::STI => String::from("STI"),
+            Instruction::STA => String::from("STA"),
+            Instruction::SEXP { .. } => String::from("SEXP"),
+            Instruction::TAG { .. } => String::from("TAG"),
+            Instruction::PATT { kind } => format!("PATT {:#?}", kind),
+            Instruction::ARRAY { .. } => String::from("ARRAY"),
+            Instruction::HALT => String::from("HALT"),
+        }
+    }
+}
