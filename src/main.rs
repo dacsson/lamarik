@@ -29,6 +29,12 @@ struct Args {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
+    #[cfg(feature = "static_checks")]
+    if let Err(err) = Analyzer::verify_input(args.lama_file.as_str()) {
+        eprintln!("{}", err);
+        return Ok(());
+    };
+
     let mut file: File = File::open(args.lama_file)?;
     let mut content = Vec::new();
     file.read_to_end(&mut content)?;
@@ -40,6 +46,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let mut interp = Interpreter::new(bytefile);
+
+    #[cfg(feature = "static_checks")]
+    {
+        let instructions = interp.collect_instructions().map_err(|err| {
+            eprintln!("{}", err);
+            err
+        })?;
+
+        let mut analyzer = Analyzer::new();
+        analyzer.build_cfg(instructions.to_vec());
+        if let Err(err) = analyzer.verify_bytecode(&interp.bf) {
+            eprintln!("{}", err);
+            return Ok(());
+        }
+    }
 
     if args.frequency || args.dump_cfg {
         let instructions = interp.collect_instructions().map_err(|err| {

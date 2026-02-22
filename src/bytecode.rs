@@ -320,13 +320,17 @@ impl Instruction {
             Instruction::RET => String::from("RET"),
             Instruction::BINOP { op } => format!("BINOP {:#?}", op),
             Instruction::CONST { value } => format!("CONST {}", value),
-            Instruction::STRING { .. } => String::from("STRING"),
-            Instruction::BEGIN { .. } => String::from("BEGIN"),
-            Instruction::CBEGIN { .. } => String::from("CBEGIN"),
-            Instruction::CLOSURE { .. } => String::from("CLOSURE"),
-            Instruction::STORE { .. } => String::from("STORE"),
-            Instruction::LOAD { rel, .. } => format!("LOAD {}", rel),
-            Instruction::LOADREF { rel, .. } => format!("LDA {}", rel),
+            Instruction::STRING { index } => format!("STRING {}", index),
+            Instruction::BEGIN { args, locals } => format!("BEGIN {} {}", args, locals),
+            Instruction::CBEGIN { args, locals } => format!("CBEGIN {} {}", args, locals),
+            Instruction::CLOSURE {
+                offset,
+                arity,
+                captured,
+            } => format!("CLOSURE {} {} {}", offset, arity, captured.len()),
+            Instruction::STORE { rel, index } => format!("STORE {} {}", rel, index),
+            Instruction::LOAD { rel, index } => format!("LOAD {} {}", rel, index),
+            Instruction::LOADREF { rel, index } => format!("LDA {} {}", rel, index),
             Instruction::CALL {
                 offset,
                 n,
@@ -336,24 +340,24 @@ impl Instruction {
                 if let Some(name) = name {
                     format!("CALL {:#?}", name)
                 } else {
-                    format!("CALL",)
+                    format!("CALL {} {}", offset.unwrap(), n.unwrap())
                 }
             }
-            Instruction::CALLC { .. } => String::from("CALLC"),
-            Instruction::FAIL { .. } => String::from("FAIL"),
-            Instruction::LINE { .. } => String::from("LINE"),
+            Instruction::CALLC { arity } => format!("CALLC {}", arity),
+            Instruction::FAIL { line, column } => format!("FAIL {} {}", line, column),
+            Instruction::LINE { n } => format!("LINE {}", n),
             Instruction::DROP => String::from("DROP"),
             Instruction::DUP => String::from("DUP"),
             Instruction::SWAP => String::from("SWAP"),
-            Instruction::JMP { .. } => String::from("JMP"),
-            Instruction::CJMP { .. } => String::from("CJMP"),
+            Instruction::JMP { offset } => format!("JMP {}", offset),
+            Instruction::CJMP { offset, kind } => format!("CJMP {} {:#?}", offset, kind),
             Instruction::ELEM => String::from("ELEM"),
             Instruction::STI => String::from("STI"),
             Instruction::STA => String::from("STA"),
-            Instruction::SEXP { .. } => String::from("SEXP"),
-            Instruction::TAG { .. } => String::from("TAG"),
+            Instruction::SEXP { s_index, n_members } => format!("SEXP {} {}", s_index, n_members),
+            Instruction::TAG { index, n } => format!("TAG {} {}", index, n),
             Instruction::PATT { kind } => format!("PATT {:#?}", kind),
-            Instruction::ARRAY { .. } => String::from("ARRAY"),
+            Instruction::ARRAY { n } => format!("ARRAY {}", n),
             Instruction::HALT => String::from("HALT"),
         }
     }

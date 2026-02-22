@@ -90,9 +90,9 @@ fn new_sexp(tag: CString, mut args: Vec<i64>) -> *mut c_void {
 
 /// Create a new lama string.
 #[inline(always)]
-fn new_string(bytes: Vec<u8>) -> Result<*mut c_void, Box<dyn std::error::Error>> {
+fn new_string(bytes: &[u8]) -> Result<*mut c_void, Box<dyn std::error::Error>> {
     unsafe {
-        let c_string = CString::from_vec_with_nul(bytes)?;
+        let c_string = CString::new(bytes)?;
         let as_ptr = c_string.into_raw();
 
         let mut slice = vec![as_ptr as i64];

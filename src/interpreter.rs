@@ -1,10 +1,11 @@
 //! VM Interpreter
 
+use crate::analyzer::InterpreterError;
 use crate::bytecode::{Builtin, CapturedVar, CompareJumpKind, Instruction, Op, PattKind, ValueRel};
 use crate::disasm::Bytefile;
 use crate::frame::FrameMetadata;
 use crate::numeric::LeBytes;
-use crate::object::{Object, ObjectError};
+use crate::object::Object;
 use crate::{
     __gc_init, __gc_stack_bottom, __gc_stack_top, Barray_tag_patt, Bboxed_patt, Bclosure_tag_patt,
     Bsexp_tag_patt, Bstring_patt, Bstring_tag_patt, Bunboxed_patt, CONS_TAG_HASH, Llength, Lread,
@@ -17,122 +18,6 @@ use std::convert::TryFrom;
 use std::ffi::{CStr, CString};
 use std::panic;
 
-// TODO: add `LINE` diagnostic to all errors
-#[derive(Debug, PartialEq)]
-pub enum InterpreterError {
-    StackUnderflow,
-    EndOfCodeSection,
-    ReadingMoreThenCodeSection,
-    InvalidOpcode(u8),
-    InvalidType(String),
-    OutOfBoundsAccess(usize, usize),
-    InvalidByteSequence(usize),
-    StringIndexOutOfBounds,
-    InvalidStringPointer,
-    InvalidUtf8String,
-    InvalidCString,
-    InvalidObjectPointer,
-    InvalidJumpOffset(usize, i32, usize),
-    NotEnoughArguments(&'static str),
-    InvalidStoreIndex(ValueRel, i32, i64),
-    InvalidLoadIndex(ValueRel, i32, i64),
-    InvalidLengthForArray,
-    ObjectError(ObjectError),
-    Fail {
-        line: usize,
-        column: usize,
-        obj: String,
-    },
-    InvalidValueRel,
-}
-
-/// Convert a byte, that couldnt be incoded into an interpreter error.
-impl From<u8> for InterpreterError {
-    fn from(opcode: u8) -> Self {
-        InterpreterError::InvalidOpcode(opcode)
-    }
-}
-
-impl From<ObjectError> for InterpreterError {
-    fn from(err: ObjectError) -> Self {
-        InterpreterError::ObjectError(err)
-    }
-}
-
-impl std::fmt::Display for InterpreterError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            InterpreterError::StackUnderflow => write!(f, "Stack underflow"),
-            InterpreterError::EndOfCodeSection => write!(f, "End of code section"),
-            InterpreterError::ReadingMoreThenCodeSection => {
-                write!(f, "Reading more bytes than code section currently has")
-            }
-            InterpreterError::InvalidOpcode(opcode) => write!(f, "Invalid opcode: {:#x}", opcode),
-            InterpreterError::InvalidType(name) => write!(f, "Invalid type: {}", name),
-            InterpreterError::OutOfBoundsAccess(index, length) => write!(
-                f,
-                "Out of bounds access at index {} with length {}",
-                index, length
-            ),
-            InterpreterError::InvalidByteSequence(ip) => {
-                write!(f, "Invalid byte sequence at index {}", ip)
-            }
-            InterpreterError::StringIndexOutOfBounds => {
-                write!(f, "String index out of bounds")
-            }
-            InterpreterError::InvalidStringPointer => {
-                write!(f, "Invalid string pointer")
-            }
-            InterpreterError::InvalidUtf8String => {
-                write!(f, "Invalid UTF-8 string")
-            }
-            InterpreterError::InvalidCString => {
-                write!(f, "Invalid C string")
-            }
-            InterpreterError::InvalidObjectPointer => {
-                write!(f, "Invalid object pointer")
-            }
-            InterpreterError::InvalidJumpOffset(ip, offset, code_len) => {
-                write!(
-                    f,
-                    "Invalid jump offset: current ip at {}, offset is {}, but code length is {}",
-                    ip, offset, code_len
-                )
-            }
-            InterpreterError::NotEnoughArguments(instr) => {
-                write!(f, "Not enough arguments for instruction `{}`", instr)
-            }
-            InterpreterError::InvalidStoreIndex(rel, index, n) => {
-                write!(f, "Invalid store index {}/{} for {}", index, n, rel)
-            }
-            InterpreterError::InvalidLoadIndex(rel, index, n) => {
-                write!(f, "Invalid load index {}/{} for {}", index, n, rel)
-            }
-            InterpreterError::InvalidLengthForArray => {
-                write!(f, "Invalid length for array")
-            }
-            InterpreterError::ObjectError(err) => {
-                write!(f, "Object creation error: {}", err)
-            }
-            InterpreterError::Fail { line, column, obj } => {
-                write!(
-                    f,
-                    "Failed matching at line {} column {}: {}",
-                    line, column, obj
-                )
-            }
-            InterpreterError::InvalidValueRel => {
-                write!(
-                    f,
-                    "Invalid value relation, there is only: Global(0), Local(1), Argument(2) and Captured(3), encountered something else"
-                )
-            }
-        }
-    }
-}
-
-impl std::error::Error for InterpreterError {}
-
 #[derive(Debug, Clone)]
 pub struct InstructionTrace {
     pub instruction: Instruction,
@@ -143,7 +28,7 @@ pub struct Interpreter {
     operand_stack: Vec<Object>,
     frame_pointer: usize,
     /// Decoded bytecode file with raw code section
-    bf: Bytefile,
+    pub bf: Bytefile,
     /// Instruction pointer, moves along code section in `bf`
     ip: usize,
     /// Collect found instructions, only when `parse_only` is true
@@ -179,12 +64,13 @@ impl Interpreter {
 
         let global_areas_size = bf.global_area_size as usize;
         let code_section_len = bf.code_section.len();
+        let main_offset = bf.main_offset as usize;
 
         Interpreter {
             operand_stack,
             frame_pointer: 0,
             bf,
-            ip: 0,
+            ip: main_offset,
             instructions: Vec::new(),
             globals: vec![Object::new_empty(); global_areas_size],
             code_section_len,
@@ -219,7 +105,9 @@ impl Interpreter {
         Ok(T::from_le_bytes(bytes.try_into().unwrap()))
     }
 
-    pub fn collect_instructions(&mut self) -> Result<&Vec<InstructionTrace>, InterpreterError> {
+    pub fn collect_instructions(&mut self) -> Result<Vec<InstructionTrace>, InterpreterError> {
+        let mut instructions = Vec::new();
+
         while self.ip < self.code_section_len {
             let opcode_offset = self.ip;
 
@@ -235,13 +123,16 @@ impl Interpreter {
                 println!("[LOG] IP {} BYTE {} INSTR {:?}", self.ip, encoding, instr);
             }
 
-            self.instructions.push(InstructionTrace {
+            instructions.push(InstructionTrace {
                 instruction: instr,
                 offset: opcode_offset,
             });
         }
 
-        Ok(&self.instructions)
+        // reset
+        self.ip = self.bf.main_offset as usize;
+
+        Ok(instructions)
     }
 
     /// Main interpreter loop
@@ -403,8 +294,20 @@ impl Interpreter {
                     Op::ADD => left + right,
                     Op::SUB => left - right,
                     Op::MUL => left * right,
-                    Op::DIV => left / right,
-                    Op::MOD => left % right,
+                    Op::DIV => {
+                        #[cfg(feature = "runtime_checks")]
+                        if right == 0 {
+                            return Err(InterpreterError::DivisionByZero);
+                        }
+                        left / right
+                    }
+                    Op::MOD => {
+                        #[cfg(feature = "runtime_checks")]
+                        if right == 0 {
+                            return Err(InterpreterError::DivisionByZero);
+                        }
+                        left % right
+                    }
                     Op::EQ => {
                         if left == right {
                             1
@@ -509,8 +412,8 @@ impl Interpreter {
                     );
                 }
 
-                let c_string = CString::from_vec_with_nul(tag_u8)
-                    .map_err(|_| InterpreterError::InvalidCString)?;
+                let c_string =
+                    CString::new(tag_u8).map_err(|_| InterpreterError::InvalidCString)?;
 
                 if cfg!(feature = "verbose") {
                     println!(
@@ -520,16 +423,10 @@ impl Interpreter {
                 }
 
                 let mut args = vec![0; *n_members as usize];
-                //Vec::with_capacity(*n_members as usize);
-                // args.resize(*n_members as usize, 0);
 
                 for i in (0..*n_members).rev() {
-                    // args.push(self.pop()?.raw());
                     args[i as usize] = self.pop()?.raw();
                 }
-
-                // Reverse the arguments to match the order of the SEXP constructor
-                // args.reverse();
 
                 let sexp = new_sexp(c_string, args);
 
@@ -1103,8 +1000,8 @@ impl Interpreter {
                             .get_string_at_offset(*index as usize)
                             .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
 
-                        let c_string = CString::from_vec_with_nul(tag_u8)
-                            .map_err(|_| InterpreterError::InvalidCString)?;
+                        let c_string =
+                            CString::new(tag_u8).map_err(|_| InterpreterError::InvalidCString)?;
 
                         let hashed_string = if c_string.to_bytes() == "cons".as_bytes() {
                             CONS_TAG_HASH

@@ -13,6 +13,7 @@ pub enum BytefileError {
     UnexpectedEOF,
     NoCodeSection,
     InvalidStringIndexInStringTable,
+    MainNotFound,
 }
 
 // Memory layout of the bytecode file
@@ -35,12 +36,13 @@ pub enum BytefileError {
 // |  e.g., 0x01 0x02 ... 0xFF          |
 // +------------------------------------+
 pub struct Bytefile {
-    stringtab_size: u32,
+    pub stringtab_size: u32,
     pub global_area_size: u32,
     public_symbols_number: u32,
     public_symbols: Vec<(u32, u32)>,
-    string_table: Vec<u8>,
+    pub string_table: Vec<u8>,
     pub code_section: Vec<u8>, // Kept raw for later interpretation
+    pub main_offset: u32,      // "main" function offset, a.k.a entry point
 }
 
 impl Display for BytefileError {
@@ -54,6 +56,7 @@ impl Display for BytefileError {
             BytefileError::InvalidStringIndexInStringTable => {
                 write!(f, "Invalid string index in string table")
             }
+            BytefileError::MainNotFound => write!(f, "Main function not found"),
         }
     }
 }
@@ -103,15 +106,35 @@ impl Bytefile {
         }
 
         // Read string table
-        let mut byte = [0u8; 1];
-        let mut string_table = Vec::with_capacity(stringtab_size as usize);
-        for _ in 0..stringtab_size {
-            buf.fill(0);
-            reader
-                .read_exact(&mut byte)
-                .map_err(|_| BytefileError::UnexpectedEOF)?;
-            string_table.push(byte[0]);
-        }
+        // let mut byte = [0u8; 1];
+        let mut string_table = vec![0u8; stringtab_size as usize];
+        reader
+            .read_exact(&mut string_table)
+            .map_err(|_| BytefileError::UnexpectedEOF)?;
+
+        // Find "main" entry point in public symbols
+        let main_offset = public_symbols
+            .iter()
+            .find(|(s_index, offset)| {
+                let slice: &[u8] = &string_table[*s_index as usize..];
+                let first_null = slice
+                    .iter()
+                    .position(|&b| b == 0)
+                    .ok_or(BytefileError::InvalidStringIndexInStringTable);
+
+                if let Ok(first_null) = first_null {
+                    let buff = slice[..=first_null].to_vec();
+
+                    if buff == b"main\0".to_vec() {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+                false
+            })
+            .map(|(_, offset)| *offset)
+            .ok_or(BytefileError::MainNotFound)?;
 
         // Read code section
         let bytes_till_end = source_len - reader.buffer().len();
@@ -127,6 +150,7 @@ impl Bytefile {
             public_symbols,
             string_table,
             code_section,
+            main_offset,
         })
     }
 
@@ -152,7 +176,7 @@ impl Bytefile {
     }
 
     /// Given a strings as array of bytes (including null terminators), read string to null-terminator at offset `offset`
-    pub fn get_string_at_offset(&self, offset: usize) -> Result<Vec<u8>, BytefileError> {
+    pub fn get_string_at_offset(&self, offset: usize) -> Result<&[u8], BytefileError> {
         #[cfg(feature = "runtime_checks")]
         if offset >= self.string_table.len() {
             return Err(BytefileError::InvalidStringIndexInStringTable);
@@ -163,7 +187,7 @@ impl Bytefile {
             .iter()
             .position(|&b| b == 0)
             .ok_or(BytefileError::InvalidStringIndexInStringTable)?;
-        let buff = slice[..=first_null].to_vec();
+        let buff = &slice[..first_null];
 
         Ok(buff)
     }
@@ -178,6 +202,7 @@ impl Bytefile {
             code_section: vec![0; 100],
             string_table: vec![],
             public_symbols: vec![],
+            main_offset: 0,
         }
     }
 

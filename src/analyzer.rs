@@ -1,12 +1,171 @@
 //! Implements static analysis of Lama VM bytecode, for frequency analysis of instructions.
 
+use crate::bytecode::ValueRel;
+use crate::disasm::Bytefile;
+use crate::object::ObjectError;
 use crate::{bytecode::Instruction, interpreter::InstructionTrace};
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter, Write};
+use std::path::Path;
+
+const MAX_SEXP_TAGLEN: usize = 10;
+const MAX_SEXP_MEMBERS: usize = 0xffff;
+const MAX_ARRAY_MEMBERS: usize = 0xffff;
+const MAX_CAPTURES: usize = 0x7fffffff;
+const MAX_FILE_SIZE: u64 = 1024 * 1024 * 1024; // 1GB
+
+// TODO: add `LINE` diagnostic to all errors
+#[derive(Debug, PartialEq)]
+pub enum InterpreterError {
+    StackUnderflow,
+    EndOfCodeSection,
+    ReadingMoreThenCodeSection,
+    InvalidOpcode(u8),
+    InvalidType(String),
+    OutOfBoundsAccess(usize, usize),
+    InvalidByteSequence(usize),
+    StringIndexOutOfBounds,
+    InvalidStringPointer,
+    InvalidUtf8String,
+    InvalidCString,
+    InvalidObjectPointer,
+    InvalidJumpOffset(usize, i32, usize),
+    NotEnoughArguments(&'static str),
+    InvalidStoreIndex(ValueRel, i32, i64),
+    InvalidLoadIndex(ValueRel, i32, i64),
+    InvalidLengthForArray,
+    ObjectError(ObjectError),
+    Fail {
+        line: usize,
+        column: usize,
+        obj: String,
+    },
+    InvalidValueRel,
+    TooMuchMembers(usize, usize),
+    TooManyCaptures(usize),
+    FileDoesNotExist(String),
+    FileIsTooLarge(String),
+    FileTypeError(String),
+    DivisionByZero,
+    SexpTagTooLong(usize),
+}
+
+/// Convert a byte, that couldnt be incoded into an interpreter error.
+impl From<u8> for InterpreterError {
+    fn from(opcode: u8) -> Self {
+        InterpreterError::InvalidOpcode(opcode)
+    }
+}
+
+impl From<ObjectError> for InterpreterError {
+    fn from(err: ObjectError) -> Self {
+        InterpreterError::ObjectError(err)
+    }
+}
+
+impl std::fmt::Display for InterpreterError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InterpreterError::StackUnderflow => write!(f, "Stack underflow"),
+            InterpreterError::EndOfCodeSection => write!(f, "End of code section"),
+            InterpreterError::ReadingMoreThenCodeSection => {
+                write!(f, "Reading more bytes than code section currently has")
+            }
+            InterpreterError::InvalidOpcode(opcode) => write!(f, "Invalid opcode: {:#x}", opcode),
+            InterpreterError::InvalidType(name) => write!(f, "Invalid type: {}", name),
+            InterpreterError::OutOfBoundsAccess(index, length) => write!(
+                f,
+                "Out of bounds access at index {} with length {}",
+                index, length
+            ),
+            InterpreterError::InvalidByteSequence(ip) => {
+                write!(f, "Invalid byte sequence at index {}", ip)
+            }
+            InterpreterError::StringIndexOutOfBounds => {
+                write!(f, "String index out of bounds")
+            }
+            InterpreterError::InvalidStringPointer => {
+                write!(f, "Invalid string pointer")
+            }
+            InterpreterError::InvalidUtf8String => {
+                write!(f, "Invalid UTF-8 string")
+            }
+            InterpreterError::InvalidCString => {
+                write!(f, "Invalid C string")
+            }
+            InterpreterError::InvalidObjectPointer => {
+                write!(f, "Invalid object pointer")
+            }
+            InterpreterError::InvalidJumpOffset(ip, offset, code_len) => {
+                write!(
+                    f,
+                    "Invalid jump offset: current ip at {}, offset is {}, but code length is {}",
+                    ip, offset, code_len
+                )
+            }
+            InterpreterError::NotEnoughArguments(instr) => {
+                write!(f, "Not enough arguments for instruction `{}`", instr)
+            }
+            InterpreterError::InvalidStoreIndex(rel, index, n) => {
+                write!(f, "Invalid store index {}/{} for {}", index, n, rel)
+            }
+            InterpreterError::InvalidLoadIndex(rel, index, n) => {
+                write!(f, "Invalid load index {}/{} for {}", index, n, rel)
+            }
+            InterpreterError::InvalidLengthForArray => {
+                write!(f, "Invalid length for array")
+            }
+            InterpreterError::ObjectError(err) => {
+                write!(f, "Object creation error: {}", err)
+            }
+            InterpreterError::Fail { line, column, obj } => {
+                write!(
+                    f,
+                    "Failed matching at line {} column {}: {}",
+                    line, column, obj
+                )
+            }
+            InterpreterError::InvalidValueRel => {
+                write!(
+                    f,
+                    "Invalid value relation, there is only: Global(0), Local(1), Argument(2) and Captured(3), encountered something else"
+                )
+            }
+            InterpreterError::TooMuchMembers(n, max) => {
+                write!(f, "Too much aggregate members: {}, max is {}", n, max)
+            }
+            InterpreterError::FileDoesNotExist(file) => {
+                write!(f, "File does not exist: {}", file)
+            }
+            InterpreterError::FileIsTooLarge(file) => {
+                write!(f, "File is too large: {}, max is 1GB", file)
+            }
+            InterpreterError::FileTypeError(file) => {
+                write!(f, "File type error: {}, expected .bc", file)
+            }
+            InterpreterError::DivisionByZero => {
+                write!(f, "Division by zero")
+            }
+            InterpreterError::TooManyCaptures(captured_len) => {
+                write!(
+                    f,
+                    "Too many captured variables: {}, max is {}",
+                    captured_len, MAX_CAPTURES
+                )
+            }
+            InterpreterError::SexpTagTooLong(len) => {
+                write!(f, "Sexp tag too long: {}, max is {}", len, MAX_SEXP_TAGLEN)
+            }
+        }
+    }
+}
+
+impl std::error::Error for InterpreterError {}
 
 #[derive(Debug, Clone)]
 pub struct Function {
     label: i32,
+    reachable: bool,
     blocks: Vec<Block>,
     target_offsets: HashSet<usize>,
 }
@@ -15,6 +174,7 @@ impl Function {
     pub fn new(label: i32) -> Self {
         Function {
             label,
+            reachable: false,
             blocks: Vec::new(),
             target_offsets: HashSet::new(),
         }
@@ -62,7 +222,7 @@ impl Analyzer {
     }
 
     pub fn build_cfg(&mut self, instructions: Vec<InstructionTrace>) {
-        let mut functions = Vec::new();
+        let mut functions: Vec<Function> = Vec::new();
 
         let mut counter = 0;
         let mut func_counter = 0;
@@ -70,16 +230,18 @@ impl Analyzer {
         let mut current_func = Function::new(func_counter);
 
         let mut previous_instruction_is_jmp = false;
+        let mut previous_instruction_is_end = false;
 
         // Push entry block
         current_func.blocks.push(Block::new(0, counter));
+
+        // CALL targets
+        let mut call_targets = Vec::new();
 
         // First pass:
         // 1. Split bytecode into functions
         // 2. Assign target offsets to each function
         for trace in instructions {
-            current_func.add_instruction(trace.clone());
-
             if previous_instruction_is_jmp {
                 current_func.target_offsets.insert(trace.offset);
                 previous_instruction_is_jmp = false;
@@ -87,23 +249,23 @@ impl Analyzer {
 
             match trace.instruction {
                 Instruction::BEGIN { .. } | Instruction::CBEGIN { .. } => {
-                    current_func = Function::new(func_counter);
-
                     // Push entry block
                     current_func
                         .blocks
                         .push(Block::new(trace.offset as usize, counter));
 
-                    // Push `BEGIN` function
-                    // TODO: fix
-                    current_func.add_instruction(trace.clone());
+                    // If we create a function that is in the call targets we mark it reachable
+                    if call_targets.contains(&trace.offset) || trace.offset == 0 {
+                        current_func.reachable = true;
+                    }
 
                     func_counter += 1;
                     counter = 0;
                 }
                 Instruction::END | Instruction::RET => {
+                    previous_instruction_is_end = true;
                     current_func.blocks.last_mut().unwrap().offset_end = trace.offset as usize;
-                    functions.push(current_func.clone());
+                    // functions.push(current_func.clone());
                 }
                 Instruction::JMP { offset } => {
                     current_func.target_offsets.insert(offset as usize);
@@ -115,21 +277,63 @@ impl Analyzer {
                     // if compare is false
                     previous_instruction_is_jmp = true;
                 }
+                Instruction::CALL {
+                    ref offset,
+                    ref n,
+                    ref name,
+                    ref builtin,
+                } => {
+                    // NOTE: We only record target offsets for calls inside a function
+
+                    if *builtin {
+                        continue;
+                    }
+
+                    let Some(offset) = offset else {
+                        continue;
+                    };
+
+                    // If some function exists with this offset mark it as reachable
+                    if let Some(func) = functions
+                        .iter_mut()
+                        .find(|f| f.blocks[0].offset == *offset as usize)
+                    {
+                        func.reachable = true;
+                    }
+
+                    call_targets.push(*offset as usize);
+                }
                 _ => {}
             }
+
+            current_func.add_instruction(trace);
+
+            if previous_instruction_is_end {
+                previous_instruction_is_end = false;
+                functions.push(current_func);
+                current_func = Function::new(func_counter);
+            }
         }
+
+        // Remove unreachable functions
+        functions.retain(|func| func.reachable);
 
         // Second pass:
         // Split each function into basic blocks
         // by iterating over target offsets from first step
-        // let functions = self.functions.clone();
         for mut func in functions {
             // After first pass we have only one block in each function
-            let instructions = func.blocks[0].instructions.clone();
+            // Entry block will be recreated, thus we move instructions to a new vector
+            let instructions = func.blocks[0].instructions.drain(..).collect::<Vec<_>>();
 
             // Sort offsets
             // TODO: fix clone()
-            let mut offsets = func.target_offsets.clone().into_iter().collect::<Vec<_>>();
+            let mut offsets = func
+                .target_offsets
+                .iter()
+                .map(|off| *off)
+                .collect::<Vec<usize>>();
+            // .clone().into_iter().collect::<Vec<_>>();
             offsets.push(func.blocks[0].offset);
             offsets.push(func.blocks[0].offset_end);
             offsets.sort();
@@ -211,12 +415,11 @@ impl Analyzer {
             }
         }
 
-        for targets in label_to_predecessor {
-            for func in &mut self.functions {
-                func.blocks
-                    .iter_mut()
-                    .find(|b| b.label == targets.0)
-                    .map(|b| b.predecessors = targets.1.clone());
+        for func in &mut self.functions {
+            for block in &mut func.blocks {
+                if let Some(preds) = label_to_predecessor.remove(&block.label) {
+                    block.predecessors = preds;
+                }
             }
         }
     }
@@ -231,15 +434,16 @@ impl Analyzer {
         // Frequency analysis for a single opcode
         for func in &self.functions {
             for block in &func.blocks {
-                let names = &block
+                let names = &mut block
                     .instructions
                     .iter()
                     .map(|instr| instr.instruction.get_opcode_name())
                     .collect::<Vec<String>>();
 
-                for name in names {
-                    frequencies.add_instruction(name.clone());
-                }
+                names
+                    .drain(..)
+                    .into_iter()
+                    .for_each(|name| frequencies.add_instruction(name));
             }
         }
 
@@ -254,8 +458,7 @@ impl Analyzer {
 
                 let instr_seq = names
                     .iter()
-                    .cloned()
-                    .zip(names.iter().skip(1).cloned())
+                    .zip(names.iter().skip(1))
                     .map(|(f, s)| format!("{}; {}", f, s))
                     .collect::<Vec<_>>();
 
@@ -266,6 +469,162 @@ impl Analyzer {
         }
 
         frequencies
+    }
+
+    /// Verify the input file before parsing as a bytecode file
+    pub fn verify_input(input: &str) -> Result<(), InterpreterError> {
+        // Check existance
+        if !Path::new(input).exists() {
+            return Err(InterpreterError::FileDoesNotExist(input.to_string()));
+        }
+
+        // Check file type (naive)
+        // NOTE: we can use a hack: `file` command detects `bc` file type as a matlab file,
+        // but im not sure its platform-independent
+        let extension = Path::new(input).extension().unwrap_or_default();
+        if extension != "bc" {
+            return Err(InterpreterError::FileTypeError(input.to_string()));
+        }
+
+        // Check file size
+        let metadata = std::fs::metadata(input)
+            .map_err(|_| InterpreterError::FileIsTooLarge(input.to_string()))?;
+        if metadata.len() >= MAX_FILE_SIZE {
+            return Err(InterpreterError::FileIsTooLarge(input.to_string()))?;
+        }
+
+        Ok(())
+    }
+
+    /// Static verification of bytecode on built CFG on par with the bytefile.
+    pub fn verify_bytecode(&self, bf: &Bytefile) -> Result<(), InterpreterError> {
+        if self.functions.is_empty() {
+            panic!("Please, run cfg builder first");
+        }
+
+        // Check code section
+        if bf.code_section.is_empty() {
+            return Err(InterpreterError::EndOfCodeSection);
+        }
+
+        let code_section_len = bf.code_section.len();
+        let strintab_size = bf.string_table.len();
+
+        for func in &self.functions {
+            for block in &func.blocks {
+                for instr in &block.instructions {
+                    let ip = instr.offset;
+                    let instruction = &instr.instruction;
+
+                    match instruction {
+                        Instruction::JMP { offset } | Instruction::CJMP { offset, .. } => {
+                            let offset_at = *offset as usize;
+
+                            if (*offset) < 0 || offset_at >= code_section_len {
+                                return Err(InterpreterError::InvalidJumpOffset(
+                                    ip,
+                                    *offset,
+                                    code_section_len,
+                                ));
+                            }
+                        }
+                        Instruction::CALL {
+                            offset,
+                            n,
+                            name,
+                            builtin,
+                        } => {
+                            // No offset means its a builtin call
+                            let Some(offset) = offset else {
+                                continue;
+                            };
+
+                            let offset_at = *offset as usize;
+
+                            if (*offset) < 0 || offset_at >= code_section_len {
+                                return Err(InterpreterError::InvalidJumpOffset(
+                                    ip,
+                                    *offset,
+                                    code_section_len,
+                                ));
+                            }
+                        }
+                        Instruction::STRING { index } => {
+                            let string_index = *index as usize;
+                            if string_index >= strintab_size as usize {
+                                return Err(InterpreterError::StringIndexOutOfBounds);
+                            }
+                        }
+                        Instruction::SEXP { s_index, n_members } => {
+                            let string_index = *s_index as usize;
+                            if string_index >= strintab_size as usize {
+                                return Err(InterpreterError::StringIndexOutOfBounds);
+                            }
+
+                            let mems = *n_members as usize;
+                            if mems >= MAX_SEXP_MEMBERS {
+                                return Err(InterpreterError::TooMuchMembers(
+                                    mems,
+                                    MAX_SEXP_MEMBERS,
+                                ));
+                            }
+
+                            let tag = bf
+                                .get_string_at_offset(string_index)
+                                .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
+
+                            if tag.len() > MAX_SEXP_TAGLEN {
+                                return Err(InterpreterError::SexpTagTooLong(tag.len()));
+                            }
+                        }
+                        Instruction::ARRAY { n } => {
+                            let array_members = *n as usize;
+                            if array_members >= MAX_ARRAY_MEMBERS {
+                                return Err(InterpreterError::TooMuchMembers(
+                                    array_members,
+                                    MAX_ARRAY_MEMBERS,
+                                ));
+                            }
+                        }
+                        Instruction::STORE { rel, index } | Instruction::LOAD { rel, index } => {
+                            if let ValueRel::Global = rel {
+                                let el_index = *index as usize;
+
+                                if el_index >= bf.global_area_size as usize {
+                                    if let Instruction::STORE { .. } = instr.instruction {
+                                        return Err(InterpreterError::InvalidStoreIndex(
+                                            ValueRel::Global,
+                                            *index,
+                                            bf.global_area_size as i64,
+                                        ));
+                                    } else {
+                                        return Err(InterpreterError::InvalidLoadIndex(
+                                            ValueRel::Global,
+                                            *index,
+                                            bf.global_area_size as i64,
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                        Instruction::CLOSURE {
+                            offset,
+                            arity,
+                            captured,
+                        } => {
+                            let captured_len = captured.len();
+
+                            if captured_len >= MAX_CAPTURES {
+                                return Err(InterpreterError::TooManyCaptures(captured_len));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub fn cfg_to_dot(&self) -> String {
