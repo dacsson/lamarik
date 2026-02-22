@@ -58,11 +58,12 @@ test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
 You can see the regression tests in the `doc` directory. Currently this interpreter passes all 75 tests, and 4 tests failed as expected.
 
-> [!WARNING] To run the regression tests, you need to set heap size to at least 128, instead of the default 64:
-```
-// in `runtime-c/gc.h`
-#define MINIMUM_HEAP_CAPACITY (128)
-```
+> [!WARNING]
+> To run the regression tests, you need to set heap size to at least 128, instead of the default 64:
+> ```
+> // in `runtime-c/gc.h`
+> #define MINIMUM_HEAP_CAPACITY (128)
+> ```
 
 Running regression tests:
 ```
