@@ -607,15 +607,11 @@ impl Analyzer {
                                 }
                             }
                         }
-                        Instruction::CLOSURE {
-                            offset,
-                            arity,
-                            captured,
-                        } => {
-                            let captured_len = captured.len();
+                        Instruction::CLOSURE { offset, arity } => {
+                            let arity = *arity as usize;
 
-                            if captured_len >= MAX_CAPTURES {
-                                return Err(InterpreterError::TooManyCaptures(captured_len));
+                            if arity >= MAX_CAPTURES {
+                                return Err(InterpreterError::TooManyCaptures(arity));
                             }
                         }
                         _ => {}

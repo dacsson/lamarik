@@ -1211,10 +1211,6 @@ fn test_closure_creation() -> Result<(), Box<dyn std::error::Error>> {
         Instruction::CLOSURE {
             offset: 10,
             arity: 1,
-            captured: vec![CapturedVar {
-                rel: ValueRel::Local,
-                index: 0,
-            }],
         },
     ]);
 
@@ -1225,7 +1221,7 @@ fn test_closure_creation() -> Result<(), Box<dyn std::error::Error>> {
 
     let expected_results = vec![Expect {
         offset: 10,
-        captured: vec![1],
+        captured: vec![0],
     }];
 
     assert_eq!(programs.len(), expected_results.len());

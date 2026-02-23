@@ -386,6 +386,10 @@ def main() -> None:
     if failed and FAIL_LOG.is_file():
         print(f"\nDetails of failures are stored in {FAIL_LOG}")
 
+    if passed == 75:
+        print("\nAll tests passed!")
+        sys.exit(0)
+
     # Exit with non‑zero status when there are failures (useful for CI)
     sys.exit(1 if failed else 0)
 

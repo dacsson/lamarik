@@ -4,6 +4,8 @@
 
 use std::{ffi::CString, os::raw::c_void};
 
+use crate::object::Object;
+
 pub mod analyzer;
 pub mod bytecode;
 pub mod disasm;
@@ -124,7 +126,7 @@ fn get_array_el(arr: &data, index: usize) -> i64 {
 /// Returns a pointer to *contents* of the closure.
 /// To retrieve the actual closure, use `rtToData`.
 #[inline(always)]
-fn new_closure(mut args: Vec<i64>) -> *mut c_void {
+fn new_closure(args: &mut [i64]) -> *mut c_void {
     unsafe {
         Bclosure(
             args.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */

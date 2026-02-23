@@ -120,8 +120,6 @@ pub enum Instruction {
     CLOSURE {
         offset: i32,
         arity: i32,
-        /// A description of each captured variable.
-        captured: Vec<CapturedVar>,
     },
     /// Store a value somewhere, depending on ValueRel
     ///
@@ -323,11 +321,7 @@ impl Instruction {
             Instruction::STRING { index } => format!("STRING {}", index),
             Instruction::BEGIN { args, locals } => format!("BEGIN {} {}", args, locals),
             Instruction::CBEGIN { args, locals } => format!("CBEGIN {} {}", args, locals),
-            Instruction::CLOSURE {
-                offset,
-                arity,
-                captured,
-            } => format!("CLOSURE {} {} {}", offset, arity, captured.len()),
+            Instruction::CLOSURE { offset, arity } => format!("CLOSURE {} {}", offset, arity),
             Instruction::STORE { rel, index } => format!("STORE {} {}", rel, index),
             Instruction::LOAD { rel, index } => format!("LOAD {} {}", rel, index),
             Instruction::LOADREF { rel, index } => format!("LDA {} {}", rel, index),

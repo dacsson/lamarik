@@ -40,6 +40,7 @@ pub struct Interpreter {
 }
 
 const MAX_OPERAND_STACK_SIZE: usize = 0xffff;
+const MAX_ARG_LEN: usize = 50;
 
 impl Interpreter {
     /// Create a new interpreter with operand stack filled with
@@ -222,20 +223,7 @@ impl Interpreter {
                 let offset = self.next::<i32>()?;
                 let arity = self.next::<i32>()?;
 
-                let mut captured = Vec::with_capacity(arity as usize);
-                for _ in 0..arity {
-                    captured.push(CapturedVar {
-                        rel: ValueRel::try_from(self.next::<u8>()?)
-                            .map_err(|_| InterpreterError::InvalidValueRel)?,
-                        index: self.next::<i32>()?,
-                    });
-                }
-
-                Ok(Instruction::CLOSURE {
-                    offset,
-                    arity,
-                    captured,
-                })
+                Ok(Instruction::CLOSURE { offset, arity })
             }
             (0x50, 0x5) => Ok(Instruction::CALLC {
                 arity: self.next::<i32>()?,
@@ -1037,11 +1025,7 @@ impl Interpreter {
                     obj: String::from(string),
                 });
             },
-            Instruction::CLOSURE {
-                offset,
-                arity: _,
-                captured,
-            } => unsafe {
+            Instruction::CLOSURE { offset, arity } => unsafe {
                 let offset_at = *offset as usize;
 
                 // verify offset is within bounds
@@ -1054,10 +1038,29 @@ impl Interpreter {
                     ));
                 }
 
-                // Collect captured variables
-                let mut args: Vec<i64> = captured
-                    .iter()
-                    .map(|desc| match desc.rel {
+                #[cfg(feature = "runtime_checks")]
+                if *arity as usize > MAX_ARG_LEN {
+                    return Err(InterpreterError::TooMuchMembers(
+                        *arity as usize,
+                        MAX_ARG_LEN,
+                    ));
+                }
+
+                let mut args = [0; MAX_ARG_LEN];
+
+                // Push offset - which is a first element to args of Bsexp
+                args[0] = *offset as i64;
+
+                // Read captured variables description from code section
+                for i in 0..*arity as usize {
+                    let desc = CapturedVar {
+                        rel: ValueRel::try_from(self.next::<u8>()?)
+                            .map_err(|_| InterpreterError::InvalidValueRel)?,
+                        index: self.next::<i32>()?,
+                    };
+
+                    // Push captures
+                    match desc.rel {
                         ValueRel::Arg => {
                             let frame = FrameMetadata::get_from_stack(
                                 &self.operand_stack,
@@ -1077,7 +1080,7 @@ impl Interpreter {
                                 .ok_or(InterpreterError::NotEnoughArguments(
                                     "trying to create closure frame",
                                 ))?;
-                            Ok::<i64, InterpreterError>(obj.raw())
+                            args[i + 1] = obj.raw();
                         }
                         ValueRel::Capture => {
                             let mut frame = FrameMetadata::get_from_stack(
@@ -1108,7 +1111,7 @@ impl Interpreter {
 
                             let element = get_captured_variable(&*to_data, desc.index as usize);
 
-                            Ok(element)
+                            args[i + 1] = element;
                         }
                         ValueRel::Global => {
                             let value = self.globals.get(desc.index as usize).ok_or(
@@ -1116,7 +1119,7 @@ impl Interpreter {
                                     "trying to create closure frame",
                                 ),
                             )?;
-                            Ok(value.raw())
+                            args[i + 1] = value.raw();
                         }
                         ValueRel::Local => {
                             let frame = FrameMetadata::get_from_stack(
@@ -1138,15 +1141,13 @@ impl Interpreter {
                                 .ok_or(InterpreterError::NotEnoughArguments(
                                     "trying to create closure frame",
                                 ))?;
-                            Ok(obj.raw())
+                            args[i + 1] = obj.raw();
                         }
-                    })
-                    .collect::<Result<_, _>>()?;
-
-                args.insert(0, *offset as i64);
+                    }
+                }
 
                 // Create a new closure object
-                let closure = new_closure(args);
+                let closure = new_closure(&mut args[0..(*arity as usize + 1)]);
 
                 self.push(
                     Object::try_from(closure)
