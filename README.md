@@ -21,6 +21,12 @@ cd ..
 cargo build --release
 ```
 
+To turn on bytecode verification:
+```
+cargo build --release --features="runtime_checks" // for on-the-fly checking, which is more verbose
+cargo build --release --features="static_checks" // for static check of bytecode file before evaluation
+```
+
 ## Running
 
 You can run a `*.bc` file with the following commands:
