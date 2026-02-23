@@ -1,0 +1,19 @@
+[package]
+name = "lamarik"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5.55", features = ["derive"] }
+lamacore = { path = "../lamacore" }
+
+[build-dependencies]
+bindgen = "0.72.1"
+
+[features]
+default = []
+verbose = []
+runtime_checks = []
+
+[profile.release]
+panic = 'abort'

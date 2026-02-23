@@ -440,3 +440,85 @@ Additionally we can check for allocations in main modules: `disasm` and `interpe
 ```
 
 We see that interpreter does not allocate memory in Rust runtime during interpretation, only during its creation (operand stack reservation).
+
+## 2. Tools splitting
+
+Instead of having interpreter that does all the work, we should split it into:
+- interpreter with runtime checks
+- frequency analysis tool
+- static bytecode verifyer
+
+```
+Замечание №1: домашние работы 2-4 не могут быть частями одного исполняемого файла. №2 - это интерпретатор. №3 - это отдельная утилита для анализа идиом, которая обычно пишется другим человеком и часто другой компанией, поэтоум должна минимально зависеть от кодировки набора инструкций. №4 - это встроенный в интерпреттаор верификатор, который модифицирует байткод в памяти и в котоырй выноситься большинство проверок времени исполнения. Интерпретаторы #2 и #4 разные.
+```
+
+1. Split tools into separate project
+
+This is done via splitting this cargo workspace into multiple crates:
+- `lamacore` - core library for working with bytefiles
+- `lamarik` - first interpreter
+- `lamanyzer` - frequency analyzer
+- `lamarifyer` - static bytecode verifyer
+
+Each crate is its own project, with its own dependencies, build scripts and executable. 
+
+The `lamanyzer` crate depends on `lamacore` for bytefile parsing, in `lamanyzer/Cargo.toml`:
+```toml
+[dependencies]
+lamacore = { path = "../lamacore" }
+```
+
+The `lamarifyer` crate depends on `lamarik` for interpreter and `lamacore` for bytefile parsing, in `lamarifyer/Cargo.toml`:
+```toml
+[dependencies]
+lamarik = { path = "../lamarik" }
+lamacore = { path = "../lamacore" }
+```
+
+So, after building a workspace, via `cargo build --release` in build directory we have three separate executables:
+```
+~/Uni/VirtualMachines/lama-rs  =>  cargo build --release
+~/Uni/VirtualMachines/lama-rs  =>  ls target/release/
+build  examples     lamanyzer    lamarifyer    lamarik    liblamacore.d     liblamarik.d
+deps   incremental  lamanyzer.d  lamarifyer.d  lamarik.d  liblamacore.rlib  liblamarik.rlib
+```
+
+2. Remove analyzer from first interpreter 
+
+- Changes:
+Removed `analyzer.rs` from first interpreter, now it just includes runtime checks enabled by `cargo build --release --features="runtime_checks"`
+
+Additionally fixed this:
+```
+2. Что, если на вход вашей программе подать файл длиной в 1 ТБ? Выдаваемая диагностика должна быть конкретной.
+    let mut content = Vec::new();
+    file.read_to_end(&mut content)?;
+```
+
+```rust
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Args::parse();
+
+    // Check file size
+    let metadata = std::fs::metadata(&args.lama_file).map_err(|err| {
+        eprintln!("{}", err);
+        err
+    })?;
+    if metadata.len() >= MAX_FILE_SIZE {
+        return Err(InterpreterError::FileIsTooLarge(
+            args.lama_file.to_string(),
+            metadata.len(),
+        ))
+        .map_err(|err| {
+            eprintln!("{}", err);
+            err
+        })?;
+    }
+    ...
+```
+
+Diagnostic output:
+```
+~/Uni/VirtualMachines/lama-rs  =>  ./target/release/lamarik -l ~/Downloads/sc-dt-2025.11-Ubuntu22.04-x86_64-internal-g86e02dcc-d251024-172639.tar.gz
+File /home/safonoff/Downloads/sc-dt-2025.11-Ubuntu22.04-x86_64-internal-g86e02dcc-d251024-172639.tar.gz is too large: 1206037184, max is 1GB
+```

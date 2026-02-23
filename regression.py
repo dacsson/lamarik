@@ -57,7 +57,7 @@ LAMA_PATH   = Path(os.getenv("LAMA_PATH", Path.cwd().parent / "Lama"))
 LAMAC       = Path(os.getenv("LAMAC", LAMA_PATH / "src" / "lamac"))
 RUNTIME_DIR = Path(os.getenv("RUNTIME_DIR", LAMA_PATH / "runtime"))
 STD_LIB_DIR = Path(os.getenv("STD_LIB_DIR", LAMA_PATH / "stdlib" / "x64"))
-LAMARIK     = Path(os.getenv("LAMARIK", "./target/release/lama-rs"))
+LAMARIK     = Path(os.getenv("LAMARIK", "./target/release/lamarik"))
 DUMP_DIR    = Path("./dump")               # where *.bc* files are placed
 FAIL_LOG    = Path("failures.log")
 
