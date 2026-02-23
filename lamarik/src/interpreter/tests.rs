@@ -5,7 +5,7 @@ use crate::{
 
 use super::*;
 use lamacore::bytecode::*;
-use lamacore::disasm::Bytefile;
+use lamacore::bytefile::Bytefile;
 use std::{ffi::CStr, os::raw::c_void};
 
 /// Test minimal evaluation functionality of the interpreter
@@ -79,7 +79,8 @@ fn test_binops_eval() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
         interp.run_on_program(program)?;
 
         let top = interp.pop().unwrap();
@@ -105,12 +106,13 @@ fn test_string_eval() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
-        interp.bf.put_string(CString::new("main")?);
-        interp.bf.put_string(CString::new("Hello, world!")?);
+        interp.decoder.bf.put_string(CString::new("main")?);
+        interp.decoder.bf.put_string(CString::new("Hello, world!")?);
 
-        println!("{}", interp.bf);
+        println!("{}", interp.decoder.bf);
 
         interp.run_on_program(program)?;
 
@@ -204,12 +206,13 @@ fn test_sexp_cons_nil_eval() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
-        interp.bf.put_string(CString::new("Cons")?);
-        interp.bf.put_string(CString::new("Nil")?);
+        interp.decoder.bf.put_string(CString::new("Cons")?);
+        interp.decoder.bf.put_string(CString::new("Nil")?);
 
-        println!("{}", interp.bf);
+        println!("{}", interp.decoder.bf);
 
         interp.run_on_program(program)?;
 
@@ -252,7 +255,8 @@ fn test_invalid_jump_offset() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
         let result = interp.run_on_program(program);
 
         assert!(result.is_err());
@@ -283,7 +287,8 @@ fn test_invalid_frame_move() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
         interp.operand_stack.clear();
         let result = interp.run_on_program(program);
 
@@ -372,7 +377,8 @@ fn test_frame_move_args_and_locals() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
         interp.run_on_program(program)?;
 
@@ -453,7 +459,8 @@ fn test_invalid_args_and_locals_assignment() -> Result<(), Box<dyn std::error::E
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
         let result = interp.run_on_program(program);
 
@@ -537,7 +544,8 @@ fn test_arg_and_local_load() -> Result<(), InterpreterError> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
         interp.run_on_program(program)?;
 
@@ -565,7 +573,8 @@ fn test_drop() -> Result<(), InterpreterError> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
         interp.run_on_program(program)?;
 
@@ -593,7 +602,8 @@ fn test_dup() -> Result<(), InterpreterError> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
         interp.run_on_program(program)?;
 
@@ -622,7 +632,8 @@ fn test_swap() -> Result<(), InterpreterError> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
         interp.run_on_program(program)?;
 
@@ -706,9 +717,10 @@ fn test_array() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
-        interp.bf.put_string(CString::new("main")?);
+        interp.decoder.bf.put_string(CString::new("main")?);
 
         interp.run_on_program(program)?;
 
@@ -792,10 +804,11 @@ fn test_builtin_functions() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
-        interp.bf.put_string(CString::new("Cons")?);
-        interp.bf.put_string(CString::new("Nil")?);
+        interp.decoder.bf.put_string(CString::new("Cons")?);
+        interp.decoder.bf.put_string(CString::new("Nil")?);
 
         interp.run_on_program(program)?;
 
@@ -853,10 +866,11 @@ fn test_conditional_jump() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
         interp.run_on_program(program)?;
 
-        let ip = interp.ip;
+        let ip = interp.decoder.ip;
 
         assert_eq!(ip, expected);
     }
@@ -913,9 +927,10 @@ fn test_elem() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
-        interp.bf.put_string(CString::new("main")?);
+        interp.decoder.bf.put_string(CString::new("main")?);
 
         interp.run_on_program(program)?;
 
@@ -968,9 +983,10 @@ fn test_invalid_elem() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
-        interp.bf.put_string(CString::new("main")?);
+        interp.decoder.bf.put_string(CString::new("main")?);
 
         let result = interp.run_on_program(program);
 
@@ -1038,9 +1054,10 @@ fn test_array_tag() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
-        interp.bf.put_string(CString::new("main")?);
+        interp.decoder.bf.put_string(CString::new("main")?);
 
         interp.run_on_program(program)?;
 
@@ -1082,9 +1099,9 @@ fn test_array_tag() -> Result<(), Box<dyn std::error::Error>> {
 //     assert_eq!(programs.len(), expected_results.len());
 
 //     for (program, expected) in programs.into_iter().zip(expected_results) {
-//         let mut interp = Interpreter::new(Bytefile::new_dummy());
+//         let decoder = Decoder::new(Bytefile::new_dummy()); let mut interp = Interpreter::new(decoder);
 
-//         interp.bf.put_string(CString::new("main")?);
+//         interp.decoder.bf.put_string(CString::new("main")?);
 
 //         interp.run_on_program(program)?;
 
@@ -1182,12 +1199,13 @@ fn test_sexp_tag() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
-        interp.bf.put_string(CString::new("Cons")?);
-        interp.bf.put_string(CString::new("Nil")?);
+        interp.decoder.bf.put_string(CString::new("Cons")?);
+        interp.decoder.bf.put_string(CString::new("Nil")?);
 
-        println!("{}", interp.bf);
+        println!("{}", interp.decoder.bf);
 
         interp.run_on_program(program)?;
 
@@ -1229,7 +1247,8 @@ fn test_closure_creation() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(programs.len(), expected_results.len());
 
     for (program, expected) in programs.into_iter().zip(expected_results) {
-        let mut interp = Interpreter::new(Bytefile::new_dummy());
+        let decoder = Decoder::new(Bytefile::new_dummy());
+        let mut interp = Interpreter::new(decoder);
 
         interp.run_on_program(program)?;
 

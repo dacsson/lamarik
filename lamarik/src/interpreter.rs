@@ -1,7 +1,6 @@
 //! VM Interpreter
 
 use crate::frame::FrameMetadata;
-use crate::numeric::LeBytes;
 use crate::object::{Object, ObjectError};
 use crate::{
     __gc_init, __gc_stack_bottom, __gc_stack_top, Barray_tag_patt, Bboxed_patt, Bclosure_tag_patt,
@@ -14,7 +13,9 @@ use crate::{
 use lamacore::bytecode::{
     Builtin, CapturedVar, CompareJumpKind, Instruction, Op, PattKind, ValueRel,
 };
-use lamacore::disasm::Bytefile;
+use lamacore::bytefile::Bytefile;
+use lamacore::decoder::{Decoder, DecoderError};
+use lamacore::numeric::LeBytes;
 use std::convert::TryFrom;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
@@ -57,6 +58,7 @@ pub enum InterpreterError {
     FileTypeError(String),
     DivisionByZero,
     SexpTagTooLong(usize),
+    DecoderError(DecoderError),
 }
 
 /// Convert a byte, that couldnt be incoded into an interpreter error.
@@ -69,6 +71,12 @@ impl From<u8> for InterpreterError {
 impl From<ObjectError> for InterpreterError {
     fn from(err: ObjectError) -> Self {
         InterpreterError::ObjectError(err)
+    }
+}
+
+impl From<DecoderError> for InterpreterError {
+    fn from(err: DecoderError) -> Self {
+        InterpreterError::DecoderError(err)
     }
 }
 
@@ -165,6 +173,9 @@ impl std::fmt::Display for InterpreterError {
             InterpreterError::SexpTagTooLong(len) => {
                 write!(f, "Sexp tag too long: {}, max is {}", len, MAX_SEXP_TAGLEN)
             }
+            InterpreterError::DecoderError(err) => {
+                write!(f, "Decoder error: {}", err)
+            }
         }
     }
 }
@@ -180,10 +191,10 @@ pub struct InstructionTrace {
 pub struct Interpreter {
     operand_stack: Vec<Object>,
     frame_pointer: usize,
-    /// Decoded bytecode file with raw code section
-    pub bf: Bytefile,
+    // Bytefile decoder
+    decoder: Decoder,
     /// Instruction pointer, moves along code section in `bf`
-    ip: usize,
+    // ip: usize,
     /// Collect found instructions, only when `parse_only` is true
     instructions: Vec<InstructionTrace>,
     /// Global variables
@@ -203,7 +214,7 @@ const MAX_ARG_LEN: usize = 50;
 impl Interpreter {
     /// Create a new interpreter with operand stack filled with
     /// emulated call to main
-    pub fn new(bf: Bytefile) -> Self {
+    pub fn new(decoder: Decoder) -> Self {
         let mut operand_stack = Vec::with_capacity(MAX_OPERAND_STACK_SIZE);
 
         unsafe {
@@ -221,15 +232,13 @@ impl Interpreter {
         operand_stack.push(Object::new_empty()); // ARGC
         operand_stack.push(Object::new_empty()); // CURR_IP
 
-        let global_areas_size = bf.global_area_size as usize;
-        let code_section_len = bf.code_section.len();
-        let main_offset = bf.main_offset as usize;
+        let global_areas_size = decoder.bf.global_area_size as usize;
+        let code_section_len = decoder.bf.code_section.len();
 
         Interpreter {
             operand_stack,
             frame_pointer: 0,
-            bf,
-            ip: main_offset,
+            decoder,
             instructions: Vec::new(),
             globals: vec![Object::new_empty(); global_areas_size],
             code_section_len,
@@ -247,39 +256,25 @@ impl Interpreter {
         Ok(())
     }
 
-    /// Reads the next n bytes from the code section,
-    /// where n is the size of type `T`.
-    /// Returns the value read as type `T`, where `T` is an integer type.
-    fn next<T: LeBytes>(&mut self) -> Result<T, InterpreterError> {
-        #[cfg(feature = "runtime_checks")]
-        if self.ip + std::mem::size_of::<T>() > self.code_section_len {
-            return Err(InterpreterError::ReadingMoreThenCodeSection);
-        }
-
-        let bit_size = std::mem::size_of::<T>();
-        let bytes = &self.bf.code_section[self.ip..self.ip + bit_size];
-
-        self.ip += bit_size;
-
-        Ok(T::from_le_bytes(bytes.try_into().unwrap()))
-    }
-
     pub fn collect_instructions(&mut self) -> Result<Vec<InstructionTrace>, InterpreterError> {
         let mut instructions = Vec::new();
 
-        while self.ip < self.code_section_len {
-            let opcode_offset = self.ip;
+        while self.decoder.ip < self.code_section_len {
+            let opcode_offset = self.decoder.ip;
 
-            let encoding = self.next::<u8>()?;
+            let encoding = self.decoder.next::<u8>()?;
 
             if encoding == 0xff {
                 break;
             }
 
-            let instr = self.decode(encoding)?;
+            let instr = self.decoder.decode(encoding)?;
 
             if cfg!(feature = "verbose") {
-                println!("[LOG] IP {} BYTE {} INSTR {:?}", self.ip, encoding, instr);
+                println!(
+                    "[LOG] IP {} BYTE {} INSTR {:?}",
+                    self.decoder.ip, encoding, instr
+                );
             }
 
             instructions.push(InstructionTrace {
@@ -289,19 +284,22 @@ impl Interpreter {
         }
 
         // reset
-        self.ip = self.bf.main_offset as usize;
+        self.decoder.ip = self.decoder.bf.main_offset as usize;
 
         Ok(instructions)
     }
 
     /// Main interpreter loop
     pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        while self.ip < self.code_section_len {
-            let encoding = self.next::<u8>()?;
-            let instr = self.decode(encoding)?;
+        while self.decoder.ip < self.code_section_len {
+            let encoding = self.decoder.next::<u8>()?;
+            let instr = self.decoder.decode(encoding)?;
 
             if cfg!(feature = "verbose") {
-                println!("[LOG] IP {} BYTE {} INSTR {:?}", self.ip, encoding, instr);
+                println!(
+                    "[LOG] IP {} BYTE {} INSTR {:?}",
+                    self.decoder.ip, encoding, instr
+                );
             }
 
             self.eval(&instr)
@@ -309,9 +307,11 @@ impl Interpreter {
                     let global_offset = std::mem::size_of::<i32>()
                         + std::mem::size_of::<i32>()
                         + std::mem::size_of::<i32>()
-                        + (std::mem::size_of::<i32>() * 2 * self.bf.public_symbols_number as usize)
-                        + self.bf.stringtab_size as usize
-                        + self.ip;
+                        + (std::mem::size_of::<i32>()
+                            * 2
+                            * self.decoder.bf.public_symbols_number as usize)
+                        + self.decoder.bf.stringtab_size as usize
+                        + self.decoder.ip;
 
                     format!("Error at offset {}: {}", global_offset, e).into()
                 })?;
@@ -326,113 +326,6 @@ impl Interpreter {
         }
 
         Ok(())
-    }
-
-    /// Decode a byte into an instruction
-    fn decode(&mut self, byte: u8) -> Result<Instruction, InterpreterError> {
-        let (opcode, subopcode) = (byte & 0xF0, byte & 0x0F);
-
-        match (opcode, subopcode) {
-            (0x00, 0x0) => Ok(Instruction::NOP),
-            (0x00, _) if (0x1..=0xd).contains(&subopcode) => Ok(Instruction::BINOP {
-                op: Op::try_from(subopcode).map_err(|_| InterpreterError::from(byte))?,
-            }),
-            (0x00, _) => Err(InterpreterError::from(byte)),
-            (0x10, 0x0) => Ok(Instruction::CONST {
-                value: self.next::<i32>()?,
-            }),
-            (0x10, 0x1) => Ok(Instruction::STRING {
-                index: self.next::<i32>()?,
-            }),
-            (0x10, 0x2) => Ok(Instruction::SEXP {
-                s_index: self.next::<i32>()?,
-                n_members: self.next::<i32>()?,
-            }),
-            (0x10, 0x3) => Ok(Instruction::STI),
-            (0x10, 0x4) => Ok(Instruction::STA),
-            (0x10, 0x5) => Ok(Instruction::JMP {
-                offset: self.next::<i32>()?,
-            }),
-            (0x10, 0x6) => Ok(Instruction::END),
-            (0x10, 0x7) => Ok(Instruction::RET),
-            (0x10, 0x8) => Ok(Instruction::DROP),
-            (0x10, 0x9) => Ok(Instruction::DUP),
-            (0x10, 0xa) => Ok(Instruction::SWAP),
-            (0x10, 0xb) => Ok(Instruction::ELEM),
-            (0x20, _) if subopcode <= 0x3 => Ok(Instruction::LOAD {
-                rel: ValueRel::try_from(subopcode).map_err(|_| InterpreterError::from(byte))?,
-                index: self.next::<i32>()?,
-            }),
-            (0x30, _) if subopcode <= 0x3 => Ok(Instruction::LOADREF {
-                rel: ValueRel::try_from(subopcode).map_err(|_| InterpreterError::from(byte))?,
-                index: self.next::<i32>()?,
-            }),
-            (0x40, _) if subopcode <= 0x3 => Ok(Instruction::STORE {
-                rel: ValueRel::try_from(subopcode).map_err(|_| InterpreterError::from(byte))?,
-                index: self.next::<i32>()?,
-            }),
-            (0x50, 0x0) => Ok(Instruction::CJMP {
-                offset: self.next::<i32>()?,
-                kind: CompareJumpKind::ISZERO,
-            }),
-            (0x50, 0x1) => Ok(Instruction::CJMP {
-                offset: self.next::<i32>()?,
-                kind: CompareJumpKind::ISNONZERO,
-            }),
-            (0x50, 0x2) => Ok(Instruction::BEGIN {
-                args: self.next::<i32>()?,
-                locals: self.next::<i32>()?,
-            }),
-            (0x50, 0x3) => Ok(Instruction::CBEGIN {
-                args: self.next::<i32>()?,
-                locals: self.next::<i32>()?,
-            }),
-            (0x50, 0x4) => {
-                let offset = self.next::<i32>()?;
-                let arity = self.next::<i32>()?;
-
-                Ok(Instruction::CLOSURE { offset, arity })
-            }
-            (0x50, 0x5) => Ok(Instruction::CALLC {
-                arity: self.next::<i32>()?,
-            }),
-            (0x50, 0x6) => Ok(Instruction::CALL {
-                offset: Some(self.next::<i32>()?),
-                n: Some(self.next::<i32>()?),
-                name: None,
-                builtin: false,
-            }),
-            (0x50, 0x7) => Ok(Instruction::TAG {
-                index: self.next::<i32>()?,
-                n: self.next::<i32>()?,
-            }),
-            (0x50, 0x8) => Ok(Instruction::ARRAY {
-                n: self.next::<i32>()?,
-            }),
-            (0x50, 0x9) => Ok(Instruction::FAIL {
-                line: self.next::<i32>()?,
-                column: self.next::<i32>()?,
-            }),
-            (0x50, 0xa) => Ok(Instruction::LINE {
-                n: self.next::<i32>()?,
-            }),
-            (0x60, _) if subopcode <= 0x6 => Ok(Instruction::PATT {
-                kind: PattKind::try_from(subopcode).map_err(|_| InterpreterError::from(byte))?,
-            }),
-            (0x70, _) if subopcode <= 0x3 => Ok(Instruction::CALL {
-                offset: None,
-                n: None,
-                name: Some(Builtin::try_from(subopcode).map_err(|_| InterpreterError::from(byte))?),
-                builtin: true,
-            }),
-            (0x70, 0x4) => Ok(Instruction::CALL {
-                offset: None,
-                n: Some(self.next::<i32>()?),
-                name: Some(Builtin::Barray),
-                builtin: true,
-            }),
-            _ => Err(InterpreterError::InvalidOpcode(byte)),
-        }
     }
 
     /// Evaluate a decoded instruction
@@ -531,6 +424,7 @@ impl Interpreter {
             Instruction::CONST { value: index } => self.push(Object::new_boxed(*index as i64))?,
             Instruction::STRING { index } => {
                 let string = self
+                    .decoder
                     .bf
                     .get_string_at_offset(*index as usize)
                     .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
@@ -564,6 +458,7 @@ impl Interpreter {
                 }
 
                 let tag_u8 = self
+                    .decoder
                     .bf
                     .get_string_at_offset(*s_index as usize)
                     .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
@@ -605,13 +500,13 @@ impl Interpreter {
                 #[cfg(feature = "runtime_checks")]
                 if (*offset) < 0 || offset_at >= self.code_section_len {
                     return Err(InterpreterError::InvalidJumpOffset(
-                        self.ip,
+                        self.decoder.ip,
                         *offset,
                         self.code_section_len,
                     ));
                 }
 
-                self.ip = offset_at;
+                self.decoder.ip = offset_at;
             }
             Instruction::STA => {
                 let value_obj = self.pop()?;
@@ -753,7 +648,7 @@ impl Interpreter {
                 // Return to caller's instruction pointer
                 // NOTE: returning from main is not possible in this implementation
                 //       the program will exit after the main function returns
-                self.ip = ret_ip;
+                self.decoder.ip = ret_ip;
 
                 // Pop closure object
                 self.pop()?;
@@ -934,10 +829,10 @@ impl Interpreter {
                 if !builtin {
                     // Push old instruction pointer
                     // `BEGIN` instruction will collect it
-                    self.push(Object::new_unboxed(self.ip as i64))?;
+                    self.push(Object::new_unboxed(self.decoder.ip as i64))?;
 
                     if let Some(offset) = offset {
-                        self.ip = *offset as usize;
+                        self.decoder.ip = *offset as usize;
                     } else {
                         panic!(
                             "Calling user-provided function without offset, this should never be possible"
@@ -1032,7 +927,7 @@ impl Interpreter {
                 #[cfg(feature = "runtime_checks")]
                 if (*offset) < 0 || offset_at >= self.code_section_len {
                     return Err(InterpreterError::InvalidJumpOffset(
-                        self.ip,
+                        self.decoder.ip,
                         *offset,
                         self.code_section_len,
                     ));
@@ -1044,7 +939,7 @@ impl Interpreter {
                         let value = obj.unwrap();
 
                         if value != 0 {
-                            self.ip = offset_at;
+                            self.decoder.ip = offset_at;
                         }
                     }
                     CompareJumpKind::ISZERO => {
@@ -1052,7 +947,7 @@ impl Interpreter {
                         let value = obj.unwrap();
 
                         if value == 0 {
-                            self.ip = offset_at;
+                            self.decoder.ip = offset_at;
                         }
                     }
                 }
@@ -1166,6 +1061,7 @@ impl Interpreter {
                         );
 
                         let tag_u8 = self
+                            .decoder
                             .bf
                             .get_string_at_offset(*index as usize)
                             .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
@@ -1214,7 +1110,7 @@ impl Interpreter {
                 #[cfg(feature = "runtime_checks")]
                 if (*offset) < 0 || offset_at >= self.code_section_len {
                     return Err(InterpreterError::InvalidJumpOffset(
-                        self.ip,
+                        self.decoder.ip,
                         *offset,
                         self.code_section_len,
                     ));
@@ -1236,9 +1132,9 @@ impl Interpreter {
                 // Read captured variables description from code section
                 for i in 0..*arity as usize {
                     let desc = CapturedVar {
-                        rel: ValueRel::try_from(self.next::<u8>()?)
+                        rel: ValueRel::try_from(self.decoder.next::<u8>()?)
                             .map_err(|_| InterpreterError::InvalidValueRel)?,
-                        index: self.next::<i32>()?,
+                        index: self.decoder.next::<i32>()?,
                     };
 
                     // Push captures
@@ -1355,7 +1251,7 @@ impl Interpreter {
 
                 // Push old instruction pointer
                 // `CBEGIN` instruction will collect it
-                self.push(Object::new_unboxed(self.ip as i64))?;
+                self.push(Object::new_unboxed(self.decoder.ip as i64))?;
 
                 // Re-push closure object
                 // `CBEGIN` instruction will collect it
@@ -1367,7 +1263,7 @@ impl Interpreter {
                             .ok_or(InterpreterError::InvalidObjectPointer)?,
                     );
                     // First element in closure object is the offset
-                    self.ip = get_array_el(&*to_data, 0) as usize;
+                    self.decoder.ip = get_array_el(&*to_data, 0) as usize;
                 }
             }
             Instruction::PATT { kind } => match kind {

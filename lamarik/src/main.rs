@@ -1,5 +1,6 @@
 use clap::Parser;
-use lamacore::disasm::Bytefile;
+use lamacore::bytefile::Bytefile;
+use lamacore::decoder::Decoder;
 use lamarik::interpreter::{Interpreter, InterpreterError};
 use std::fs::File;
 use std::io::Read;
@@ -57,7 +58,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("{}", bytefile);
     }
 
-    let mut interp = Interpreter::new(bytefile);
+    let decoder = Decoder::new(bytefile);
+    let mut interp = Interpreter::new(decoder);
 
     let _ = interp.run().map_err(|err| {
         eprintln!("{}", err);

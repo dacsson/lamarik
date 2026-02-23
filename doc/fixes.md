@@ -641,3 +641,24 @@ I modifyed a compiled file to showcase how errors look now:
 > 5
 Error at offset 45: Invalid store index 10/3 for global variable
 ```
+
+## 4. Shared layer for tools
+
+We shouldn't repeat outselfs in all those different tools, thus we need a shared layer of basic operations on bytecode file: parsing and decoding.
+
+Idea originated from:
+```
+Нет, в анализаторе вам не придется самим декодировать инструкции. Нужно завести минимальный разумный программынй интерфейс и реализлвать его с максимальным повторным использованием кода существующего дизассемблера byterun.
+```
+
+This layer is a `lamacore` crate (library), it exposes:
+```
+└── src
+    ├── bytecode.rs   <- Lama VM bytecode description
+    ├── decoder.rs    <- bytecode instruction decoder
+    ├── bytefile.rs   <- bytefile parsing 
+    ├── lib.rs        <- exposes modules
+    └── numeric.rs    <- util traits 
+```
+
+All other tools will use this crate.

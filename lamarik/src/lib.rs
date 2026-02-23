@@ -9,7 +9,6 @@ use std::{
 
 mod frame;
 pub mod interpreter;
-mod numeric;
 pub mod object;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));

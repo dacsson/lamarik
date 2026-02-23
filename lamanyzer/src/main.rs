@@ -1,5 +1,6 @@
 use clap::Parser;
-use lamacore::disasm::Bytefile;
+use lamacore::bytefile::Bytefile;
+use lamanyzer::analyzer::AnalysisError;
 use std::fs::File;
 use std::io::Read;
 
@@ -17,23 +18,6 @@ struct Args {
 }
 
 const MAX_FILE_SIZE: u64 = 1024 * 1024 * 1024; // 1GB
-
-#[derive(Debug)]
-enum AnalysisError {
-    FileIsTooLarge(String, u64),
-}
-
-impl std::fmt::Display for AnalysisError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AnalysisError::FileIsTooLarge(file, size) => {
-                write!(f, "File {} is too large: {}, max is 1GB", file, size)
-            }
-        }
-    }
-}
-
-impl std::error::Error for AnalysisError {}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
