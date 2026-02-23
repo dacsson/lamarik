@@ -17,7 +17,7 @@ use crate::{
 use std::convert::TryFrom;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use std::panic;
+use std::{array, panic};
 
 #[derive(Debug, Clone)]
 pub struct InstructionTrace {
@@ -521,12 +521,12 @@ impl Interpreter {
                 }
 
                 // Collect callee provided arguments
-                let mut arguments = Vec::new();
-                for _ in 0..*args {
-                    arguments.push(
-                        self.pop()
-                            .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?,
-                    );
+                // let mut arguments = Vec::new();
+                let mut arguments: [Object; MAX_ARG_LEN] = array::repeat(Object::new_empty());
+                for i in (0..*args as usize).rev() {
+                    arguments[i] = self
+                        .pop()
+                        .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?
                 }
 
                 // Save previous frame pointer
@@ -553,7 +553,10 @@ impl Interpreter {
                 self.push(ret_ip)?;
 
                 // Re-push arguments
-                for arg in arguments.into_iter().rev() {
+                for (iarg, arg) in arguments.into_iter().enumerate() {
+                    if iarg >= *args as usize {
+                        break;
+                    }
                     self.push(arg)?;
                 }
 

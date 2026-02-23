@@ -250,3 +250,84 @@ fn new_string(bytes: &[u8]) -> Result<*mut c_void, Box<dyn std::error::Error>> {
 ```
 
 - Regressions: [see here](regression_cstr_insted_of_cstring.txt)
+
+3. Remove *vector* allocations for arguments collection in `BEGIN` instruction
+
+Instead lets use a static array.
+
+- Changes:
+```rust
+            Instruction::BEGIN { args, locals } | Instruction::CBEGIN { args, locals } => {
+                let mut closure_obj = Object::new_empty();
+                let mut ret_ip = Object::new_empty();
+
+                // Top object is either return_ip or a closure obj
+                let mut obj = self
+                    .pop()
+                    .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?; // must be a closure
+
+                // check for closure
+                if let Some(lama_type) = obj.lama_type() {
+                    // check for closure type
+                    if lama_type == lama_type_CLOSURE {
+                        closure_obj = obj;
+
+                        // Save previous ip (provided by `CALL`)
+                        ret_ip = self
+                            .pop()
+                            .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?;
+                    }
+                } else {
+                    ret_ip = obj;
+                }
+
+                // Collect callee provided arguments in a static array
+                // ! Previous - vector used
+                let mut arguments: [Object; MAX_ARG_LEN] = array::repeat(Object::new_empty());
+                for i in (0..*args as usize).rev() {
+                    arguments[i] = self
+                        .pop()
+                        .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?
+                }
+
+                // Save previous frame pointer
+                let ret_frame_pointer = self.frame_pointer;
+
+                // Set new frame pointer as index into operand stack
+                #[cfg(feature = "runtime_checks")]
+                if self.operand_stack.is_empty() {
+                    return Err(InterpreterError::NotEnoughArguments("BEGIN"));
+                }
+                self.frame_pointer = self.operand_stack.len() - 1;
+
+                // Push closure object onto operand stack
+                self.push(closure_obj)?;
+
+                // Push arg and local count
+                self.push(Object::new_unboxed(*args as i64))?;
+                self.push(Object::new_unboxed(*locals as i64))?;
+
+                // Push return frame pointer and ip
+                // 1. Where to return in sack operand
+                self.push(Object::new_unboxed(ret_frame_pointer as i64))?;
+                // 2. Where to return in the bytecode after this call
+                self.push(ret_ip)?;
+
+                // Re-push arguments
+                // By moving them from args array -> no additonal heap allocations 
+                for (iarg, arg) in arguments.into_iter().enumerate() {
+                    if iarg > *args as usize {
+                        break;
+                    }
+                    self.push(arg)?;
+                }
+
+                // Initialize local variables with 0
+                // We create them as boxed objects
+                for _ in 0..*locals {
+                    self.push(Object::new_boxed(0))?;
+                }
+            }
+```
+
+- Regressions: [see here](regression_begin_arguments_no_vec.txt)
