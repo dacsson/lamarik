@@ -37,7 +37,7 @@ pub enum BytefileError {
 pub struct Bytefile {
     pub stringtab_size: u32,
     pub global_area_size: u32,
-    public_symbols_number: u32,
+    pub public_symbols_number: u32,
     public_symbols: Vec<(u32, u32)>,
     pub string_table: Vec<u8>,
     pub code_section: Vec<u8>, // Kept raw for later interpretation

@@ -295,7 +295,7 @@ impl Interpreter {
     }
 
     /// Main interpreter loop
-    pub fn run(&mut self) -> Result<(), InterpreterError> {
+    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         while self.ip < self.code_section_len {
             let encoding = self.next::<u8>()?;
             let instr = self.decode(encoding)?;
@@ -304,7 +304,17 @@ impl Interpreter {
                 println!("[LOG] IP {} BYTE {} INSTR {:?}", self.ip, encoding, instr);
             }
 
-            self.eval(&instr)?;
+            self.eval(&instr)
+                .map_err(|e| -> Box<dyn std::error::Error> {
+                    let global_offset = std::mem::size_of::<i32>()
+                        + std::mem::size_of::<i32>()
+                        + std::mem::size_of::<i32>()
+                        + (std::mem::size_of::<i32>() * 2 * self.bf.public_symbols_number as usize)
+                        + self.bf.stringtab_size as usize
+                        + self.ip;
+
+                    format!("Error at offset {}: {}", global_offset, e).into()
+                })?;
 
             // HACK: if we encounter END instruction, while in frame 0
             //       (a.k.a main function) we exit the interpreter
@@ -1015,24 +1025,38 @@ impl Interpreter {
                     }
                 }
             }
-            Instruction::CJMP { offset, kind } => match kind {
-                CompareJumpKind::ISNONZERO => {
-                    let obj = self.pop()?;
-                    let value = obj.unwrap();
+            Instruction::CJMP { offset, kind } => {
+                let offset_at = *offset as usize;
 
-                    if value != 0 {
-                        self.ip = *offset as usize;
+                // verify offset is within bounds
+                #[cfg(feature = "runtime_checks")]
+                if (*offset) < 0 || offset_at >= self.code_section_len {
+                    return Err(InterpreterError::InvalidJumpOffset(
+                        self.ip,
+                        *offset,
+                        self.code_section_len,
+                    ));
+                }
+
+                match kind {
+                    CompareJumpKind::ISNONZERO => {
+                        let obj = self.pop()?;
+                        let value = obj.unwrap();
+
+                        if value != 0 {
+                            self.ip = offset_at;
+                        }
+                    }
+                    CompareJumpKind::ISZERO => {
+                        let obj = self.pop()?;
+                        let value = obj.unwrap();
+
+                        if value == 0 {
+                            self.ip = offset_at;
+                        }
                     }
                 }
-                CompareJumpKind::ISZERO => {
-                    let obj = self.pop()?;
-                    let value = obj.unwrap();
-
-                    if value == 0 {
-                        self.ip = *offset as usize;
-                    }
-                }
-            },
+            }
             Instruction::ELEM => {
                 let index_obj = self.pop()?;
                 let mut obj = self.pop()?;

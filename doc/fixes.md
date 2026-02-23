@@ -522,3 +522,122 @@ Diagnostic output:
 ~/Uni/VirtualMachines/lama-rs  =>  ./target/release/lamarik -l ~/Downloads/sc-dt-2025.11-Ubuntu22.04-x86_64-internal-g86e02dcc-d251024-172639.tar.gz
 File /home/safonoff/Downloads/sc-dt-2025.11-Ubuntu22.04-x86_64-internal-g86e02dcc-d251024-172639.tar.gz is too large: 1206037184, max is 1GB
 ```
+
+## 3. Missing checks and diagnostics
+
+1. No checks in `CJMP`:
+
+```rust
+// ! Previous
+Instruction::CJMP { offset, kind } => match kind {
+    CompareJumpKind::ISNONZERO => {
+        let obj = self.pop()?;
+        let value = obj.unwrap();
+    
+        if value != 0 {
+            self.ip = *offset as usize;
+        }
+    }
+    CompareJumpKind::ISZERO => {
+        let obj = self.pop()?;
+        let value = obj.unwrap();
+    
+        if value == 0 {
+            self.ip = *offset as usize;
+        }
+    }
+    },
+```
+
+Comment:
+```
+Нет, я не вижу тут проверки.
+```
+
+- Changes:
+```rust
+Instruction::CJMP { offset, kind } => {
+    let offset_at = *offset as usize;
+
+    // verify offset is within bounds
+    #[cfg(feature = "runtime_checks")]
+    if (*offset) < 0 || offset_at >= self.code_section_len {
+        return Err(InterpreterError::InvalidJumpOffset(
+            self.ip,
+            *offset,
+            self.code_section_len,
+        ));
+    }
+
+    match kind {
+        CompareJumpKind::ISNONZERO => {
+            let obj = self.pop()?;
+            let value = obj.unwrap();
+
+            if value != 0 {
+                self.ip = offset_at;
+            }
+        }
+        CompareJumpKind::ISZERO => {
+            let obj = self.pop()?;
+            let value = obj.unwrap();
+
+            if value == 0 {
+                self.ip = offset_at;
+            }
+        }
+    }
+}
+```
+
+2. Diagnostics doesn't tell bytefile offset
+
+Basically:
+```
+Индексы переменных и смещения в переходах тоже нужно проверять на корректность и выдавать конкретную диагностику с привязкой к расположению байткода в файле.
+```
+
+- Changes:
+```rust
+/// Main interpreter loop
+/// Main interpreter loop
+pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    while self.ip < self.code_section_len {
+        let encoding = self.next::<u8>()?;
+        let instr = self.decode(encoding)?;
+
+        if cfg!(feature = "verbose") {
+            println!("[LOG] IP {} BYTE {} INSTR {:?}", self.ip, encoding, instr);
+        }
+
+        self.eval(&instr)
+            .map_err(|e| -> Box<dyn std::error::Error> {
+                let global_offset = std::mem::size_of::<i32>()
+                    + std::mem::size_of::<i32>()
+                    + std::mem::size_of::<i32>()
+                    + (std::mem::size_of::<i32>() * 2 * self.bf.public_symbols_number as usize)
+                    + self.bf.stringtab_size as usize
+                    + self.ip;
+
+                format!("Error at offset {}: {}", global_offset, e).into()
+            })?;
+
+        // HACK: if we encounter END instruction, while in frame 0
+        //       (a.k.a main function) we exit the interpreter
+        if let Instruction::END = instr
+            && self.frame_pointer == 0
+        {
+            break;
+        }
+    }
+
+    Ok(())
+}
+```
+
+I modifyed a compiled file to showcase how errors look now:
+```
+~/Uni/VirtualMachines/lama-rs  =>  ./target/release/lamarik -l testBAD.bc
+> 5
+Error at offset 45: Invalid store index 10/3 for global variable
+```
