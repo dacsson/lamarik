@@ -7,7 +7,7 @@ The problem:
 После отведения нескольких начальных структур может быть использована только куча рантайма Ламы. Никаких других отведений в каком-либо постороннем рантайме быть не должно. Другой памяти просто может не быть.
 ```
 
-Fixes:
+### Fixes:
 1. Remove *vector* allocations for captured variables in closure creation
 
 Instead lets use a static array.
@@ -390,3 +390,53 @@ Instruction::FAIL { line, column } => unsafe {
     // static array of one element insted of vector
     let ptr = Lstring([obj.raw()].as_mut_ptr());
 ```
+
+- Regressions: [see here](regression_builtin_funcs_no_vec.txt)
+
+5. Operand stack vector allocation
+
+About operand stack:
+```
+Разумеется, вы могли бы в самом начале отвести несколько (очень немного) стандарных векторов и сразу сказать им reserve или resize, если вам очень хочется писать на идиоматическом С++
+```
+
+Yes, my operand stack is a vector (all be it a Rust vector, not a C++ vector as stated above :-) ), but we make sure to initialize it with a good enough capacity:
+```rust
+const MAX_OPERAND_STACK_SIZE: usize = 0x7fffffff;
+
+let mut operand_stack = Vec::with_capacity(MAX_OPERAND_STACK_SIZE);
+```
+
+This, obviously, allows us to negate all reallocations during interpretation.
+
+### Proof of allocation/memory usage
+
+Again, problem:
+```
+После отведения нескольких начальных структур может быть использована только куча рантайма Ламы. Никаких других отведений в каком-либо постороннем рантайме быть не должно. Другой памяти просто может не быть.
+```
+
+And:
+```
+Даже при использовании С++ вы не модете использовать какие-либо структуры, явно или неявно динамический отводящие память в рантайме С++ после начала интерпретации файла.
+```
+
+Let's see where in our interpreter we do allocations and prove that with the fixes above we do *not* allocate memory in Rust runtime *during interpretation*.
+
+I used `valgrind --tool=massif ./target/release/lama-rs -l ../Lama/Sort.bc` to track heap usage, you can see the output [here](valgrind-massif-output.txt), but basically we can grep for our `eval` function and see that there is no heap allocations in Rust side:
+
+```
+~/Uni/VirtualMachines/lama-rs  =>  cat doc/valgrind-massif-output.txt | grep 'eval'
+~/Uni/VirtualMachines/lama-rs  =>
+```
+
+Additionally we can check for allocations in main modules: `disasm` and `interpeter`:
+
+```
+~/Uni/VirtualMachines/lama-rs  =>  cat doc/valgrind-massif-output.txt | grep 'lama_rs::disasm'
+|   ->33.51% (764B) 0x146AD0: lama_rs::disasm::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lama-rs)
+~/Uni/VirtualMachines/lama-rs  =>  cat doc/valgrind-massif-output.txt | grep 'lama_rs::interpreter'
+->100.00% (34,359,738,352B) 0x140357: lama_rs::interpreter::Interpreter::new (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lama-rs)
+```
+
+We see that interpreter does not allocate memory in Rust runtime during interpretation, only during its creation (operand stack reservation).

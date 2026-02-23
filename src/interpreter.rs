@@ -40,7 +40,12 @@ pub struct Interpreter {
     code_section_len: usize,
 }
 
+#[cfg(test)]
 const MAX_OPERAND_STACK_SIZE: usize = 0xffff;
+
+#[cfg(not(test))]
+const MAX_OPERAND_STACK_SIZE: usize = 0x7fffffff;
+
 const MAX_ARG_LEN: usize = 50;
 
 impl Interpreter {
@@ -1297,6 +1302,15 @@ impl Interpreter {
     /// Push to the operand stack
     #[inline(always)]
     fn push(&mut self, obj: Object) -> Result<(), InterpreterError> {
+        if self.operand_stack.len() >= self.operand_stack.capacity() {
+            eprintln!(
+                "length: {} vs capacity: {}",
+                self.operand_stack.len(),
+                self.operand_stack.capacity()
+            );
+            std::process::exit(1);
+        }
+
         self.operand_stack.push(obj);
         if cfg!(feature = "verbose") {
             println!("[LOG] STACK PUSH");
