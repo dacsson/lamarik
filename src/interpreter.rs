@@ -521,7 +521,6 @@ impl Interpreter {
                 }
 
                 // Collect callee provided arguments
-                // let mut arguments = Vec::new();
                 let mut arguments: [Object; MAX_ARG_LEN] = array::repeat(Object::new_empty());
                 for i in (0..*args as usize).rev() {
                     arguments[i] = self
@@ -784,14 +783,12 @@ impl Interpreter {
                                 let length =
                                     n.ok_or(InterpreterError::InvalidLengthForArray)? as usize;
 
-                                let mut elements = vec![0; length];
+                                let mut elements = [0; MAX_ARG_LEN];
                                 for i in (0..length).rev() {
                                     elements[i as usize] = self.pop()?.raw();
                                 }
 
-                                // elements.reverse();
-
-                                let array = new_array(elements);
+                                let array = new_array(&mut elements[..length]);
 
                                 self.push(
                                     Object::try_from(array)
@@ -829,7 +826,7 @@ impl Interpreter {
                             Builtin::Lstring => {
                                 let obj = self.pop()?;
 
-                                let mut slice = vec![obj.raw()];
+                                let mut slice: [i64; 1] = [obj.raw()];
 
                                 unsafe {
                                     let ptr = Lstring(slice.as_mut_ptr());
@@ -1016,7 +1013,7 @@ impl Interpreter {
             Instruction::FAIL { line, column } => unsafe {
                 let obj = self.pop()?;
 
-                let ptr = Lstring(vec![obj.raw()].as_mut_ptr());
+                let ptr = Lstring([obj.raw()].as_mut_ptr());
                 let contents = (*rtToData(ptr)).contents.as_ptr();
                 let c_str = CStr::from_ptr(contents);
                 let string = c_str

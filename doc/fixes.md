@@ -331,3 +331,62 @@ Instead lets use a static array.
 ```
 
 - Regressions: [see here](regression_begin_arguments_no_vec.txt)
+
+4. Remove *vector* allocation for builtin functions that collect arguments
+
+Instead use a static array.
+
+- Changes:
+```rust
+// elements is now a mutable reference to a slice of i64 - no need to allocate a vector
+#[inline(always)]
+fn new_array(elements: &mut [i64]) -> *mut c_void {
+    unsafe {
+        Barray(
+            elements.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
+            rtBox(elements.len() as i64), /* n args */
+        )
+    }
+}
+```
+
+```rust
+Builtin::Barray => {
+    let length =
+        n.ok_or(InterpreterError::InvalidLengthForArray)? as usize;
+    
+    // Static array to hold the arguments
+    // ! Previous - vector used
+    let mut elements = [0; MAX_ARG_LEN];
+    for i in (0..length).rev() {
+        elements[i as usize] = self.pop()?.raw();
+    }
+
+    let array = new_array(&mut elements[..length]);
+
+    self.push(
+        Object::try_from(array)
+            .map_err(|_| InterpreterError::InvalidObjectPointer)?,
+    )?;
+}
+```
+
+```rust
+Builtin::Lstring => {
+    let obj = self.pop()?;
+    
+    // Static array to hold the arguments
+    // ! Previous - vector used
+    let mut slice: [i64; 1] = [obj.raw()];
+
+    unsafe {
+        let ptr = Lstring(slice.as_mut_ptr());
+```
+
+```rust
+Instruction::FAIL { line, column } => unsafe {
+    let obj = self.pop()?;
+    
+    // static array of one element insted of vector
+    let ptr = Lstring([obj.raw()].as_mut_ptr());
+```

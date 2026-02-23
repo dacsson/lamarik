@@ -114,7 +114,7 @@ fn new_string(bytes: &[u8]) -> Result<*mut c_void, Box<dyn std::error::Error>> {
 /// Returns a pointer to *contents* of the array.
 /// To retrieve the actual array, use `rtToData`.
 #[inline(always)]
-fn new_array(mut elements: Vec<i64>) -> *mut c_void {
+fn new_array(elements: &mut [i64]) -> *mut c_void {
     unsafe {
         Barray(
             elements.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
