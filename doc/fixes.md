@@ -141,3 +141,112 @@ Instead lets use a static array.
 ```
 
 - Regressions: [see here](regression_closure_no_heap.txt)
+
+2. Remove *c-string* allocations for S-expressions and remove *vector* allocations for arguments for S-expressions
+
+Instead of using `CString` we use a borrowed `CStr`, in std:
+```
+&CStr is to CString as &str is to String: the former in each pair are borrowing references; the latter are owned strings.
+```
+
+meaning we avoid allocations by using it.
+
+- Changes:
+```rust
+            Instruction::SEXP { s_index, n_members } => {
+                // + 1 for tag hash
+                // ! Previous - args vas a `Vec<i64>`
+                let mut args = [0; MAX_ARG_LEN];
+
+                for i in (0..*n_members).rev() {
+                    args[i as usize] = self.pop()?.raw();
+                }
+
+                let tag_u8 = self
+                    .bf
+                    .get_string_at_offset(*s_index as usize)
+                    .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
+
+                if cfg!(feature = "verbose") {
+                    println!(
+                        "[LOG][Instruction::SEXP] tag_u8: {:#?}, index {}",
+                        tag_u8, s_index
+                    );
+                }
+                let c_string = CStr::from_bytes_with_nul(tag_u8)
+                    .map_err(|_| InterpreterError::InvalidCString)?;
+
+                if cfg!(feature = "verbose") {
+                    println!(
+                        "[LOG][Instruction::SEXP] c_string: {}",
+                        c_string.to_str().unwrap()
+                    );
+                }
+
+                let sexp = new_sexp(c_string, &mut args[0..*n_members as usize + 1]);
+
+                if cfg!(feature = "verbose") {
+                    unsafe {
+                        println!("[Log][SEXP] {:#?}", *rtToSexp(sexp));
+                    }
+                }
+
+                self.push(
+                    Object::try_from(sexp).map_err(|_| InterpreterError::InvalidObjectPointer)?,
+                )?;
+            }
+```
+
+```rust
+// args here is a slice provided by caller, i.e. no allocations here
+// ! Previous - args vas a `Vec<i64>`
+#[inline(always)]
+fn new_sexp(tag: &CStr, args: &mut [i64]) -> *mut c_void {
+    unsafe {
+        let tag_hash = if tag.to_bytes() == "cons".as_bytes() {
+            CONS_TAG_HASH
+        } else if tag.to_bytes() == "nil".as_bytes() {
+            NIL_TAG_HASH
+        } else {
+            // WARNING: We are responsible for ensuring lifetime of the CStr
+            //          but because LtagHash doesn't write to the CStr, i think it's safe to cast here
+            LtagHash(tag.as_ptr() as *mut c_char)
+        };
+
+        if let Some(last) = args.last_mut() {
+            *last = tag_hash;
+        }
+
+        Bsexp(
+            args.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
+            rtBox(args.len() as i64), /* n args */
+        )
+    }
+}
+```
+
+We also remove *c string* allocations for STRING creation in the same manner
+
+- Changes:
+```rust
+/// Create a new lama string.
+/// Create a new lama string.
+#[inline(always)]
+fn new_string(bytes: &[u8]) -> Result<*mut c_void, Box<dyn std::error::Error>> {
+    unsafe {
+        // ! Previous - CString owning memory
+        // let c_string = CString::new(bytes)?;
+        // let as_ptr = c_string.into_raw();
+        let c_string = CStr::from_bytes_with_nul(bytes)?;
+        let as_ptr = c_string.as_ptr();
+        
+        // ! Previous - vector allocation
+        // let mut slice = vec![as_ptr as i64];
+        let mut slice: [i64; 1] = [as_ptr as i64];
+
+        Ok(Bstring(slice.as_mut_ptr()))
+    }
+}
+```
+
+- Regressions: [see here](regression_cstr_insted_of_cstring.txt)

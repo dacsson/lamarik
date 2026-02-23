@@ -2,7 +2,10 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-use std::{ffi::CString, os::raw::c_void};
+use std::{
+    ffi::{CStr, CString},
+    os::raw::{c_char, c_void},
+};
 
 use crate::object::Object;
 
@@ -71,17 +74,21 @@ fn rtTag(x: u64) -> i32 {
 /// Returns a pointer to *contents* of the S-expression.
 /// To retrieve the actual S-expression, use `rtToSexp`.
 #[inline(always)]
-fn new_sexp(tag: CString, mut args: Vec<i64>) -> *mut c_void {
+fn new_sexp(tag: &CStr, args: &mut [i64]) -> *mut c_void {
     unsafe {
         let tag_hash = if tag.to_bytes() == "cons".as_bytes() {
             CONS_TAG_HASH
         } else if tag.to_bytes() == "nil".as_bytes() {
             NIL_TAG_HASH
         } else {
-            LtagHash(tag.into_raw())
+            // WARNING: We are responsible for ensuring lifetime of the CStr
+            //          but because LtagHash doesn't write to the CStr, i think it's safe to cast here
+            LtagHash(tag.as_ptr() as *mut c_char)
         };
 
-        args.push(tag_hash);
+        if let Some(last) = args.last_mut() {
+            *last = tag_hash;
+        }
 
         Bsexp(
             args.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
@@ -94,10 +101,10 @@ fn new_sexp(tag: CString, mut args: Vec<i64>) -> *mut c_void {
 #[inline(always)]
 fn new_string(bytes: &[u8]) -> Result<*mut c_void, Box<dyn std::error::Error>> {
     unsafe {
-        let c_string = CString::new(bytes)?;
-        let as_ptr = c_string.into_raw();
+        let c_string = CStr::from_bytes_with_nul(bytes)?;
+        let as_ptr = c_string.as_ptr();
 
-        let mut slice = vec![as_ptr as i64];
+        let mut slice: [i64; 1] = [as_ptr as i64];
 
         Ok(Bstring(slice.as_mut_ptr()))
     }

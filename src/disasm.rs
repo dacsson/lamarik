@@ -187,7 +187,7 @@ impl Bytefile {
             .iter()
             .position(|&b| b == 0)
             .ok_or(BytefileError::InvalidStringIndexInStringTable)?;
-        let buff = &slice[..first_null];
+        let buff = &slice[..=first_null];
 
         Ok(buff)
     }

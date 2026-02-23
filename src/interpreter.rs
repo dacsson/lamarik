@@ -16,6 +16,7 @@ use crate::{
 };
 use std::convert::TryFrom;
 use std::ffi::{CStr, CString};
+use std::os::raw::c_char;
 use std::panic;
 
 #[derive(Debug, Clone)]
@@ -388,6 +389,13 @@ impl Interpreter {
                 };
             }
             Instruction::SEXP { s_index, n_members } => {
+                // + 1 for tag hash
+                let mut args = [0; MAX_ARG_LEN];
+
+                for i in (0..*n_members).rev() {
+                    args[i as usize] = self.pop()?.raw();
+                }
+
                 let tag_u8 = self
                     .bf
                     .get_string_at_offset(*s_index as usize)
@@ -399,9 +407,8 @@ impl Interpreter {
                         tag_u8, s_index
                     );
                 }
-
-                let c_string =
-                    CString::new(tag_u8).map_err(|_| InterpreterError::InvalidCString)?;
+                let c_string = CStr::from_bytes_with_nul(tag_u8)
+                    .map_err(|_| InterpreterError::InvalidCString)?;
 
                 if cfg!(feature = "verbose") {
                     println!(
@@ -410,13 +417,7 @@ impl Interpreter {
                     );
                 }
 
-                let mut args = vec![0; *n_members as usize];
-
-                for i in (0..*n_members).rev() {
-                    args[i as usize] = self.pop()?.raw();
-                }
-
-                let sexp = new_sexp(c_string, args);
+                let sexp = new_sexp(c_string, &mut args[0..*n_members as usize + 1]);
 
                 if cfg!(feature = "verbose") {
                     unsafe {
@@ -988,15 +989,15 @@ impl Interpreter {
                             .get_string_at_offset(*index as usize)
                             .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
 
-                        let c_string =
-                            CString::new(tag_u8).map_err(|_| InterpreterError::InvalidCString)?;
+                        let c_string = CStr::from_bytes_with_nul(tag_u8)
+                            .map_err(|_| InterpreterError::InvalidCString)?;
 
                         let hashed_string = if c_string.to_bytes() == "cons".as_bytes() {
                             CONS_TAG_HASH
                         } else if c_string.to_bytes() == "nil".as_bytes() {
                             NIL_TAG_HASH
                         } else {
-                            LtagHash(c_string.into_raw())
+                            LtagHash(c_string.as_ptr() as *mut c_char)
                         };
 
                         if rtBox((*sexp).tag as i64) == hashed_string {
