@@ -1,0 +1,666 @@
+--------------------------------------------------------------------------------
+Command:            ./target/release/lamanyzer -l ../Lama/Sort.bc
+Massif arguments:   (none)
+ms_print arguments: massif.out.2708647
+--------------------------------------------------------------------------------
+
+
+    KB
+10.34^                                                             :        :@
+     |                                                     #:::::::::@:::@:@@@
+     |                                                     #:::::::::@:::@:@@@
+     |                                                     #:::::::::@:::@:@@@
+     |                                                  :: #:::::::::@:::@:@@@
+     |                                        :         :  #:::::::::@:::@:@@@
+     |                                        :         :  #:::::::::@:::@:@@@
+     |                                        ::::::::::: :#:::::::::@:::@:@@@
+     |                                        ::        : :#:::::::::@:::@:@@@
+     |                              ::::::::::::        : :#:::::::::@:::@:@@@
+     |                     :      : :         ::        : :#:::::::::@:::@:@@@
+     |                     :      :::         ::        : :#:::::::::@:::@:@@@
+     |                     :    @@: :         ::        : :#:::::::::@:::@:@@@
+     |                     :   :@ : :         ::        : :#:::::::::@:::@:@@@
+     |                     : :::@ : :         ::        : :#:::::::::@:::@:@@@
+     |                     : : :@ : :         ::        : :#:::::::::@:::@:@@@
+     |                     : : :@ : :         ::        : :#:::::::::@:::@:@@@
+     |               :::::@::: :@ : :         ::        : :#:::::::::@:::@:@@@
+     |               :    @::: :@ : :         ::        : :#:::::::::@:::@:@@@
+     |               :    @::: :@ : :         ::        : :#:::::::::@:::@:@@@
+   0 +----------------------------------------------------------------------->Mi
+     0                                                                   1.278
+
+Number of snapshots: 82
+ Detailed snapshots: [3, 12, 20 (peak), 37, 45, 48, 53, 63, 73]
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+  0              0                0                0             0            0
+  1        283,870              488              472            16            0
+  2        285,550            1,768            1,736            32            0
+  3        387,690            1,768            1,736            32            0
+98.19% (1,736B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->57.92% (1,024B) 0x4906BA3: _IO_file_doallocate (filedoalloc.c:101)
+| ->57.92% (1,024B) 0x4915CDF: _IO_doallocbuf (genops.c:347)
+|   ->57.92% (1,024B) 0x4914CDB: _IO_file_underflow@@GLIBC_2.2.5 (fileops.c:485)
+|     ->57.92% (1,024B) 0x4908307: getdelim (iogetdelim.c:73)
+|       ->57.92% (1,024B) 0x491E0C3: pthread_getattr_np@@GLIBC_2.32 (pthread_getattr_np.c:122)
+|         ->57.92% (1,024B) 0x1A538D: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->57.92% (1,024B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             
+->26.70% (472B) 0x490764D: __fopen_internal (iofopen.c:65)
+| ->26.70% (472B) 0x490764D: fopen@@GLIBC_2.2.5 (iofopen.c:86)
+|   ->26.70% (472B) 0x491DFB2: pthread_getattr_np@@GLIBC_2.32 (pthread_getattr_np.c:85)
+|     ->26.70% (472B) 0x1A538D: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->26.70% (472B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         
+->13.57% (240B) 0x490817D: getdelim (iogetdelim.c:102)
+| ->13.57% (240B) 0x491E0C3: pthread_getattr_np@@GLIBC_2.32 (pthread_getattr_np.c:122)
+|   ->13.57% (240B) 0x1A538D: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->13.57% (240B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       
+->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+  4        399,520            5,464            5,103           361            0
+  5        411,938            1,672            1,543           129            0
+  6        419,435            1,672            1,559           113            0
+  7        436,069            1,632            1,527           105            0
+  8        436,541            3,272            3,159           113            0
+  9        466,341            3,376            3,255           121            0
+ 10        476,565            3,976            3,847           129            0
+ 11        488,969            4,576            4,439           137            0
+ 12        494,491            4,648            4,519           129            0
+97.22% (4,519B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->35.11% (1,632B) 0x14762B: <alloc::vec::Vec<T> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<T,I>>::from_iter (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->35.11% (1,632B) 0x141F2F: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->35.11% (1,632B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->35.11% (1,632B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->35.11% (1,632B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->35.11% (1,632B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->35.11% (1,632B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             
+->16.52% (768B) 0x14559B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h0329e7d1f0d2fe29E.llvm.1181815265960304466 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->16.52% (768B) 0x145489: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | ->16.52% (768B) 0x1431ED: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |   ->16.52% (768B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |     ->16.52% (768B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |       ->16.52% (768B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |         ->16.52% (768B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |           ->16.52% (768B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |             ->16.52% (768B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |               
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->16.44% (764B) 0x148E8B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h97cc9f477b8b2523E.llvm.13397148587225309408 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->16.44% (764B) 0x149357: <std::io::buffered::bufreader::BufReader<R> as std::io::Read>::read_to_end (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->16.44% (764B) 0x14897F: lamacore::bytefile::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->16.44% (764B) 0x13BE81: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->16.44% (764B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->16.44% (764B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->16.44% (764B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->16.44% (764B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               
+->12.74% (592B) 0x144B0F: hashbrown::raw::RawTable<T,A>::reserve_rehash (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->12.74% (592B) 0x1449A1: hashbrown::rustc_entry::<impl hashbrown::map::HashMap<K,V,S,A>>::rustc_entry (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->12.74% (592B) 0x143243: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   | ->12.74% (592B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |   ->12.74% (592B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |     ->12.74% (592B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |       ->12.74% (592B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |         ->12.74% (592B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |           ->12.74% (592B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |             
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->11.70% (544B) 0x1A6EBC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->11.70% (544B) 0x1A54BE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->11.70% (544B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     
+->04.13% (192B) 0x1455B9: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h0329e7d1f0d2fe29E.llvm.1181815265960304466 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->04.13% (192B) 0x145653: alloc::raw_vec::RawVecInner<A>::reserve::do_reserve_and_handle (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | ->04.13% (192B) 0x141A10: bitvec::vec::api::<impl bitvec::vec::BitVec<T,O>>::resize (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | | ->02.07% (96B) 0x14286C: lamanyzer::analyzer::Analyzer::get_reachables (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | | | ->02.07% (96B) 0x141E8E: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | | |   ->02.07% (96B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | | |     ->02.07% (96B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | | |       ->02.07% (96B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | | |         ->02.07% (96B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | | |           ->02.07% (96B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | | |             
+| | | ->02.07% (96B) 0x14289C: lamanyzer::analyzer::Analyzer::get_reachables (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | |   ->02.07% (96B) 0x141E8E: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | |     ->02.07% (96B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | |       ->02.07% (96B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | |         ->02.07% (96B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | |           ->02.07% (96B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | |             ->02.07% (96B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | |               
+| | ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| | 
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->00.58% (27B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 13        527,152            5,824            5,687           137            0
+ 14        532,568            5,224            5,095           129            0
+ 15        567,411            5,992            5,863           129            0
+ 16        754,914            8,320            8,183           137            0
+ 17        765,636            7,144            7,015           129            0
+ 18        937,234            8,680            8,551           129            0
+ 19        974,219            7,040            6,919           121            0
+ 20        988,359           10,552           10,395           157            0
+98.51% (10,395B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->29.11% (3,072B) 0x14559B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h0329e7d1f0d2fe29E.llvm.1181815265960304466 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->29.11% (3,072B) 0x145489: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | ->29.11% (3,072B) 0x1431ED: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |   ->29.11% (3,072B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |     ->29.11% (3,072B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |       ->29.11% (3,072B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |         ->29.11% (3,072B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |           ->29.11% (3,072B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |             ->29.11% (3,072B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |               
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->25.02% (2,640B) 0x147B86: <alloc::vec::Vec<T> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<T,I>>::from_iter (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->25.02% (2,640B) 0x1414E2: <lamanyzer::analyzer::Frequency as core::fmt::Display>::fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->25.02% (2,640B) 0x1D6AA6: core::fmt::write (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->25.02% (2,640B) 0x1C4DC0: <&std::io::stdio::Stdout as std::io::Write>::write_fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->25.02% (2,640B) 0x1A4AE9: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->25.02% (2,640B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->25.02% (2,640B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->25.02% (2,640B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->25.02% (2,640B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 ->25.02% (2,640B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                   
+->21.99% (2,320B) 0x144B0F: hashbrown::raw::RawTable<T,A>::reserve_rehash (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->21.99% (2,320B) 0x1449A1: hashbrown::rustc_entry::<impl hashbrown::map::HashMap<K,V,S,A>>::rustc_entry (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->21.99% (2,320B) 0x143243: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   | ->21.99% (2,320B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |   ->21.99% (2,320B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |     ->21.99% (2,320B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |       ->21.99% (2,320B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |         ->21.99% (2,320B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |           ->21.99% (2,320B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |             
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->09.70% (1,024B) 0x1AAA8D: std::sync::once::Once::call_once_force::{{closure}} (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->09.70% (1,024B) 0x1A8CE6: std::sys::sync::once::futex::Once::call (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->09.70% (1,024B) 0x1AAEFC: std::sync::once_lock::OnceLock<T>::initialize (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->09.70% (1,024B) 0x1A4AFC: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->09.70% (1,024B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->09.70% (1,024B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->09.70% (1,024B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->09.70% (1,024B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->09.70% (1,024B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 
+->07.24% (764B) 0x148E8B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h97cc9f477b8b2523E.llvm.13397148587225309408 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->07.24% (764B) 0x149357: <std::io::buffered::bufreader::BufReader<R> as std::io::Read>::read_to_end (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->07.24% (764B) 0x14897F: lamacore::bytefile::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->07.24% (764B) 0x13BE81: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->07.24% (764B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->07.24% (764B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->07.24% (764B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->07.24% (764B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               
+->05.16% (544B) 0x1A6EBC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->05.16% (544B) 0x1A54BE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->05.16% (544B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     
+->00.29% (31B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 21      1,002,583           10,552           10,403           149            0
+ 22      1,017,825           10,512           10,391           121            0
+ 23      1,027,998           10,552           10,395           157            0
+ 24      1,042,184           10,512           10,391           121            0
+ 25      1,053,826           10,512           10,391           121            0
+ 26      1,064,153           10,576           10,427           149            0
+ 27      1,076,549           10,576           10,413           163            0
+ 28      1,087,507           10,552           10,395           157            0
+ 29      1,097,570           10,552           10,401           151            0
+ 30      1,108,622           10,552           10,403           149            0
+ 31      1,122,287           10,576           10,415           161            0
+ 32      1,136,168           10,592           10,439           153            0
+ 33      1,144,845           10,512           10,391           121            0
+ 34      1,152,904           10,552           10,415           137            0
+ 35      1,164,742           10,552           10,415           137            0
+ 36      1,179,545           10,512           10,391           121            0
+ 37      1,188,847           10,576           10,411           165            0
+98.44% (10,411B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->29.05% (3,072B) 0x14559B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h0329e7d1f0d2fe29E.llvm.1181815265960304466 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->29.05% (3,072B) 0x145489: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | ->29.05% (3,072B) 0x1431ED: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |   ->29.05% (3,072B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |     ->29.05% (3,072B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |       ->29.05% (3,072B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |         ->29.05% (3,072B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |           ->29.05% (3,072B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |             ->29.05% (3,072B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |               
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->24.96% (2,640B) 0x147B86: <alloc::vec::Vec<T> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<T,I>>::from_iter (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->24.96% (2,640B) 0x1414E2: <lamanyzer::analyzer::Frequency as core::fmt::Display>::fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->24.96% (2,640B) 0x1D6AA6: core::fmt::write (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->24.96% (2,640B) 0x1C4DC0: <&std::io::stdio::Stdout as std::io::Write>::write_fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->24.96% (2,640B) 0x1A4AE9: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->24.96% (2,640B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->24.96% (2,640B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->24.96% (2,640B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->24.96% (2,640B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 ->24.96% (2,640B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                   
+->21.94% (2,320B) 0x144B0F: hashbrown::raw::RawTable<T,A>::reserve_rehash (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->21.94% (2,320B) 0x1449A1: hashbrown::rustc_entry::<impl hashbrown::map::HashMap<K,V,S,A>>::rustc_entry (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->21.94% (2,320B) 0x143243: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   | ->21.94% (2,320B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |   ->21.94% (2,320B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |     ->21.94% (2,320B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |       ->21.94% (2,320B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |         ->21.94% (2,320B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |           ->21.94% (2,320B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |             
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->09.68% (1,024B) 0x1AAA8D: std::sync::once::Once::call_once_force::{{closure}} (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->09.68% (1,024B) 0x1A8CE6: std::sys::sync::once::futex::Once::call (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->09.68% (1,024B) 0x1AAEFC: std::sync::once_lock::OnceLock<T>::initialize (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->09.68% (1,024B) 0x1A4AFC: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->09.68% (1,024B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->09.68% (1,024B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->09.68% (1,024B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->09.68% (1,024B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->09.68% (1,024B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 
+->07.22% (764B) 0x148E8B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h97cc9f477b8b2523E.llvm.13397148587225309408 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->07.22% (764B) 0x149357: <std::io::buffered::bufreader::BufReader<R> as std::io::Read>::read_to_end (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->07.22% (764B) 0x14897F: lamacore::bytefile::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->07.22% (764B) 0x13BE81: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->07.22% (764B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->07.22% (764B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->07.22% (764B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->07.22% (764B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               
+->05.14% (544B) 0x1A6EBC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->05.14% (544B) 0x1A54BE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->05.14% (544B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     
+->00.44% (47B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 38      1,199,789           10,552           10,403           149            0
+ 39      1,207,910           10,552           10,415           137            0
+ 40      1,215,500           10,552           10,415           137            0
+ 41      1,226,096           10,552           10,403           149            0
+ 42      1,235,876           10,512           10,391           121            0
+ 43      1,242,965           10,576           10,413           163            0
+ 44      1,251,495           10,512           10,391           121            0
+ 45      1,265,042           10,552           10,415           137            0
+98.70% (10,415B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->29.11% (3,072B) 0x14559B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h0329e7d1f0d2fe29E.llvm.1181815265960304466 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->29.11% (3,072B) 0x145489: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | ->29.11% (3,072B) 0x1431ED: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |   ->29.11% (3,072B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |     ->29.11% (3,072B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |       ->29.11% (3,072B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |         ->29.11% (3,072B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |           ->29.11% (3,072B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |             ->29.11% (3,072B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |               
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->25.02% (2,640B) 0x147B86: <alloc::vec::Vec<T> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<T,I>>::from_iter (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->25.02% (2,640B) 0x1414E2: <lamanyzer::analyzer::Frequency as core::fmt::Display>::fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->25.02% (2,640B) 0x1D6AA6: core::fmt::write (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->25.02% (2,640B) 0x1C4DC0: <&std::io::stdio::Stdout as std::io::Write>::write_fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->25.02% (2,640B) 0x1A4AE9: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->25.02% (2,640B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->25.02% (2,640B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->25.02% (2,640B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->25.02% (2,640B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 ->25.02% (2,640B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                   
+->21.99% (2,320B) 0x144B0F: hashbrown::raw::RawTable<T,A>::reserve_rehash (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->21.99% (2,320B) 0x1449A1: hashbrown::rustc_entry::<impl hashbrown::map::HashMap<K,V,S,A>>::rustc_entry (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->21.99% (2,320B) 0x143243: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   | ->21.99% (2,320B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |   ->21.99% (2,320B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |     ->21.99% (2,320B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |       ->21.99% (2,320B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |         ->21.99% (2,320B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |           ->21.99% (2,320B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |             
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->09.70% (1,024B) 0x1AAA8D: std::sync::once::Once::call_once_force::{{closure}} (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->09.70% (1,024B) 0x1A8CE6: std::sys::sync::once::futex::Once::call (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->09.70% (1,024B) 0x1AAEFC: std::sync::once_lock::OnceLock<T>::initialize (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->09.70% (1,024B) 0x1A4AFC: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->09.70% (1,024B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->09.70% (1,024B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->09.70% (1,024B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->09.70% (1,024B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->09.70% (1,024B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 
+->07.24% (764B) 0x148E8B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h97cc9f477b8b2523E.llvm.13397148587225309408 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->07.24% (764B) 0x149357: <std::io::buffered::bufreader::BufReader<R> as std::io::Read>::read_to_end (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->07.24% (764B) 0x14897F: lamacore::bytefile::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->07.24% (764B) 0x13BE81: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->07.24% (764B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->07.24% (764B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->07.24% (764B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->07.24% (764B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               
+->05.16% (544B) 0x1A6EBC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->05.16% (544B) 0x1A54BE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->05.16% (544B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     
+->00.48% (51B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 46      1,275,464           10,552           10,415           137            0
+ 47      1,283,914           10,552           10,401           151            0
+ 48      1,291,743           10,576           10,427           149            0
+98.59% (10,427B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->29.05% (3,072B) 0x14559B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h0329e7d1f0d2fe29E.llvm.1181815265960304466 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->29.05% (3,072B) 0x145489: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | ->29.05% (3,072B) 0x1431ED: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |   ->29.05% (3,072B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |     ->29.05% (3,072B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |       ->29.05% (3,072B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |         ->29.05% (3,072B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |           ->29.05% (3,072B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |             ->29.05% (3,072B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |               
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->24.96% (2,640B) 0x147B86: <alloc::vec::Vec<T> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<T,I>>::from_iter (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->24.96% (2,640B) 0x1414E2: <lamanyzer::analyzer::Frequency as core::fmt::Display>::fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->24.96% (2,640B) 0x1D6AA6: core::fmt::write (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->24.96% (2,640B) 0x1C4DC0: <&std::io::stdio::Stdout as std::io::Write>::write_fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->24.96% (2,640B) 0x1A4AE9: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->24.96% (2,640B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->24.96% (2,640B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->24.96% (2,640B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->24.96% (2,640B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 ->24.96% (2,640B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                   
+->21.94% (2,320B) 0x144B0F: hashbrown::raw::RawTable<T,A>::reserve_rehash (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->21.94% (2,320B) 0x1449A1: hashbrown::rustc_entry::<impl hashbrown::map::HashMap<K,V,S,A>>::rustc_entry (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->21.94% (2,320B) 0x143243: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   | ->21.94% (2,320B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |   ->21.94% (2,320B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |     ->21.94% (2,320B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |       ->21.94% (2,320B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |         ->21.94% (2,320B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |           ->21.94% (2,320B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |             
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->09.68% (1,024B) 0x1AAA8D: std::sync::once::Once::call_once_force::{{closure}} (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->09.68% (1,024B) 0x1A8CE6: std::sys::sync::once::futex::Once::call (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->09.68% (1,024B) 0x1AAEFC: std::sync::once_lock::OnceLock<T>::initialize (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->09.68% (1,024B) 0x1A4AFC: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->09.68% (1,024B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->09.68% (1,024B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->09.68% (1,024B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->09.68% (1,024B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->09.68% (1,024B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 
+->07.22% (764B) 0x148E8B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h97cc9f477b8b2523E.llvm.13397148587225309408 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->07.22% (764B) 0x149357: <std::io::buffered::bufreader::BufReader<R> as std::io::Read>::read_to_end (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->07.22% (764B) 0x14897F: lamacore::bytefile::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->07.22% (764B) 0x13BE81: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->07.22% (764B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->07.22% (764B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->07.22% (764B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->07.22% (764B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               
+->05.14% (544B) 0x1A6EBC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->05.14% (544B) 0x1A54BE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->05.14% (544B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     
+->00.60% (63B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 49      1,301,760           10,552           10,395           157            0
+ 50      1,302,638           10,576           10,418           158            0
+ 51      1,304,053           10,552           10,415           137            0
+ 52      1,305,569           10,512           10,391           121            0
+ 53      1,306,414           10,576           10,423           153            0
+98.55% (10,423B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->29.05% (3,072B) 0x14559B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h0329e7d1f0d2fe29E.llvm.1181815265960304466 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->29.05% (3,072B) 0x145489: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | ->29.05% (3,072B) 0x1431ED: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |   ->29.05% (3,072B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |     ->29.05% (3,072B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |       ->29.05% (3,072B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |         ->29.05% (3,072B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |           ->29.05% (3,072B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |             ->29.05% (3,072B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |               
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->24.96% (2,640B) 0x147B86: <alloc::vec::Vec<T> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<T,I>>::from_iter (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->24.96% (2,640B) 0x1414E2: <lamanyzer::analyzer::Frequency as core::fmt::Display>::fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->24.96% (2,640B) 0x1D6AA6: core::fmt::write (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->24.96% (2,640B) 0x1C4DC0: <&std::io::stdio::Stdout as std::io::Write>::write_fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->24.96% (2,640B) 0x1A4AE9: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->24.96% (2,640B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->24.96% (2,640B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->24.96% (2,640B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->24.96% (2,640B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 ->24.96% (2,640B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                   
+->21.94% (2,320B) 0x144B0F: hashbrown::raw::RawTable<T,A>::reserve_rehash (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->21.94% (2,320B) 0x1449A1: hashbrown::rustc_entry::<impl hashbrown::map::HashMap<K,V,S,A>>::rustc_entry (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->21.94% (2,320B) 0x143243: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   | ->21.94% (2,320B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |   ->21.94% (2,320B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |     ->21.94% (2,320B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |       ->21.94% (2,320B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |         ->21.94% (2,320B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |           ->21.94% (2,320B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |             
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->09.68% (1,024B) 0x1AAA8D: std::sync::once::Once::call_once_force::{{closure}} (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->09.68% (1,024B) 0x1A8CE6: std::sys::sync::once::futex::Once::call (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->09.68% (1,024B) 0x1AAEFC: std::sync::once_lock::OnceLock<T>::initialize (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->09.68% (1,024B) 0x1A4AFC: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->09.68% (1,024B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->09.68% (1,024B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->09.68% (1,024B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->09.68% (1,024B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->09.68% (1,024B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 
+->07.22% (764B) 0x148E8B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h97cc9f477b8b2523E.llvm.13397148587225309408 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->07.22% (764B) 0x149357: <std::io::buffered::bufreader::BufReader<R> as std::io::Read>::read_to_end (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->07.22% (764B) 0x14897F: lamacore::bytefile::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->07.22% (764B) 0x13BE81: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->07.22% (764B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->07.22% (764B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->07.22% (764B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->07.22% (764B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               
+->05.14% (544B) 0x1A6EBC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->05.14% (544B) 0x1A54BE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->05.14% (544B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     
+->00.56% (59B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 54      1,307,818           10,552           10,419           133            0
+ 55      1,310,102           10,552           10,395           157            0
+ 56      1,310,637           10,592           10,423           169            0
+ 57      1,312,386           10,552           10,395           157            0
+ 58      1,313,037           10,576           10,415           161            0
+ 59      1,314,679           10,552           10,403           149            0
+ 60      1,316,220           10,512           10,391           121            0
+ 61      1,316,720           10,592           10,423           169            0
+ 62      1,318,469           10,552           10,395           157            0
+ 63      1,319,431           10,576           10,415           161            0
+98.48% (10,415B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->29.05% (3,072B) 0x14559B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h0329e7d1f0d2fe29E.llvm.1181815265960304466 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->29.05% (3,072B) 0x145489: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | ->29.05% (3,072B) 0x1431ED: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |   ->29.05% (3,072B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |     ->29.05% (3,072B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |       ->29.05% (3,072B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |         ->29.05% (3,072B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |           ->29.05% (3,072B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |             ->29.05% (3,072B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |               
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->24.96% (2,640B) 0x147B86: <alloc::vec::Vec<T> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<T,I>>::from_iter (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->24.96% (2,640B) 0x1414E2: <lamanyzer::analyzer::Frequency as core::fmt::Display>::fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->24.96% (2,640B) 0x1D6AA6: core::fmt::write (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->24.96% (2,640B) 0x1C4DC0: <&std::io::stdio::Stdout as std::io::Write>::write_fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->24.96% (2,640B) 0x1A4AE9: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->24.96% (2,640B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->24.96% (2,640B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->24.96% (2,640B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->24.96% (2,640B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 ->24.96% (2,640B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                   
+->21.94% (2,320B) 0x144B0F: hashbrown::raw::RawTable<T,A>::reserve_rehash (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->21.94% (2,320B) 0x1449A1: hashbrown::rustc_entry::<impl hashbrown::map::HashMap<K,V,S,A>>::rustc_entry (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->21.94% (2,320B) 0x143243: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   | ->21.94% (2,320B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |   ->21.94% (2,320B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |     ->21.94% (2,320B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |       ->21.94% (2,320B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |         ->21.94% (2,320B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |           ->21.94% (2,320B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |             
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->09.68% (1,024B) 0x1AAA8D: std::sync::once::Once::call_once_force::{{closure}} (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->09.68% (1,024B) 0x1A8CE6: std::sys::sync::once::futex::Once::call (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->09.68% (1,024B) 0x1AAEFC: std::sync::once_lock::OnceLock<T>::initialize (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->09.68% (1,024B) 0x1A4AFC: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->09.68% (1,024B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->09.68% (1,024B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->09.68% (1,024B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->09.68% (1,024B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->09.68% (1,024B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 
+->07.22% (764B) 0x148E8B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h97cc9f477b8b2523E.llvm.13397148587225309408 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->07.22% (764B) 0x149357: <std::io::buffered::bufreader::BufReader<R> as std::io::Read>::read_to_end (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->07.22% (764B) 0x14897F: lamacore::bytefile::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->07.22% (764B) 0x13BE81: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->07.22% (764B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->07.22% (764B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->07.22% (764B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->07.22% (764B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               
+->05.14% (544B) 0x1A6EBC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->05.14% (544B) 0x1A54BE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->05.14% (544B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     
+->00.48% (51B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 64      1,321,168           10,552           10,405           147            0
+ 65      1,322,176           10,576           10,413           163            0
+ 66      1,322,715           10,592           10,425           167            0
+ 67      1,324,191           10,552           10,401           151            0
+ 68      1,324,960           10,552           10,415           137            0
+ 69      1,326,043           10,512           10,391           121            0
+ 70      1,326,603           10,576           10,415           161            0
+ 71      1,327,142           10,592           10,427           165            0
+ 72      1,328,700           10,552           10,403           149            0
+ 73      1,329,235           10,592           10,419           173            0
+98.37% (10,419B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->29.00% (3,072B) 0x14559B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h0329e7d1f0d2fe29E.llvm.1181815265960304466 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->29.00% (3,072B) 0x145489: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| | ->29.00% (3,072B) 0x1431ED: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |   ->29.00% (3,072B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |     ->29.00% (3,072B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |       ->29.00% (3,072B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |         ->29.00% (3,072B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |           ->29.00% (3,072B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |             ->29.00% (3,072B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| |               
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->24.92% (2,640B) 0x147B86: <alloc::vec::Vec<T> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<T,I>>::from_iter (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->24.92% (2,640B) 0x1414E2: <lamanyzer::analyzer::Frequency as core::fmt::Display>::fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->24.92% (2,640B) 0x1D6AA6: core::fmt::write (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->24.92% (2,640B) 0x1C4DC0: <&std::io::stdio::Stdout as std::io::Write>::write_fmt (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->24.92% (2,640B) 0x1A4AE9: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->24.92% (2,640B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->24.92% (2,640B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->24.92% (2,640B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->24.92% (2,640B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 ->24.92% (2,640B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                   
+->21.90% (2,320B) 0x144B0F: hashbrown::raw::RawTable<T,A>::reserve_rehash (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->21.90% (2,320B) 0x1449A1: hashbrown::rustc_entry::<impl hashbrown::map::HashMap<K,V,S,A>>::rustc_entry (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->21.90% (2,320B) 0x143243: lamanyzer::analyzer::Frequency::add_instruction_pair (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   | ->21.90% (2,320B) 0x142009: lamanyzer::analyzer::Analyzer::get_frequency (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |   ->21.90% (2,320B) 0x13C12E: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |     ->21.90% (2,320B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |       ->21.90% (2,320B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |         ->21.90% (2,320B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |           ->21.90% (2,320B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   |             
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->09.67% (1,024B) 0x1AAA8D: std::sync::once::Once::call_once_force::{{closure}} (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->09.67% (1,024B) 0x1A8CE6: std::sys::sync::once::futex::Once::call (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->09.67% (1,024B) 0x1AAEFC: std::sync::once_lock::OnceLock<T>::initialize (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->09.67% (1,024B) 0x1A4AFC: std::io::stdio::_print (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->09.67% (1,024B) 0x13C24F: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->09.67% (1,024B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->09.67% (1,024B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->09.67% (1,024B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               ->09.67% (1,024B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|                 
+->07.21% (764B) 0x148E8B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h97cc9f477b8b2523E.llvm.13397148587225309408 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->07.21% (764B) 0x149357: <std::io::buffered::bufreader::BufReader<R> as std::io::Read>::read_to_end (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->07.21% (764B) 0x14897F: lamacore::bytefile::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     ->07.21% (764B) 0x13BE81: lamanyzer::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|       ->07.21% (764B) 0x13DF92: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|         ->07.21% (764B) 0x13DF78: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h2f4edaeeb02b8290E.llvm.6043995572677760945 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|           ->07.21% (764B) 0x1A5585: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|             ->07.21% (764B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|               
+->05.14% (544B) 0x1A6EBC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+| ->05.14% (544B) 0x1A54BE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|   ->05.14% (544B) 0x13C744: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamanyzer)
+|     
+->00.52% (55B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 74      1,330,977           10,552           10,395           157            0
+ 75      1,331,745           10,552           10,415           137            0
+ 76      1,333,274           10,552           10,415           137            0
+ 77      1,333,809           10,592           10,423           169            0
+ 78      1,335,558           10,552           10,395           157            0
+ 79      1,337,390           10,512           10,391           121            0
+ 80      1,338,889           10,512           10,391           121            0
+ 81      1,339,563              600              553            47            0

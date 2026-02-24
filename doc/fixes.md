@@ -662,3 +662,24 @@ This layer is a `lamacore` crate (library), it exposes:
 ```
 
 All other tools will use this crate.
+
+## 4. Idiom analyzer
+
+1. Analyzer doesnt walk reachable code
+
+Analyzer should start from public symbols (can be more then one!) and then walk to every reachable offset.
+
+Comments:
+```
+Анализатор идиом вообще делает что-то странное, игнорируя достижимость кода и точки входа потока управления.
+```
+
+```
+Анализировать нужно весь достижимый от точек входа (смещений публичных символов) код.
+```
+
+```
+Там ограничение по памяти 16х размер входного файла на все структуры данных в сумме.
+```
+
+- Changes: algorithm is changed entirely, please look at `lamanyzer/src/analyzer.rs`, for memory usage info look at `lamanyzer/README.md`

@@ -1,0 +1,1240 @@
+--------------------------------------------------------------------------------
+Command:            ./target/release/lamarik -l ../Lama/Sort.bc
+Massif arguments:   (none)
+ms_print arguments: massif.out.2579019
+--------------------------------------------------------------------------------
+
+
+    GB
+32.00^:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+     |:                                                                      #
+   0 +----------------------------------------------------------------------->Ti
+     0                                                                   2.036
+
+Number of snapshots: 90
+ Detailed snapshots: [5, 17, 33, 43, 47, 58, 68, 78, 80, 83, 86 (peak)]
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+  0              0                0                0             0            0
+  1        327,432              488              472            16            0
+  2        327,975              624              592            32            0
+  3        328,154            1,656            1,616            40            0
+  4        329,112            1,768            1,736            32            0
+  5        431,254            1,768            1,736            32            0
+98.19% (1,736B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->57.92% (1,024B) 0x4906BA3: _IO_file_doallocate (filedoalloc.c:101)
+| ->57.92% (1,024B) 0x4915CDF: _IO_doallocbuf (genops.c:347)
+|   ->57.92% (1,024B) 0x4914CDB: _IO_file_underflow@@GLIBC_2.2.5 (fileops.c:485)
+|     ->57.92% (1,024B) 0x4908307: getdelim (iogetdelim.c:73)
+|       ->57.92% (1,024B) 0x491E0C3: pthread_getattr_np@@GLIBC_2.32 (pthread_getattr_np.c:122)
+|         ->57.92% (1,024B) 0x1A687D: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|           ->57.92% (1,024B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|             
+->26.70% (472B) 0x490764D: __fopen_internal (iofopen.c:65)
+| ->26.70% (472B) 0x490764D: fopen@@GLIBC_2.2.5 (iofopen.c:86)
+|   ->26.70% (472B) 0x491DFB2: pthread_getattr_np@@GLIBC_2.32 (pthread_getattr_np.c:85)
+|     ->26.70% (472B) 0x1A687D: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       ->26.70% (472B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|         
+->13.57% (240B) 0x490817D: getdelim (iogetdelim.c:102)
+| ->13.57% (240B) 0x491E0C3: pthread_getattr_np@@GLIBC_2.32 (pthread_getattr_np.c:122)
+|   ->13.57% (240B) 0x1A687D: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->13.57% (240B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       
+->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+  6        431,650               40               32             8            0
+  7        432,491              208              184            24            0
+  8        432,734                0                0             0            0
+  9        433,241              576              548            28            0
+ 10        433,714              648              612            36            0
+ 11        434,177            1,064            1,012            52            0
+ 12        434,633            1,104            1,032            72            0
+ 13        435,139            3,512            3,432            80            0
+ 14        435,479            3,536            3,448            88            0
+ 15        435,935            3,576            3,477            99            0
+ 16        436,335            3,600            3,482           118            0
+ 17        436,502            3,624            3,498           126            0
+96.52% (3,498B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->79.94% (2,897B) 0x17FF89: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h8cefdfbe8f592b46E.llvm.3258508165875048630 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->66.23% (2,400B) 0x17FDE9: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->66.23% (2,400B) 0x14FE55: clap_builder::builder::command::Command::arg_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->66.23% (2,400B) 0x13E601: <lamarik::Args as clap_builder::derive::CommandFactory>::command (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->66.23% (2,400B) 0x13F23D: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->66.23% (2,400B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->66.23% (2,400B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->66.23% (2,400B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->66.23% (2,400B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               
+| ->10.60% (384B) 0x17FD79: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->10.60% (384B) 0x13E19F: <lamarik::Args as clap_builder::derive::CommandFactory>::command (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->10.60% (384B) 0x13F23D: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->10.60% (384B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->10.60% (384B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->10.60% (384B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->10.60% (384B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             
+| ->01.77% (64B) 0x17FC99: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->01.77% (64B) 0x142232: clap_builder::builder::arg_group::ArgGroup::args (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->01.77% (64B) 0x13E17F: <lamarik::Args as clap_builder::derive::CommandFactory>::command (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->01.77% (64B) 0x13F23D: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->01.77% (64B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->01.77% (64B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->01.77% (64B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->01.77% (64B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               
+| ->01.35% (49B) 0x1800E3: alloc::raw_vec::RawVecInner<A>::reserve::do_reserve_and_handle (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->01.35% (49B) 0x175733: <clap_builder::builder::styled_str::StyledStr as core::convert::From<&str>>::from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->01.35% (49B) in 2 places, all below massif's threshold (1.00%)
+|       
+->15.01% (544B) 0x1A83AC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->15.01% (544B) 0x1A69AE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->15.01% (544B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     
+->01.57% (57B) in 11 places, all below massif's threshold (1.00%)
+  
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 18        437,059            3,664            3,526           138            0
+ 19        437,581            3,752            3,598           154            0
+ 20        437,772            3,816            3,624           192            0
+ 21        438,160            3,856            3,663           193            0
+ 22        438,568            3,880            3,670           210            0
+ 23        438,819            3,920            3,686           234            0
+ 24        439,164            3,880            3,670           210            0
+ 25        439,664            3,944            3,696           248            0
+ 26        440,155            4,208            3,952           256            0
+ 27        441,212            4,232            3,967           265            0
+ 28        441,332            4,336            4,063           273            0
+ 29        441,834            4,424            4,127           297            0
+ 30        442,249            5,056            4,735           321            0
+ 31        442,565            5,160            4,831           329            0
+ 32        443,047            5,464            5,096           368            0
+ 33        443,604            5,648            5,247           401            0
+92.90% (5,247B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->69.53% (3,927B) 0x17FF89: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h8cefdfbe8f592b46E.llvm.3258508165875048630 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->42.49% (2,400B) 0x17FDE9: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->42.49% (2,400B) 0x14FE55: clap_builder::builder::command::Command::arg_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->42.49% (2,400B) 0x13E601: <lamarik::Args as clap_builder::derive::CommandFactory>::command (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->42.49% (2,400B) 0x13F23D: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->42.49% (2,400B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->42.49% (2,400B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->42.49% (2,400B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->42.49% (2,400B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               
+| ->07.37% (416B) 0x17FE59: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->07.37% (416B) 0x17C150: _ZN12clap_builder4util8flat_map18Entry$LT$K$C$V$GT$9or_insert17he7ef81c7d4b4076bE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->07.37% (416B) 0x17D496: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->07.37% (416B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->07.37% (416B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->07.37% (416B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->07.37% (416B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->07.37% (416B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               ->07.37% (416B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                 ->07.37% (416B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                   ->07.37% (416B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                     ->07.37% (416B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                       ->07.37% (416B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                         ->07.37% (416B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                           
+| ->06.80% (384B) 0x17FC29: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->03.40% (192B) 0x17E207: _ZN12clap_builder6parser7matches11matched_arg10MatchedArg13new_val_group17h741d2b4c0359c95dE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->01.70% (96B) 0x166A4A: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | | ->01.70% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   ->01.70% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |     ->01.70% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |       ->01.70% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |         ->01.70% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |           ->01.70% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |             ->01.70% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |               ->01.70% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                 ->01.70% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                   ->01.70% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                     
+| | | ->01.70% (96B) 0x17D4BE: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |   ->01.70% (96B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     ->01.70% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |       ->01.70% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |         ->01.70% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |           ->01.70% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |             ->01.70% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |               ->01.70% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                 ->01.70% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                   ->01.70% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                     ->01.70% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                       ->01.70% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                         
+| | ->03.40% (192B) 0x17E256: _ZN12clap_builder6parser7matches11matched_arg10MatchedArg13new_val_group17h741d2b4c0359c95dE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->01.70% (96B) 0x166A4A: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | ->01.70% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |   ->01.70% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |     ->01.70% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |       ->01.70% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |         ->01.70% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |           ->01.70% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |             ->01.70% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |               ->01.70% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |                 ->01.70% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |                   ->01.70% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |                     
+| |   ->01.70% (96B) 0x17D4BE: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->01.70% (96B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->01.70% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->01.70% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->01.70% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->01.70% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               ->01.70% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                 ->01.70% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                   ->01.70% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                     ->01.70% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                       ->01.70% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                         ->01.70% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                           
+| ->06.80% (384B) 0x17FD79: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->06.80% (384B) 0x13E19F: <lamarik::Args as clap_builder::derive::CommandFactory>::command (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->06.80% (384B) 0x13F23D: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->06.80% (384B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->06.80% (384B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->06.80% (384B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->06.80% (384B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             
+| ->02.27% (128B) 0x17FB49: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->02.27% (128B) 0x17CD39: clap_builder::parser::arg_matcher::ArgMatcher::add_val_to (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->02.27% (128B) 0x1669D3: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->02.27% (128B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->02.27% (128B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->02.27% (128B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->02.27% (128B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->02.27% (128B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               ->02.27% (128B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                 ->02.27% (128B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                   ->02.27% (128B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                     ->02.27% (128B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                       ->02.27% (128B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                         
+| ->02.27% (128B) 0x17FC99: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->01.13% (64B) 0x142232: clap_builder::builder::arg_group::ArgGroup::args (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->01.13% (64B) 0x13E17F: <lamarik::Args as clap_builder::derive::CommandFactory>::command (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |   ->01.13% (64B) 0x13F23D: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     ->01.13% (64B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |       ->01.13% (64B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |         ->01.13% (64B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |           ->01.13% (64B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |             
+| | ->01.13% (64B) 0x17C121: _ZN12clap_builder4util8flat_map18Entry$LT$K$C$V$GT$9or_insert17he7ef81c7d4b4076bE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->01.13% (64B) 0x17D496: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->01.13% (64B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->01.13% (64B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->01.13% (64B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->01.13% (64B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->01.13% (64B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               ->01.13% (64B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                 ->01.13% (64B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                   ->01.13% (64B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                     ->01.13% (64B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                       ->01.13% (64B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                         ->01.13% (64B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                           
+| ->01.54% (87B) 0x1800E3: alloc::raw_vec::RawVecInner<A>::reserve::do_reserve_and_handle (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->01.36% (77B) 0x175733: <clap_builder::builder::styled_str::StyledStr as core::convert::From<&str>>::from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | ->01.36% (77B) in 3 places, all below massif's threshold (1.00%)
+|   |   
+|   ->00.18% (10B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->09.63% (544B) 0x1A83AC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->09.63% (544B) 0x1A69AE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->09.63% (544B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     
+->04.53% (256B) 0x17FF6B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h8cefdfbe8f592b46E.llvm.3258508165875048630 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->04.53% (256B) 0x17FB49: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->04.53% (256B) 0x196CD3: clap_builder::mkeymap::MKeyMap::_build (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->04.53% (256B) 0x14EFD3: clap_builder::builder::command::Command::_build_self (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       ->04.53% (256B) 0x1536C7: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|         ->04.53% (256B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|           ->04.53% (256B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|             ->04.53% (256B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|               ->04.53% (256B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                 ->04.53% (256B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                   ->04.53% (256B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                     
+->04.11% (232B) in 22 places, all below massif's threshold (1.00%)
+| 
+->03.40% (192B) 0x1BCEBC: alloc::raw_vec::RawVecInner<A>::finish_grow (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->03.40% (192B) 0x1BC9DE: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->01.70% (96B) 0x162D65: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | ->01.70% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |   ->01.70% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |     ->01.70% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |       ->01.70% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |         ->01.70% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |           ->01.70% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |             ->01.70% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |               
+|   ->01.70% (96B) 0x17CD90: clap_builder::parser::arg_matcher::ArgMatcher::add_val_to (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->01.70% (96B) 0x1669D3: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       ->01.70% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|         ->01.70% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|           ->01.70% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|             ->01.70% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|               ->01.70% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                 ->01.70% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                   ->01.70% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                     ->01.70% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                       ->01.70% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                         ->01.70% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                           
+->01.70% (96B) 0x14462F: <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+  ->01.70% (96B) 0x13B529: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+    ->01.70% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+      ->01.70% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+        ->01.70% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+          ->01.70% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+            ->01.70% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+              
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 34        443,949            5,888            5,471           417            0
+ 35        444,507            5,904            5,436           468            0
+ 36        444,953            6,008            5,532           476            0
+ 37        445,511            6,288            5,780           508            0
+ 38        445,857            6,432            5,908           524            0
+ 39        446,091            6,608            6,084           524            0
+ 40        446,553            6,680            6,148           532            0
+ 41        446,678            6,784            6,244           540            0
+ 42        447,520            6,824            6,252           572            0
+ 43        447,775            6,864            6,284           580            0
+91.55% (6,284B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->67.47% (4,631B) 0x17FF89: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h8cefdfbe8f592b46E.llvm.3258508165875048630 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->34.97% (2,400B) 0x17FDE9: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->34.97% (2,400B) 0x14FE55: clap_builder::builder::command::Command::arg_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->34.97% (2,400B) 0x13E601: <lamarik::Args as clap_builder::derive::CommandFactory>::command (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->34.97% (2,400B) 0x13F23D: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->34.97% (2,400B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->34.97% (2,400B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->34.97% (2,400B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->34.97% (2,400B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               
+| ->09.79% (672B) 0x17FC29: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->04.20% (288B) 0x17E207: _ZN12clap_builder6parser7matches11matched_arg10MatchedArg13new_val_group17h741d2b4c0359c95dE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->02.80% (192B) 0x17D4BE: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | | ->02.80% (192B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   ->01.40% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   | ->01.40% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |   ->01.40% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |     ->01.40% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |       ->01.40% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |         ->01.40% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |           ->01.40% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |             ->01.40% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |               ->01.40% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |                 ->01.40% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |                   
+| | | |   ->01.40% (96B) 0x16976C: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |     ->01.40% (96B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |       ->01.40% (96B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |         ->01.40% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |           ->01.40% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |             ->01.40% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |               ->01.40% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                 ->01.40% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                   ->01.40% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                     ->01.40% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                       
+| | | ->01.40% (96B) 0x166A4A: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |   ->01.40% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     ->01.40% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |       ->01.40% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |         ->01.40% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |           ->01.40% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |             ->01.40% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |               ->01.40% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                 ->01.40% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                   ->01.40% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                     ->01.40% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                       
+| | ->04.20% (288B) 0x17E256: _ZN12clap_builder6parser7matches11matched_arg10MatchedArg13new_val_group17h741d2b4c0359c95dE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->02.80% (192B) 0x17D4BE: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | | ->02.80% (192B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   ->01.40% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   | ->01.40% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |   ->01.40% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |     ->01.40% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |       ->01.40% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |         ->01.40% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |           ->01.40% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |             ->01.40% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |               ->01.40% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |                 ->01.40% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |                   
+| | | |   ->01.40% (96B) 0x16976C: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |     ->01.40% (96B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |       ->01.40% (96B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |         ->01.40% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |           ->01.40% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |             ->01.40% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |               ->01.40% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                 ->01.40% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                   ->01.40% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                     ->01.40% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                       
+| | | ->01.40% (96B) 0x166A4A: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |   ->01.40% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     ->01.40% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |       ->01.40% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |         ->01.40% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |           ->01.40% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |             ->01.40% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |               ->01.40% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                 ->01.40% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                   ->01.40% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                     ->01.40% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                       
+| | ->01.40% (96B) 0x17C50E: clap_builder::util::flat_map::FlatMap<K,V>::extend_unchecked (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->01.40% (96B) 0x183565: clap_builder::parser::validator::Validator::validate (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->01.40% (96B) 0x1657F9: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->01.40% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->01.40% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->01.40% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->01.40% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               ->01.40% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                 ->01.40% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                   ->01.40% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                     
+| ->06.06% (416B) 0x17FE59: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->06.06% (416B) 0x17C150: _ZN12clap_builder4util8flat_map18Entry$LT$K$C$V$GT$9or_insert17he7ef81c7d4b4076bE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->06.06% (416B) 0x17D496: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->06.06% (416B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->06.06% (416B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->06.06% (416B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->06.06% (416B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->06.06% (416B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               ->06.06% (416B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                 ->06.06% (416B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                   ->06.06% (416B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                     ->06.06% (416B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                       ->06.06% (416B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                         ->06.06% (416B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                           
+| ->05.59% (384B) 0x17FB49: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->05.59% (384B) 0x17CD39: clap_builder::parser::arg_matcher::ArgMatcher::add_val_to (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->03.73% (256B) 0x160E5B: clap_builder::parser::parser::Parser::push_arg_values (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | ->01.86% (128B) 0x1691C7: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | | ->01.86% (128B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |   ->01.86% (128B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |     ->01.86% (128B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |       ->01.86% (128B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |         ->01.86% (128B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |           ->01.86% (128B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |             ->01.86% (128B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |               ->01.86% (128B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |                 ->01.86% (128B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |                   
+| |   | ->01.86% (128B) 0x169786: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |   ->01.86% (128B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |     ->01.86% (128B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |       ->01.86% (128B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |         ->01.86% (128B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |           ->01.86% (128B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |             ->01.86% (128B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |               ->01.86% (128B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |                 ->01.86% (128B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |                   ->01.86% (128B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |                     
+| |   ->01.86% (128B) 0x1669D3: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->01.86% (128B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->01.86% (128B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->01.86% (128B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->01.86% (128B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->01.86% (128B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               ->01.86% (128B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                 ->01.86% (128B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                   ->01.86% (128B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                     ->01.86% (128B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                       ->01.86% (128B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                         
+| ->05.59% (384B) 0x17FD79: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->05.59% (384B) 0x13E19F: <lamarik::Args as clap_builder::derive::CommandFactory>::command (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->05.59% (384B) 0x13F23D: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->05.59% (384B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->05.59% (384B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->05.59% (384B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->05.59% (384B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             
+| ->02.80% (192B) 0x17FC99: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->02.80% (192B) in 3 places, all below massif's threshold (1.00%)
+| |   
+| ->01.40% (96B) 0x17FD09: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->01.40% (96B) in 2 places, all below massif's threshold (1.00%)
+| |   
+| ->01.27% (87B) 0x1800E3: alloc::raw_vec::RawVecInner<A>::reserve::do_reserve_and_handle (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->01.12% (77B) 0x175733: <clap_builder::builder::styled_str::StyledStr as core::convert::From<&str>>::from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | ->01.12% (77B) in 3 places, all below massif's threshold (1.00%)
+|   |   
+|   ->00.15% (10B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->07.93% (544B) 0x1A83AC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->07.93% (544B) 0x1A69AE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->07.93% (544B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     
+->04.20% (288B) 0x1BCEBC: alloc::raw_vec::RawVecInner<A>::finish_grow (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->04.20% (288B) 0x1BC9DE: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->04.20% (288B) 0x17CD90: clap_builder::parser::arg_matcher::ArgMatcher::add_val_to (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | ->02.80% (192B) 0x160E5B: clap_builder::parser::parser::Parser::push_arg_values (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | ->01.40% (96B) 0x1691C7: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | | ->01.40% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |   ->01.40% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |     ->01.40% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |       ->01.40% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |         ->01.40% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |           ->01.40% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |             ->01.40% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |               ->01.40% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |                 ->01.40% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |                   
+|   | | ->01.40% (96B) 0x169786: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |   ->01.40% (96B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |     ->01.40% (96B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |       ->01.40% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |         ->01.40% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |           ->01.40% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |             ->01.40% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |               ->01.40% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |                 ->01.40% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |                   ->01.40% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |                     
+|   | ->01.40% (96B) 0x1669D3: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |   ->01.40% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |     ->01.40% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |       ->01.40% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |         ->01.40% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |           ->01.40% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |             ->01.40% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |               ->01.40% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |                 ->01.40% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |                   ->01.40% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |                     ->01.40% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |                       
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->03.92% (269B) in 26 places, all below massif's threshold (1.00%)
+| 
+->03.73% (256B) 0x17FF6B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h8cefdfbe8f592b46E.llvm.3258508165875048630 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->03.73% (256B) 0x17FB49: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->03.73% (256B) 0x196CD3: clap_builder::mkeymap::MKeyMap::_build (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->03.73% (256B) 0x14EFD3: clap_builder::builder::command::Command::_build_self (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       ->03.73% (256B) 0x1536C7: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|         ->03.73% (256B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|           ->03.73% (256B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|             ->03.73% (256B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|               ->03.73% (256B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                 ->03.73% (256B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                   ->03.73% (256B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                     
+->02.91% (200B) 0x15034B: clap_builder::builder::command::Command::required_graph (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->02.91% (200B) 0x1657E6: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->02.91% (200B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->02.91% (200B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       ->02.91% (200B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|         ->02.91% (200B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|           ->02.91% (200B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|             ->02.91% (200B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|               ->02.91% (200B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                 
+->01.40% (96B) 0x14462F: <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+  ->01.40% (96B) 0x13B529: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+    ->01.40% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+      ->01.40% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+        ->01.40% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+          ->01.40% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+            ->01.40% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+              
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 44        447,810            6,784            6,244           540            0
+ 45        448,575            6,712            6,180           532            0
+ 46        448,886            6,352            5,860           492            0
+ 47        449,168            6,176            5,740           436            0
+92.94% (5,740B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->71.88% (4,439B) 0x17FF89: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h8cefdfbe8f592b46E.llvm.3258508165875048630 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->38.86% (2,400B) 0x17FDE9: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->38.86% (2,400B) 0x14FE55: clap_builder::builder::command::Command::arg_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->38.86% (2,400B) 0x13E601: <lamarik::Args as clap_builder::derive::CommandFactory>::command (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->38.86% (2,400B) 0x13F23D: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->38.86% (2,400B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->38.86% (2,400B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->38.86% (2,400B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->38.86% (2,400B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               
+| ->09.33% (576B) 0x17FC29: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->04.66% (288B) 0x17E207: _ZN12clap_builder6parser7matches11matched_arg10MatchedArg13new_val_group17h741d2b4c0359c95dE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->03.11% (192B) 0x17D4BE: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | | ->03.11% (192B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   ->01.55% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   | ->01.55% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |   ->01.55% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |     ->01.55% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |       ->01.55% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |         ->01.55% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |           ->01.55% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |             ->01.55% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |               ->01.55% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |                 ->01.55% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |                   
+| | | |   ->01.55% (96B) 0x16976C: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |     ->01.55% (96B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |       ->01.55% (96B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |         ->01.55% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |           ->01.55% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |             ->01.55% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |               ->01.55% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                 ->01.55% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                   ->01.55% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                     ->01.55% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                       
+| | | ->01.55% (96B) 0x166A4A: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |   ->01.55% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     ->01.55% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |       ->01.55% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |         ->01.55% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |           ->01.55% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |             ->01.55% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |               ->01.55% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                 ->01.55% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                   ->01.55% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                     ->01.55% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                       
+| | ->04.66% (288B) 0x17E256: _ZN12clap_builder6parser7matches11matched_arg10MatchedArg13new_val_group17h741d2b4c0359c95dE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->03.11% (192B) 0x17D4BE: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | | ->03.11% (192B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   ->01.55% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   | ->01.55% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |   ->01.55% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |     ->01.55% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |       ->01.55% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |         ->01.55% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |           ->01.55% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |             ->01.55% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |               ->01.55% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |                 ->01.55% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   |                   
+| | | |   ->01.55% (96B) 0x16976C: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |     ->01.55% (96B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |       ->01.55% (96B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |         ->01.55% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |           ->01.55% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |             ->01.55% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |               ->01.55% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                 ->01.55% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                   ->01.55% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                     ->01.55% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                       
+| | | ->01.55% (96B) 0x166A4A: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |   ->01.55% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     ->01.55% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |       ->01.55% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |         ->01.55% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |           ->01.55% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |             ->01.55% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |               ->01.55% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                 ->01.55% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                   ->01.55% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                     ->01.55% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                       
+| | ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| | 
+| ->06.74% (416B) 0x17FE59: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->06.74% (416B) 0x17C150: _ZN12clap_builder4util8flat_map18Entry$LT$K$C$V$GT$9or_insert17he7ef81c7d4b4076bE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->06.74% (416B) 0x17D496: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->06.74% (416B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->06.74% (416B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->06.74% (416B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->06.74% (416B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->06.74% (416B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               ->06.74% (416B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                 ->06.74% (416B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                   ->06.74% (416B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                     ->06.74% (416B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                       ->06.74% (416B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                         ->06.74% (416B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                           
+| ->06.22% (384B) 0x17FB49: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->06.22% (384B) 0x17CD39: clap_builder::parser::arg_matcher::ArgMatcher::add_val_to (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->04.15% (256B) 0x160E5B: clap_builder::parser::parser::Parser::push_arg_values (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | ->02.07% (128B) 0x1691C7: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | | ->02.07% (128B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |   ->02.07% (128B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |     ->02.07% (128B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |       ->02.07% (128B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |         ->02.07% (128B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |           ->02.07% (128B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |             ->02.07% (128B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |               ->02.07% (128B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |                 ->02.07% (128B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |                   
+| |   | ->02.07% (128B) 0x169786: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |   ->02.07% (128B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |     ->02.07% (128B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |       ->02.07% (128B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |         ->02.07% (128B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |           ->02.07% (128B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |             ->02.07% (128B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |               ->02.07% (128B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |                 ->02.07% (128B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |                   ->02.07% (128B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   |                     
+| |   ->02.07% (128B) 0x1669D3: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->02.07% (128B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->02.07% (128B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->02.07% (128B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->02.07% (128B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->02.07% (128B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               ->02.07% (128B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                 ->02.07% (128B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                   ->02.07% (128B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                     ->02.07% (128B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                       ->02.07% (128B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                         
+| ->06.22% (384B) 0x17FD79: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->06.22% (384B) 0x13E19F: <lamarik::Args as clap_builder::derive::CommandFactory>::command (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->06.22% (384B) 0x13F23D: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->06.22% (384B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->06.22% (384B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->06.22% (384B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->06.22% (384B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             
+| ->02.07% (128B) 0x17FC99: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->01.04% (64B) 0x142232: clap_builder::builder::arg_group::ArgGroup::args (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->01.04% (64B) 0x13E17F: <lamarik::Args as clap_builder::derive::CommandFactory>::command (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |   ->01.04% (64B) 0x13F23D: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     ->01.04% (64B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |       ->01.04% (64B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |         ->01.04% (64B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |           ->01.04% (64B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |             
+| | ->01.04% (64B) 0x17C121: _ZN12clap_builder4util8flat_map18Entry$LT$K$C$V$GT$9or_insert17he7ef81c7d4b4076bE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->01.04% (64B) 0x17D496: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |   ->01.04% (64B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     ->01.04% (64B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |       ->01.04% (64B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |         ->01.04% (64B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |           ->01.04% (64B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |             ->01.04% (64B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |               ->01.04% (64B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                 ->01.04% (64B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                   ->01.04% (64B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                     ->01.04% (64B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                       ->01.04% (64B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                         
+| | ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| | 
+| ->01.41% (87B) 0x1800E3: alloc::raw_vec::RawVecInner<A>::reserve::do_reserve_and_handle (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->01.25% (77B) 0x175733: <clap_builder::builder::styled_str::StyledStr as core::convert::From<&str>>::from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->01.25% (77B) in 3 places, all below massif's threshold (1.00%)
+| | |   
+| | ->00.16% (10B) in 1+ places, all below ms_print's threshold (01.00%)
+| | 
+| ->01.04% (64B) 0x17FD09: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->01.04% (64B) 0x17D132: clap_builder::parser::arg_matcher::ArgMatcher::add_index_to (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | ->01.04% (64B) 0x160E6F: clap_builder::parser::parser::Parser::push_arg_values (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |   ->01.04% (64B) in 2 places, all below massif's threshold (1.00%)
+|   |     
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->08.81% (544B) 0x1A83AC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->08.81% (544B) 0x1A69AE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->08.81% (544B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     
+->04.66% (288B) 0x1BCEBC: alloc::raw_vec::RawVecInner<A>::finish_grow (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->04.66% (288B) 0x1BC9DE: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->04.66% (288B) 0x17CD90: clap_builder::parser::arg_matcher::ArgMatcher::add_val_to (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | ->03.11% (192B) 0x160E5B: clap_builder::parser::parser::Parser::push_arg_values (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | ->01.55% (96B) 0x1691C7: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | | ->01.55% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |   ->01.55% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |     ->01.55% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |       ->01.55% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |         ->01.55% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |           ->01.55% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |             ->01.55% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |               ->01.55% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |                 ->01.55% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |                   
+|   | | ->01.55% (96B) 0x169786: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |   ->01.55% (96B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |     ->01.55% (96B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |       ->01.55% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |         ->01.55% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |           ->01.55% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |             ->01.55% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |               ->01.55% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |                 ->01.55% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |                   ->01.55% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |                     
+|   | ->01.55% (96B) 0x1669D3: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |   ->01.55% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |     ->01.55% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |       ->01.55% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |         ->01.55% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |           ->01.55% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |             ->01.55% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |               ->01.55% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |                 ->01.55% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |                   ->01.55% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |                     ->01.55% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |                       
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->04.15% (256B) 0x17FF6B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h8cefdfbe8f592b46E.llvm.3258508165875048630 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->04.15% (256B) 0x17FB49: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->04.15% (256B) 0x196CD3: clap_builder::mkeymap::MKeyMap::_build (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->04.15% (256B) 0x14EFD3: clap_builder::builder::command::Command::_build_self (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       ->04.15% (256B) 0x1536C7: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|         ->04.15% (256B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|           ->04.15% (256B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|             ->04.15% (256B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|               ->04.15% (256B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                 ->04.15% (256B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                   ->04.15% (256B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                     
+->03.45% (213B) in 28 places, all below massif's threshold (1.00%)
+  
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 48        449,489            6,032            5,647           385            0
+ 49        449,947            3,176            2,869           307            0
+ 50        449,992            2,784            2,485           299            0
+ 51        450,319            2,744            2,453           291            0
+ 52        450,370            2,720            2,438           282            0
+ 53        450,411            2,616            2,342           274            0
+ 54        450,452            2,512            2,246           266            0
+ 55        450,570            2,456            2,206           250            0
+ 56        450,673            2,352            2,110           242            0
+ 57        450,727            2,216            1,982           234            0
+ 58        451,021            2,176            1,950           226            0
+89.61% (1,950B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->51.47% (1,120B) 0x17FF89: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h8cefdfbe8f592b46E.llvm.3258508165875048630 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->19.12% (416B) 0x17FE59: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->19.12% (416B) 0x17C150: _ZN12clap_builder4util8flat_map18Entry$LT$K$C$V$GT$9or_insert17he7ef81c7d4b4076bE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->19.12% (416B) 0x17D496: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->19.12% (416B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->19.12% (416B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->19.12% (416B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->19.12% (416B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->19.12% (416B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               ->19.12% (416B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                 ->19.12% (416B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                   ->19.12% (416B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                     ->19.12% (416B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                       ->19.12% (416B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                         ->19.12% (416B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                           
+| ->17.65% (384B) 0x17FC29: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->08.82% (192B) 0x17E207: _ZN12clap_builder6parser7matches11matched_arg10MatchedArg13new_val_group17h741d2b4c0359c95dE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->04.41% (96B) 0x166A4A: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | | ->04.41% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   ->04.41% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |     ->04.41% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |       ->04.41% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |         ->04.41% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |           ->04.41% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |             ->04.41% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |               ->04.41% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                 ->04.41% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                   ->04.41% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                     
+| | | ->04.41% (96B) 0x17D4BE: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |   ->04.41% (96B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     ->04.41% (96B) 0x16976C: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     | ->04.41% (96B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |   ->04.41% (96B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |     ->04.41% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |       ->04.41% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |         ->04.41% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |           ->04.41% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |             ->04.41% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |               ->04.41% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |                 ->04.41% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |                   
+| | |     ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| | |     
+| | ->08.82% (192B) 0x17E256: _ZN12clap_builder6parser7matches11matched_arg10MatchedArg13new_val_group17h741d2b4c0359c95dE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->04.41% (96B) 0x166A4A: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | | ->04.41% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   ->04.41% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |     ->04.41% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |       ->04.41% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |         ->04.41% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |           ->04.41% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |             ->04.41% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |               ->04.41% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                 ->04.41% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                   ->04.41% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                     
+| | | ->04.41% (96B) 0x17D4BE: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |   ->04.41% (96B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     ->04.41% (96B) 0x16976C: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     | ->04.41% (96B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |   ->04.41% (96B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |     ->04.41% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |       ->04.41% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |         ->04.41% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |           ->04.41% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |             ->04.41% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |               ->04.41% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |                 ->04.41% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     |                   
+| | |     ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| | |     
+| | ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| | 
+| ->11.76% (256B) 0x17FB49: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->11.76% (256B) 0x17CD39: clap_builder::parser::arg_matcher::ArgMatcher::add_val_to (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->05.88% (128B) 0x160E5B: clap_builder::parser::parser::Parser::push_arg_values (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | ->05.88% (128B) 0x169786: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | | ->05.88% (128B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |   ->05.88% (128B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |     ->05.88% (128B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |       ->05.88% (128B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |         ->05.88% (128B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |           ->05.88% (128B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |             ->05.88% (128B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |               ->05.88% (128B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |                 ->05.88% (128B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   | |                   
+| |   | ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| |   | 
+| |   ->05.88% (128B) 0x1669D3: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->05.88% (128B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->05.88% (128B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->05.88% (128B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->05.88% (128B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->05.88% (128B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               ->05.88% (128B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                 ->05.88% (128B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                   ->05.88% (128B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                     ->05.88% (128B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                       ->05.88% (128B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                         
+| ->02.94% (64B) 0x17FC99: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->02.94% (64B) 0x17C121: _ZN12clap_builder4util8flat_map18Entry$LT$K$C$V$GT$9or_insert17he7ef81c7d4b4076bE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->02.94% (64B) 0x17D496: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |   ->02.94% (64B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |     ->02.94% (64B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |       ->02.94% (64B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |         ->02.94% (64B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |           ->02.94% (64B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |             ->02.94% (64B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |               ->02.94% (64B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                 ->02.94% (64B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                   ->02.94% (64B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                     ->02.94% (64B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                       ->02.94% (64B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | |                         
+| | ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| | 
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->25.00% (544B) 0x1A83AC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->25.00% (544B) 0x1A69AE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->25.00% (544B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     
+->08.82% (192B) 0x1BCEBC: alloc::raw_vec::RawVecInner<A>::finish_grow (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->08.82% (192B) 0x1BC9DE: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->08.82% (192B) 0x17CD90: clap_builder::parser::arg_matcher::ArgMatcher::add_val_to (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | ->04.41% (96B) 0x160E5B: clap_builder::parser::parser::Parser::push_arg_values (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | ->04.41% (96B) 0x169786: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | | ->04.41% (96B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |   ->04.41% (96B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |     ->04.41% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |       ->04.41% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |         ->04.41% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |           ->04.41% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |             ->04.41% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |               ->04.41% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |                 ->04.41% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | |                   
+|   | | ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   | | 
+|   | ->04.41% (96B) 0x1669D3: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |   ->04.41% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |     ->04.41% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |       ->04.41% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |         ->04.41% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |           ->04.41% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |             ->04.41% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |               ->04.41% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |                 ->04.41% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |                   ->04.41% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |                     ->04.41% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   |                       
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->01.75% (38B) in 27 places, all below massif's threshold (1.00%)
+| 
+->01.47% (32B) 0x166A60: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->01.47% (32B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->01.47% (32B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->01.47% (32B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       ->01.47% (32B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|         ->01.47% (32B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|           ->01.47% (32B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|             ->01.47% (32B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|               ->01.47% (32B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                 ->01.47% (32B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                   ->01.47% (32B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|                     
+->01.10% (24B) 0x179BB7: _ZN73_$LT$P$u20$as$u20$clap_builder..builder..value_parser..AnyValueParser$GT$10parse_ref_17h3fa7f57fdbf3893aE.llvm.6218832860187824668 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+  ->01.10% (24B) 0x160E03: clap_builder::parser::parser::Parser::push_arg_values (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+    ->01.10% (24B) 0x169786: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+      ->01.10% (24B) 0x15F446: clap_builder::parser::parser::Parser::add_defaults (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+        ->01.10% (24B) 0x1657B2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+          ->01.10% (24B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+            ->01.10% (24B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+              ->01.10% (24B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+                ->01.10% (24B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+                  ->01.10% (24B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+                    ->01.10% (24B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+                      ->01.10% (24B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+                        
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 59        451,072            2,136            1,945           191            0
+ 60        451,113            2,032            1,849           183            0
+ 61        451,154            1,928            1,753           175            0
+ 62        451,271            1,888            1,729           159            0
+ 63        451,361            1,784            1,633           151            0
+ 64        451,415            1,648            1,505           143            0
+ 65        451,485            1,560            1,441           119            0
+ 66        451,595            1,520            1,409           111            0
+ 67        451,643            1,384            1,281           103            0
+ 68        451,683            1,280            1,185            95            0
+92.58% (1,185B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->42.50% (544B) 0x1A83AC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->42.50% (544B) 0x1A69AE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->42.50% (544B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     
+->40.00% (512B) 0x17FF89: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h8cefdfbe8f592b46E.llvm.3258508165875048630 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->32.50% (416B) 0x17FE59: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->32.50% (416B) 0x17C150: _ZN12clap_builder4util8flat_map18Entry$LT$K$C$V$GT$9or_insert17he7ef81c7d4b4076bE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->32.50% (416B) 0x17D496: clap_builder::parser::arg_matcher::ArgMatcher::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->32.50% (416B) 0x16684B: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->32.50% (416B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->32.50% (416B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           ->32.50% (416B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |             ->32.50% (416B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |               ->32.50% (416B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                 ->32.50% (416B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                   ->32.50% (416B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                     ->32.50% (416B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                       ->32.50% (416B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                         ->32.50% (416B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |                           
+| ->07.50% (96B) 0x17FC29: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->07.50% (96B) 0x17E256: _ZN12clap_builder6parser7matches11matched_arg10MatchedArg13new_val_group17h741d2b4c0359c95dE.llvm.7273654900171469823 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | ->07.50% (96B) 0x166A4A: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | | ->07.50% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |   ->07.50% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |     ->07.50% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |       ->07.50% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |         ->07.50% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |           ->07.50% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |             ->07.50% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |               ->07.50% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                 ->07.50% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                   ->07.50% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | | |                     
+| | | ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| | | 
+| | ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| | 
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->07.50% (96B) 0x1BCEBC: alloc::raw_vec::RawVecInner<A>::finish_grow (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->07.50% (96B) 0x1BC9DE: alloc::raw_vec::RawVec<T,A>::grow_one (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->07.50% (96B) 0x17CD90: clap_builder::parser::arg_matcher::ArgMatcher::add_val_to (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | ->07.50% (96B) 0x1669D3: clap_builder::parser::parser::Parser::start_custom_arg (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | | ->07.50% (96B) 0x169192: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |   ->07.50% (96B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |     ->07.50% (96B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |       ->07.50% (96B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |         ->07.50% (96B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |           ->07.50% (96B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |             ->07.50% (96B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |               ->07.50% (96B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |                 ->07.50% (96B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |                   ->07.50% (96B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   | |                     
+|   | ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   | 
+|   ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+|   
+->01.41% (18B) in 28 places, all below massif's threshold (1.00%)
+| 
+->01.17% (15B) 0x179C59: _ZN73_$LT$P$u20$as$u20$clap_builder..builder..value_parser..AnyValueParser$GT$10parse_ref_17h5001d923cab895dcE.llvm.6218832860187824668 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+  ->01.17% (15B) 0x160E03: clap_builder::parser::parser::Parser::push_arg_values (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+    ->01.17% (15B) 0x1691C7: clap_builder::parser::parser::Parser::react (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+      ->01.17% (15B) 0x1610B7: clap_builder::parser::parser::Parser::resolve_pending (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+        ->01.17% (15B) 0x1657A2: clap_builder::parser::parser::Parser::get_matches_with (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+          ->01.17% (15B) 0x153741: clap_builder::builder::command::Command::_do_parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+            ->01.17% (15B) 0x13B684: clap_builder::builder::command::Command::get_matches_from (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+              ->01.17% (15B) 0x13F265: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+                ->01.17% (15B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+                  ->01.17% (15B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+                    ->01.17% (15B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+                      ->01.17% (15B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+                        
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 69        451,733            1,256            1,176            80            0
+ 70        451,774            1,152            1,080            72            0
+ 71        451,822            1,048              984            64            0
+ 72        451,861              624              568            56            0
+ 73        452,512              600              553            47            0
+ 74        452,795            1,408            1,347            61            0
+ 75        453,087            9,608            9,539            69            0
+ 76        453,487            9,632            9,547            85            0
+ 77        453,692            9,656            9,557            99            0
+ 78        453,842            9,680            9,562           118            0
+98.78% (9,562B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->84.63% (8,192B) 0x14A0A4: lamacore::disasm::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->84.63% (8,192B) 0x13F609: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->84.63% (8,192B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->84.63% (8,192B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       ->84.63% (8,192B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|         ->84.63% (8,192B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|           
+->08.20% (794B) 0x1BCEBC: alloc::raw_vec::RawVecInner<A>::finish_grow (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->08.20% (794B) 0x1ACBFF: <std::fs::File as std::io::Read>::read_to_end (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->08.20% (794B) 0x13F514: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->08.20% (794B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->08.20% (794B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->08.20% (794B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->08.20% (794B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->05.62% (544B) 0x1A83AC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->05.62% (544B) 0x1A69AE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->05.62% (544B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     
+->00.33% (32B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 79        453,913            9,704            9,567           137            0
+ 80        453,967            9,704            9,567           137            0
+98.59% (9,567B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->84.42% (8,192B) 0x14A0A4: lamacore::disasm::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->84.42% (8,192B) 0x13F609: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->84.42% (8,192B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->84.42% (8,192B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       ->84.42% (8,192B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|         ->84.42% (8,192B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|           
+->08.18% (794B) 0x1BCEBC: alloc::raw_vec::RawVecInner<A>::finish_grow (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->08.18% (794B) 0x1ACBFF: <std::fs::File as std::io::Read>::read_to_end (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->08.18% (794B) 0x13F514: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->08.18% (794B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->08.18% (794B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->08.18% (794B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->08.18% (794B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->05.61% (544B) 0x1A83AC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->05.61% (544B) 0x1A69AE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->05.61% (544B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     
+->00.38% (37B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 81        454,055            9,696            9,587           109            0
+ 82        454,196           10,432           10,321           111            0
+ 83        454,447           10,432           10,321           111            0
+98.94% (10,321B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->78.53% (8,192B) 0x14A0A4: lamacore::disasm::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->78.53% (8,192B) 0x13F609: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->78.53% (8,192B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->78.53% (8,192B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       ->78.53% (8,192B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|         ->78.53% (8,192B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|           
+->07.61% (794B) 0x1BCEBC: alloc::raw_vec::RawVecInner<A>::finish_grow (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->07.61% (794B) 0x1ACBFF: <std::fs::File as std::io::Read>::read_to_end (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| | ->07.61% (794B) 0x13F514: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |   ->07.61% (794B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |     ->07.61% (794B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |       ->07.61% (794B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |         ->07.61% (794B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| |           
+| ->00.00% (0B) in 1+ places, all below ms_print's threshold (01.00%)
+| 
+->07.32% (764B) 0x14AB6B: _ZN5alloc7raw_vec20RawVecInner$LT$A$GT$11finish_grow17h97cc9f477b8b2523E.llvm.13397148587225309408 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->07.32% (764B) 0x14B037: <std::io::buffered::bufreader::BufReader<R> as std::io::Read>::read_to_end (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->07.32% (764B) 0x14A66F: lamacore::disasm::Bytefile::parse (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->07.32% (764B) 0x13F609: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       ->07.32% (764B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|         ->07.32% (764B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|           ->07.32% (764B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|             ->07.32% (764B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|               
+->05.21% (544B) 0x1A83AC: std::sys::pal::unix::stack_overflow::thread_info::set_current_info (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->05.21% (544B) 0x1A69AE: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->05.21% (544B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     
+->00.26% (27B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 84        454,482            1,424            1,335            89            0
+ 85        454,593   34,359,743,832   34,359,739,687         4,145            0
+ 86 2,238,951,044,337   34,359,743,832   34,359,739,687         4,145            0
+100.00% (34,359,739,687B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->100.00% (34,359,738,352B) 0x1452D4: lamarik::interpreter::Interpreter::new (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+| ->100.00% (34,359,738,352B) 0x13F91C: lamarik::main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|   ->100.00% (34,359,738,352B) 0x1417D2: std::sys::backtrace::__rust_begin_short_backtrace (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|     ->100.00% (34,359,738,352B) 0x1423F8: _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17h0b1413aabbd176d6E.llvm.7711625953883816682 (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|       ->100.00% (34,359,738,352B) 0x1A6A75: std::rt::lang_start_internal (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|         ->100.00% (34,359,738,352B) 0x13FDB4: main (in /home/safonoff/Uni/VirtualMachines/lama-rs/target/release/lamarik)
+|           
+->00.00% (1,335B) in 1+ places, all below ms_print's threshold (01.00%)
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 87 2,238,951,044,372            1,400            1,327            73            0
+ 88 2,238,951,044,440              600              553            47            0
+ 89 2,238,951,045,045              576              549            27            0

@@ -1,7 +1,7 @@
 //! Descriptor of Lama bytecode
 use std::convert::TryFrom;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Op {
     ADD, // +
     SUB, // -
@@ -19,7 +19,7 @@ pub enum Op {
 }
 
 /// Scoping rule for a value
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ValueRel {
     Global,
     Local,
@@ -27,14 +27,14 @@ pub enum ValueRel {
     Capture, // Captured by closure
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CompareJumpKind {
     ISZERO,    // jump if operand is zero
     ISNONZERO, // jump if operand is non-zero
 }
 
 /// Builtin functions
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Builtin {
     Lread,
     Lwrite,
@@ -44,7 +44,7 @@ pub enum Builtin {
 }
 
 /// Pattern matching kind
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PattKind {
     /// Tests whether the two operands are both strings and
     /// store the same bytes.
@@ -70,7 +70,8 @@ pub struct CapturedVar {
     pub index: i32,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[repr(u8)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Instruction {
     NOP,
     /// Marks the end of the procedure definition. When executed
@@ -332,7 +333,11 @@ impl Instruction {
                 builtin: _,
             } => {
                 if let Some(name) = name {
-                    format!("CALL {:#?}", name)
+                    if let Some(n) = n {
+                        format!("CALL {:#?} {}", name, n)
+                    } else {
+                        format!("CALL {:#?}", name)
+                    }
                 } else {
                     format!("CALL {} {}", offset.unwrap(), n.unwrap())
                 }

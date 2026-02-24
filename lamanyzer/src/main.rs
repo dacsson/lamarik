@@ -1,6 +1,7 @@
 use clap::Parser;
 use lamacore::bytefile::Bytefile;
-use lamanyzer::analyzer::AnalysisError;
+use lamacore::decoder::Decoder;
+use lamanyzer::analyzer::{AnalysisError, Analyzer};
 use std::fs::File;
 use std::io::Read;
 
@@ -56,6 +57,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.dump_bytefile {
         println!("{}", bytefile);
     }
+
+    let decoder = Decoder::new(bytefile);
+    let mut analyzer = Analyzer::new(decoder);
+
+    let frequency = analyzer.get_frequency().map_err(|err| {
+        eprintln!("{}", err);
+        err
+    })?;
+
+    println!("{}", frequency);
 
     Ok(())
 }
