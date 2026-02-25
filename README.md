@@ -92,7 +92,7 @@ Performance has been tested on a `perfomance/Sort.lama` file with default heap s
 | lamac -s | -                 | 2m32.840s     | 2m29.347s     | 0m3.345s     |
 | lamac -i | -                 | 8m37.099s     | 8m30.830s     | 0m4.446s     |
 | lama-rs  | Runtime checks    | 3m7.228ss     | 3m3.093s     | 0m3.201s     |
-| lama-rs  | Static checks     | 3m19.732s     | 3m15.510s     | 0m4.076s     |
+| lama-rs  | Static checks     | 3m40.362s     | 3m35.054s     | 0m5.210s     |
 
 # Project structure
 ```

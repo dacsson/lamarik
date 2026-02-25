@@ -663,7 +663,7 @@ This layer is a `lamacore` crate (library), it exposes:
 
 All other tools will use this crate.
 
-## 4. Idiom analyzer
+## 5. Idiom analyzer
 
 1. Analyzer doesnt walk reachable code
 
@@ -683,3 +683,60 @@ Comments:
 ```
 
 - Changes: algorithm is changed entirely, please look at `lamanyzer/src/analyzer.rs`, for memory usage info look at `lamanyzer/README.md`
+
+## 6. Static checks
+
+Should change bytecode:
+```
+Модификации непосредственного операнда BEGIN/CBEGIN в последнем задании тоже не заметил.
+```
+
+- Changes:
+
+New file: `lamarifyer/src/verifyer.rs` with static checks
+
+Only reachable instructions are traversed.
+
+Memorisation:
+```rust
+for (offset, depth) in res.0.stack_depths.iter().enumerate() {
+    if *depth != 0 {
+        // println!("Stack depth: {}", depth);
+
+        let begin_instr_bytes = &new_bytefile.code_section[offset - 8..offset - 4];
+        let mut payload = u32::from_le_bytes(begin_instr_bytes.try_into().unwrap());
+        payload |= (depth.to_le() as u32) << 16;
+        new_bytefile.code_section[offset - 8..offset - 4]
+            .copy_from_slice(&payload.to_le_bytes());
+    }
+}
+```
+
+Usage:
+```rust
+Instruction::BEGIN {
+    args: payload,
+    locals: payload2,
+}
+| Instruction::CBEGIN {
+    args: payload,
+    locals: payload2,
+} => {
+    let stack_size_for_function = payload >> 16;
+    let args = (payload & 0xFFFF) as usize;
+
+    let reachable = payload2 >> 16;
+    let locals = (payload2 & 0xFFFF) as usize;
+
+    if let Instruction::BEGIN { .. } = instr {
+        if stack_size_for_function <= 0 {
+            return Err(InterpreterError::StackOverflow);
+        }
+    }
+
+    if self.operand_stack.len() + stack_size_for_function as usize
+        > MAX_OPERAND_STACK_SIZE
+    {
+        return Err(InterpreterError::StackOverflow);
+    }
+```

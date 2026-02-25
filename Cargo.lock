@@ -228,7 +228,10 @@ dependencies = [
 name = "lamarifyer"
 version = "0.1.0"
 dependencies = [
- "lamarik",
+ "bindgen",
+ "bitvec",
+ "clap",
+ "lamacore",
 ]
 
 [[package]]
