@@ -1,11 +1,9 @@
+// #![no_std]
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-use std::{
-    ffi::{CStr, CString},
-    os::raw::{c_char, c_void},
-};
+use core::ffi::{CStr, c_char, c_void};
 
 mod frame;
 pub mod interpreter;
@@ -35,7 +33,7 @@ fn isUnboxed(x: i64) -> bool {
 }
 
 // #  define DATA_HEADER_SZ (sizeof(auint) + sizeof(ptrt))
-const DATA_HEADER_SZ: usize = std::mem::size_of::<auint>() + std::mem::size_of::<ptrt>();
+const DATA_HEADER_SZ: usize = core::mem::size_of::<auint>() + core::mem::size_of::<ptrt>();
 
 // define TO_DATA(x) ((data *)((char *)(x)-DATA_HEADER_SZ))
 #[inline(always)]
@@ -93,7 +91,7 @@ fn new_sexp(tag: &CStr, args: &mut [i64]) -> *mut c_void {
 
 /// Create a new lama string.
 #[inline(always)]
-fn new_string(bytes: &[u8]) -> Result<*mut c_void, Box<dyn std::error::Error>> {
+fn new_string(bytes: &[u8]) -> Result<*mut c_void, core::ffi::FromBytesWithNulError> {
     unsafe {
         let c_string = CStr::from_bytes_with_nul(bytes)?;
         let as_ptr = c_string.as_ptr();
@@ -120,7 +118,11 @@ fn new_array(elements: &mut [i64]) -> *mut c_void {
 /// Remember that arrays store raw values, meaning callee is responsible for unboxing them.
 #[inline(always)]
 fn get_array_el(arr: &data, index: usize) -> i64 {
-    unsafe { (arr.contents.as_ptr() as *const i64).add(index).read() }
+    unsafe {
+    let contents = arr.contents.as_ptr() as *const crate::object::Object;
+        let obj = contents .add(index).read();
+    obj.raw()
+    }
 }
 
 /// Create a new closure object
@@ -175,104 +177,6 @@ fn get_sexp_el(sexp: &sexp, index: usize) -> i64 {
 fn set_sexp_el(sexp: &mut sexp, index: usize, value: i64) {
     unsafe {
         (sexp.contents.as_ptr() as *mut i64).add(index).write(value);
-    }
-}
-
-impl PartialEq for sexp {
-    fn eq(&self, other: &Self) -> bool {
-        unsafe {
-            let self_header = self.data_header;
-            let other_header = other.data_header;
-
-            let self_len = rtLen(self_header);
-            let other_len = rtLen(other_header);
-
-            let tag_and_len_eq = self.tag == other.tag && self_len == other_len;
-
-            if !tag_and_len_eq {
-                return false;
-            }
-
-            let hashed_cons_string = LtagHash(CString::new("cons").unwrap().into_raw());
-            if self.tag == hashed_cons_string.try_into().unwrap() {
-                for i in 0..self_len {
-                    let el = get_sexp_el(self, i as usize);
-                    let other_el = get_sexp_el(other, i as usize);
-
-                    if isUnboxed(el) {
-                        if el != other_el {
-                            return false;
-                        }
-                    } else {
-                        return rtToSexp(el as *mut c_void) == rtToSexp(other_el as *mut c_void);
-                    }
-                }
-            } else {
-                // TODO: compare contents of arbitrary types
-                //       we need PartialEq for all types
-                //       look at runtime.c: static void printValue (void *p)
-                return true;
-            }
-
-            false
-        }
-    }
-}
-
-impl PartialEq for data {
-    fn eq(&self, other: &Self) -> bool {
-        unsafe {
-            let self_header = self.data_header;
-            let other_header = other.data_header;
-
-            let self_tag = rtTag(self_header);
-            let other_tag = rtTag(other_header);
-
-            if self_tag != other_tag {
-                return false;
-            }
-
-            match self_tag as u32 {
-                STRING_TAG => strcmp(self.contents.as_ptr(), other.contents.as_ptr()) == 0,
-                // SEXP_TAG => {
-                //     let self_sexp = self as &sexp;
-                //     let other_sexp = rtToSexp(other_header as *mut c_void);
-                //     self_sexp == other_sexp
-                // }
-                ARRAY_TAG => {
-                    let self_len = rtLen(self_header);
-                    let other_len = rtLen(other_header);
-                    if self_len != other_len {
-                        return false;
-                    }
-                    for i in 0..self_len {
-                        let self_el = get_array_el(self, i as usize);
-                        let other_el = get_array_el(other, i as usize);
-
-                        let is_unboxed_self_el = isUnboxed(self_el);
-                        let is_unboxed_other_el = isUnboxed(other_el);
-
-                        if is_unboxed_self_el != is_unboxed_other_el {
-                            return false;
-                        }
-
-                        if is_unboxed_self_el {
-                            if self_el != other_el {
-                                return false;
-                            }
-                        } else {
-                            let self_el_as_ptr = self_el as *mut c_void;
-                            let other_el_as_ptr = other_el as *mut c_void;
-
-                            return *rtToData(self_el_as_ptr) == *rtToData(other_el_as_ptr);
-                        }
-                    }
-
-                    true
-                }
-                _ => panic!("Unsupported type for equality comparison"),
-            }
-        }
     }
 }
 

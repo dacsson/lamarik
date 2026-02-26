@@ -6,7 +6,7 @@ use crate::{
 use super::*;
 use lamacore::bytecode::*;
 use lamacore::bytefile::Bytefile;
-use std::{ffi::CStr, os::raw::c_void};
+use std::{ffi::CStr, ffi::CString, os::raw::c_void};
 
 /// Test minimal evaluation functionality of the interpreter
 #[test]
@@ -85,7 +85,7 @@ fn test_binops_eval() -> Result<(), Box<dyn std::error::Error>> {
 
         let top = interp.pop().unwrap();
 
-        assert_eq!(top.unwrap(), expected);
+        assert_eq!(top.unbox(), expected);
     }
 
     Ok(())
@@ -289,7 +289,7 @@ fn test_invalid_frame_move() -> Result<(), Box<dyn std::error::Error>> {
     for (program, expected) in programs.into_iter().zip(expected_results) {
         let decoder = Decoder::new(Bytefile::new_dummy());
         let mut interp = Interpreter::new(decoder);
-        interp.operand_stack.clear();
+        interp.operand_stack = array::repeat(Object::new_empty());
         let result = interp.run_on_program(program);
 
         assert!(result.is_err());
@@ -390,29 +390,29 @@ fn test_frame_move_args_and_locals() -> Result<(), Box<dyn std::error::Error>> {
             frame
                 .get_local_at(&interp.operand_stack, interp.frame_pointer, 0)
                 .unwrap()
-                .unwrap(),
-            expected.locals[0].unwrap()
+                .unbox(),
+            expected.locals[0].unbox()
         );
         assert_eq!(
             frame
                 .get_local_at(&interp.operand_stack, interp.frame_pointer, 1)
                 .unwrap()
-                .unwrap(),
-            expected.locals[1].unwrap()
+                .unbox(),
+            expected.locals[1].unbox()
         );
         assert_eq!(
             frame
                 .get_arg_at(&interp.operand_stack, interp.frame_pointer, 0)
                 .unwrap()
-                .unwrap(),
-            expected.args[0].unwrap()
+                .unbox(),
+            expected.args[0].unbox()
         );
         assert_eq!(
             frame
                 .get_arg_at(&interp.operand_stack, interp.frame_pointer, 1)
                 .unwrap()
-                .unwrap(),
-            expected.args[1].unwrap()
+                .unbox(),
+            expected.args[1].unbox()
         );
     }
 
@@ -551,7 +551,7 @@ fn test_arg_and_local_load() -> Result<(), InterpreterError> {
 
         let obj = interp.pop()?;
 
-        assert_eq!(obj.unwrap(), expected);
+        assert_eq!(obj.unbox(), expected);
     }
 
     Ok(())
@@ -580,7 +580,7 @@ fn test_drop() -> Result<(), InterpreterError> {
 
         let obj = interp.pop()?;
 
-        assert_eq!(obj.unwrap(), expected);
+        assert_eq!(obj.unbox(), expected);
     }
 
     Ok(())
@@ -609,8 +609,8 @@ fn test_dup() -> Result<(), InterpreterError> {
 
         let (obj1, obj2) = (interp.pop()?, interp.pop()?);
 
-        assert_eq!(obj1.unwrap(), expected.0);
-        assert_eq!(obj2.unwrap(), expected.1);
+        assert_eq!(obj1.unbox(), expected.0);
+        assert_eq!(obj2.unbox(), expected.1);
     }
 
     Ok(())
@@ -639,8 +639,8 @@ fn test_swap() -> Result<(), InterpreterError> {
 
         let (obj1, obj2) = (interp.pop()?, interp.pop()?);
 
-        assert_eq!(obj1.unwrap(), expected.0);
-        assert_eq!(obj2.unwrap(), expected.1);
+        assert_eq!(obj1.unbox(), expected.0);
+        assert_eq!(obj2.unbox(), expected.1);
     }
 
     Ok(())
@@ -727,7 +727,7 @@ fn test_array() -> Result<(), Box<dyn std::error::Error>> {
         let (len, obj) = (interp.pop()?, interp.pop()?);
 
         unsafe {
-            assert_eq!(len.unwrap() as usize, expected.len());
+            assert_eq!(len.unbox() as usize, expected.len());
             for (i, &value) in expected.iter().enumerate() {
                 assert_eq!(
                     rtUnbox(get_array_el(
@@ -814,7 +814,7 @@ fn test_builtin_functions() -> Result<(), Box<dyn std::error::Error>> {
 
         let obj = interp.pop()?;
 
-        assert_eq!(obj.unwrap(), expected);
+        assert_eq!(obj.unbox(), expected);
     }
 
     Ok(())
@@ -935,7 +935,7 @@ fn test_elem() -> Result<(), Box<dyn std::error::Error>> {
         interp.run_on_program(program)?;
 
         let obj = interp.pop()?;
-        assert_eq!(obj.unwrap(), expected);
+        assert_eq!(obj.unbox(), expected);
     }
 
     Ok(())
@@ -1063,7 +1063,7 @@ fn test_array_tag() -> Result<(), Box<dyn std::error::Error>> {
 
         let obj = interp.pop()?;
 
-        assert_eq!(obj.unwrap(), expected);
+        assert_eq!(obj.unbox(), expected);
     }
 
     Ok(())
@@ -1107,7 +1107,7 @@ fn test_array_tag() -> Result<(), Box<dyn std::error::Error>> {
 
 //         let obj = interp.pop()?;
 
-//         assert_eq!(obj.unwrap(), expected);
+//         assert_eq!(obj.unbox(), expected);
 //     }
 
 //     Ok(())
@@ -1211,7 +1211,7 @@ fn test_sexp_tag() -> Result<(), Box<dyn std::error::Error>> {
 
         let obj = interp.pop()?;
 
-        assert_eq!(obj.unwrap(), expected);
+        assert_eq!(obj.unbox(), expected);
     }
 
     Ok(())

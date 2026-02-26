@@ -36,10 +36,10 @@ impl<'a> FrameMetadata {
     #[inline(always)]
     pub fn get_from_stack(stack: &[Object], frame_pointer: usize) -> Option<FrameMetadata> {
         let closure_obj = stack.get(frame_pointer + 1)?.raw();
-        let n_args = stack.get(frame_pointer + 2)?.unwrap();
-        let n_locals = stack.get(frame_pointer + 3)?.unwrap();
-        let ret_frame_pointer = stack.get(frame_pointer + 4)?.unwrap() as usize;
-        let ret_ip = stack.get(frame_pointer + 5)?.unwrap() as usize;
+        let n_args = stack.get(frame_pointer + 2)?.unbox();
+        let n_locals = stack.get(frame_pointer + 3)?.unbox();
+        let ret_frame_pointer = stack.get(frame_pointer + 4)?.unbox() as usize;
+        let ret_ip = stack.get(frame_pointer + 5)?.unbox() as usize;
 
         Some(FrameMetadata {
             closure_obj,
@@ -79,16 +79,16 @@ impl<'a> FrameMetadata {
         frame_pointer: usize,
         index: usize,
         value: Object,
-    ) -> Result<(), String> {
+    ) -> Option<()> {
         let local_index = frame_pointer + 6 + self.n_args as usize + index;
 
         #[cfg(feature = "runtime_checks")]
         if local_index >= stack.len() || index > self.n_locals as usize {
-            return Err("Index out of bounds".into());
+            return None;
         }
 
         stack[local_index] = value;
-        Ok(())
+        Some(())
     }
 
     #[inline(always)]
@@ -98,16 +98,16 @@ impl<'a> FrameMetadata {
         frame_pointer: usize,
         index: usize,
         value: Object,
-    ) -> Result<(), String> {
+    ) -> Option<()> {
         let arg_index = frame_pointer + 6 + index;
 
         #[cfg(feature = "runtime_checks")]
         if arg_index >= stack.len() || index > self.n_args as usize {
-            return Err("Index out of bounds".into());
+            return None;
         }
 
         stack[arg_index] = value;
-        Ok(())
+        Some(())
     }
 
     pub fn save_closure(
@@ -115,32 +115,32 @@ impl<'a> FrameMetadata {
         stack: &'a mut [Object],
         frame_pointer: usize,
         closure_obj: Object,
-    ) -> Result<(), String> {
+    ) -> Option<()> {
         let closure_index = frame_pointer + 1;
 
         #[cfg(feature = "runtime_checks")]
         if closure_index >= stack.len() {
-            return Err("Index out of bounds".into());
+            return None;
         }
 
         stack[closure_index] = closure_obj;
-        Ok(())
+        Some(())
     }
 
     #[inline(always)]
     pub fn get_closure(
         &'a mut self,
-        stack: &'a mut Vec<Object>,
+        stack: &'a mut [Object],
         frame_pointer: usize,
-    ) -> Result<&'a Object, String> {
+    ) -> Option<&'a Object> {
         let closure_index = frame_pointer + 1;
 
         #[cfg(feature = "runtime_checks")]
         if closure_index >= stack.len() {
-            return Err("Index out of bounds".into());
+            return None;
         }
 
-        Ok(&stack[closure_index])
+        Some(&stack[closure_index])
     }
 
     #[cfg(test)]
