@@ -28,10 +28,10 @@ const MAX_SEXP_TAGLEN: usize = 10;
 const MAX_CAPTURES: usize = 0xffff; // 0x7fffffff;
 
 #[cfg(test)]
-const MAX_OPERAND_STACK_SIZE: usize = 8 * 1024; // 0xffff;
+const MAX_OPERAND_STACK_SIZE: usize = 8 * 8 * 1024; // 0xffff;
 
 #[cfg(not(test))]
-const MAX_OPERAND_STACK_SIZE: usize = 8 * 1024; // 0x7fffffff;
+const MAX_OPERAND_STACK_SIZE: usize = 8 * 8 * 1024; // 0x7fffffff;
 
 const MAX_ARG_LEN: usize = 50;
 
