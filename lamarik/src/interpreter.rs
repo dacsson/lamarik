@@ -5,11 +5,11 @@ use crate::object::{Object, ObjectError};
 use crate::{
     __gc_init, __gc_stack_bottom, __gc_stack_top, Barray, Barray_tag_patt, Bboxed_patt,
     Bclosure_tag_patt, Bsexp_tag_patt, Bstring_patt, Bstring_tag_patt, Bunboxed_patt,
-    CONS_TAG_HASH, Llength, Lread, Lstring, LtagHash, Lwrite, NIL_TAG_HASH, exit, failure,
-    gc_set_bottom, gc_set_top, get_array_el, get_captured_variable, get_sexp_el, lama_type_ARRAY,
-    lama_type_CLOSURE, lama_type_SEXP, lama_type_STRING, new_array, new_closure, new_sexp,
-    new_string, rtBox, rtToData, rtToSexp, rtUnbox, set_array_el, set_captured_variable,
-    set_sexp_el,
+    CONS_TAG_HASH, Llength, Lread, Lstring, LtagHash, Lwrite, NIL_TAG_HASH, createStringBuf, exit,
+    failure, gc_set_bottom, gc_set_top, get_array_el, get_captured_variable, get_sexp_el,
+    lama_type_ARRAY, lama_type_CLOSURE, lama_type_SEXP, lama_type_STRING, new_array, new_closure,
+    new_sexp, new_string, printValue, rtBox, rtToData, rtToSexp, rtUnbox, set_array_el,
+    set_captured_variable, set_sexp_el, stringBuf,
 };
 use core::array;
 use core::convert::TryFrom;
@@ -28,12 +28,15 @@ const MAX_SEXP_TAGLEN: usize = 10;
 const MAX_CAPTURES: usize = 0xffff; // 0x7fffffff;
 
 #[cfg(test)]
-const MAX_OPERAND_STACK_SIZE: usize = 10000; // 0xffff;
+const MAX_OPERAND_STACK_SIZE: usize = 8 * 1024; // 0xffff;
 
 #[cfg(not(test))]
-const MAX_OPERAND_STACK_SIZE: usize = 0xffff; // 0x7fffffff;
+const MAX_OPERAND_STACK_SIZE: usize = 8 * 1024; // 0x7fffffff;
 
 const MAX_ARG_LEN: usize = 50;
+
+#[repr(align(16))]
+struct OperandStack([Object; MAX_OPERAND_STACK_SIZE]);
 
 #[derive(Debug, Clone)]
 pub struct InstructionTrace {
@@ -42,7 +45,7 @@ pub struct InstructionTrace {
 }
 
 pub struct Interpreter {
-    operand_stack: [Object; MAX_OPERAND_STACK_SIZE],
+    operand_stack: OperandStack,
     operand_stack_len: usize,
     frame_pointer: usize,
     // Bytefile decoder
@@ -59,8 +62,7 @@ impl Interpreter {
     /// Create a new interpreter with operand stack filled with
     /// emulated call to main
     pub fn new(decoder: Decoder) -> Self {
-        let mut operand_stack: [Object; MAX_OPERAND_STACK_SIZE] =
-            array::repeat(Object::new_empty());
+        let mut operand_stack: OperandStack = OperandStack(array::repeat(Object::new_empty()));
 
         unsafe {
             __gc_init();
@@ -69,25 +71,24 @@ impl Interpreter {
         // Put globals at the start of operand stack
         let global_areas_size = decoder.bf.global_area_size as usize;
         for i in 0..global_areas_size {
-            operand_stack[i] = Object::new_empty();
+            operand_stack.0[i] = Object::new_empty();
         }
 
         // Emulating call to main
-        operand_stack[global_areas_size] = Object::new_empty(); // FRAME_PTR
-        operand_stack[global_areas_size + 1] = Object::new_empty(); // CLOSURE_OBJ
-        operand_stack[global_areas_size + 2] = Object::new_unboxed(2); // ARGS_COUNT
-        operand_stack[global_areas_size + 3] = Object::new_empty(); // LOCALS_COUNT
-        operand_stack[global_areas_size + 4] = Object::new_empty(); // OLD_FRAME_POINTER
-        operand_stack[global_areas_size + 5] = Object::new_empty(); // OLD_IP
-        operand_stack[global_areas_size + 6] = Object::new_empty(); // ARGV
-        operand_stack[global_areas_size + 7] = Object::new_empty(); // ARGC
-        operand_stack[global_areas_size + 8] = Object::new_empty(); // CURR_IP
+        operand_stack.0[global_areas_size] = Object::new_empty(); // CLOSURE_OBJ
+        operand_stack.0[global_areas_size + 1] = Object::new_unboxed(2); // ARGS_COUNT
+        operand_stack.0[global_areas_size + 2] = Object::new_empty(); // LOCALS_COUNT
+        operand_stack.0[global_areas_size + 3] = Object::new_empty(); // OLD_FRAME_POINTER
+        operand_stack.0[global_areas_size + 4] = Object::new_empty(); // OLD_IP
+        operand_stack.0[global_areas_size + 5] = Object::new_empty(); // ARGV
+        operand_stack.0[global_areas_size + 6] = Object::new_empty(); // ARGC
+        operand_stack.0[global_areas_size + 7] = Object::new_empty(); // CURR_IP
 
         unsafe {
-            let ptr_top: *const Object = &operand_stack[global_areas_size + 8];
+            let ptr_top: *const Object = &operand_stack.0[global_areas_size + 8];
             __gc_stack_bottom = ptr_top as usize;
 
-            let ptr_bottom: *const Object = &operand_stack[0];
+            let ptr_bottom: *const Object = &operand_stack.0[0];
             __gc_stack_top = ptr_bottom as usize;
         }
 
@@ -96,8 +97,8 @@ impl Interpreter {
 
         Interpreter {
             operand_stack,
-            operand_stack_len: global_areas_size + 9,
-            frame_pointer: 0,
+            operand_stack_len: global_areas_size + 8,
+            frame_pointer: global_areas_size,
             decoder,
             code_section_len,
             global_areas_size,
@@ -122,10 +123,10 @@ impl Interpreter {
             let instr = self.decoder.decode(encoding)?;
 
             // if cfg!(feature = "verbose") {
-            //     println!(
-            //         "[LOG] IP {} BYTE {} INSTR {:?}",
-            //         self.decoder.ip, encoding, instr
-            //     );
+            // println!(
+            //     "[LOG] IP {} BYTE {} INSTR {:?}",
+            //     self.decoder.ip, encoding, instr
+            // );
             // }
 
             self.eval(&instr).map_err(|e| -> RunError {
@@ -138,13 +139,13 @@ impl Interpreter {
                     + self.decoder.bf.stringtab_size as usize
                     + self.decoder.ip;
 
-                RunError::ErrorAtOffset(global_offset, e)
+                RunError::ErrorAtOffset(global_offset, e, instr.clone())
             })?;
 
             // HACK: if we encounter END instruction, while in frame 0
             //       (a.k.a main function) we exit the interpreter
             if let Instruction::END = instr
-                && self.frame_pointer == 0
+                && self.frame_pointer == self.global_areas_size
             {
                 break;
             }
@@ -156,7 +157,7 @@ impl Interpreter {
     /// Evaluate a decoded instruction
     fn eval(&mut self, instr: &Instruction) -> Result<(), InterpreterError> {
         // if cfg!(feature = "verbose") {
-        //     println!("[LOG] EVAL {:?}", instr);
+        // println!("[LOG] EVAL {:?}", instr);
         // }
 
         match instr {
@@ -275,12 +276,7 @@ impl Interpreter {
                 // };
             }
             Instruction::SEXP { s_index, n_members } => {
-                // + 1 for tag hash
-                let mut args = [0; MAX_ARG_LEN];
-
-                for i in (0..*n_members).rev() {
-                    args[i as usize] = self.pop()?.raw();
-                }
+                let length = *n_members as usize;
 
                 let tag_u8 = self
                     .decoder
@@ -304,7 +300,18 @@ impl Interpreter {
                 //     );
                 // }
 
-                let sexp = new_sexp(c_string, &mut args[0..*n_members as usize + 1]);
+                let borrow_operand_stack_elements = &mut self.operand_stack.0
+                    [self.operand_stack_len - length + 1..=self.operand_stack_len + 1]; // + 1 for tag
+                // println!(
+                //     "[LOG][Instruction::SEXP] borrow_operand_stack_elements: {:#?}",
+                //     borrow_operand_stack_elements
+                // );
+                let sexp = new_sexp(c_string, borrow_operand_stack_elements);
+
+                // Pop arguments from the stack
+                for _ in 0..length {
+                    self.pop()?;
+                }
 
                 // if cfg!(feature = "verbose") {
                 //     unsafe {
@@ -384,17 +391,26 @@ impl Interpreter {
                 "Congratulations! Somehow, you emitted a STI instruction, while the compiler itself never should have"
             ),
             Instruction::CBEGIN { args, locals } => {
-                // let mut closure_obj = Object::new_empty();
-                // let mut ret_ip = Object::new_empty();
-
-                // Top object is a closure obj
-                let closure_obj = self
-                    .pop()
-                    .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?; // must be a closure
-
                 let ret_ip = self
                     .pop()
                     .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?;
+
+                // Top object is a closure obj
+                let closure_obj =
+                    FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
+                        .ok_or(InterpreterError::NotEnoughArguments(
+                            "trying to call closure frame",
+                        ))?
+                        .get_closure(&mut self.operand_stack.0, self.frame_pointer)
+                        .ok_or(InterpreterError::NotEnoughArguments(
+                            "trying to call closure frame",
+                        ))?
+                        .clone();
+                // self
+                //     .pop()
+                //     .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?; // must be a closure
+
+                let frame_closure_copy = closure_obj.clone();
 
                 // check for closure
                 // if let Some(lama_type) = obj.lama_type() {
@@ -411,26 +427,18 @@ impl Interpreter {
                 //     ret_ip = obj;
                 // }
 
-                // Collect callee provided arguments
-                let mut arguments: [Object; MAX_ARG_LEN] = array::repeat(Object::new_empty());
-                for i in 0..*args as usize {
-                    arguments[i] = self
-                        .pop()
-                        .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?
-                }
-
                 // Save previous frame pointer
                 let ret_frame_pointer = self.frame_pointer;
 
                 // Set new frame pointer as index into operand stack
                 #[cfg(feature = "runtime_checks")]
-                if self.operand_stack.is_empty() {
+                if self.operand_stack.0.is_empty() {
                     return Err(InterpreterError::NotEnoughArguments("BEGIN"));
                 }
-                self.frame_pointer = self.operand_stack_len - 1;
+                self.frame_pointer = self.operand_stack_len + 1;
 
                 // Push closure object onto operand stack
-                self.push(Object::new_empty())?;
+                self.push(closure_obj)?;
 
                 // Push arg and local count
                 self.push(Object::new_unboxed(*args as i64))?;
@@ -441,14 +449,6 @@ impl Interpreter {
                 self.push(Object::new_unboxed(ret_frame_pointer as i64))?;
                 // 2. Where to return in the bytecode after this call
                 self.push(ret_ip)?;
-
-                // Re-push arguments
-                for (iarg, arg) in arguments.into_iter().enumerate() {
-                    if iarg >= *args as usize {
-                        break;
-                    }
-                    self.push(arg)?;
-                }
 
                 // Initialize local variables with 0
                 // We create them as boxed objects
@@ -460,46 +460,36 @@ impl Interpreter {
                 // let mut closure_obj = Object::new_empty();
                 // let mut ret_ip = Object::new_empty();
 
+                let mut frame =
+                    FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
+                        .ok_or(InterpreterError::NotEnoughArguments(
+                            "trying to call closure frame",
+                        ))?;
+                let closure_obj_in_prev_frame = if let Some(obj) =
+                    frame.get_closure(&mut self.operand_stack.0, self.frame_pointer)
+                {
+                    obj.clone()
+                } else {
+                    Object::new_empty()
+                };
+
                 // Top object is either return_ip or a closure obj
                 let ret_ip = self
                     .pop()
                     .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?; // must be a closure
-
-                // check for closure
-                // if let Some(lama_type) = obj.lama_type() {
-                //     // check for closure type
-                //     if lama_type == lama_type_CLOSURE {
-                //         closure_obj = obj;
-
-                //         // Save previous ip (provided by `CALL`)
-                //         ret_ip = self
-                //             .pop()
-                //             .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?;
-                //     }
-                // } else {
-                //     ret_ip = obj;
-                // }
-
-                // Collect callee provided arguments
-                let mut arguments: [Object; MAX_ARG_LEN] = array::repeat(Object::new_empty());
-                for i in (0..*args as usize).rev() {
-                    arguments[i] = self
-                        .pop()
-                        .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?
-                }
 
                 // Save previous frame pointer
                 let ret_frame_pointer = self.frame_pointer;
 
                 // Set new frame pointer as index into operand stack
                 #[cfg(feature = "runtime_checks")]
-                if self.operand_stack.is_empty() {
+                if self.operand_stack.0.is_empty() {
                     return Err(InterpreterError::NotEnoughArguments("BEGIN"));
                 }
-                self.frame_pointer = self.operand_stack_len - 1;
+                self.frame_pointer = self.operand_stack_len + 1;
 
                 // Push closure object onto operand stack
-                self.push(Object::new_empty())?;
+                self.push(closure_obj_in_prev_frame)?;
 
                 // Push arg and local count
                 self.push(Object::new_unboxed(*args as i64))?;
@@ -510,14 +500,6 @@ impl Interpreter {
                 self.push(Object::new_unboxed(ret_frame_pointer as i64))?;
                 // 2. Where to return in the bytecode after this call
                 self.push(ret_ip)?;
-
-                // Re-push arguments
-                for (iarg, arg) in arguments.into_iter().enumerate() {
-                    if iarg >= *args as usize {
-                        break;
-                    }
-                    self.push(arg)?;
-                }
 
                 // Initialize local variables with 0
                 // We create them as boxed objects
@@ -537,8 +519,31 @@ impl Interpreter {
                     n_args,
                     ret_frame_pointer,
                     ret_ip,
-                } = FrameMetadata::get_from_stack(&self.operand_stack, self.frame_pointer)
+                } = FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
                     .ok_or(InterpreterError::NotEnoughArguments("END"))?;
+
+                for _ in 0..n_locals {
+                    self.pop()?;
+                }
+
+                // Pop return ip
+                self.pop()?;
+
+                // Pop old frame pointer
+                self.pop()?;
+
+                // Pop local count
+                self.pop()?;
+
+                // Pop argument count
+                self.pop()?;
+
+                // Pop closure object
+                self.pop()?;
+
+                for _ in 0..n_args {
+                    self.pop()?;
+                }
 
                 // Return to callee's frame pointer
                 self.frame_pointer = ret_frame_pointer;
@@ -548,32 +553,13 @@ impl Interpreter {
                 //       the program will exit after the main function returns
                 self.decoder.ip = ret_ip;
 
-                // Pop closure object
-                self.pop()?;
-                // Pop return ip
-                self.pop()?;
-                // Pop old frame pointer
-                self.pop()?;
-                // Pop local count
-                self.pop()?;
-                // Pop argument count
-                self.pop()?;
-
-                for _ in 0..n_args {
-                    self.pop()?;
-                }
-
-                for _ in 0..n_locals {
-                    self.pop()?;
-                }
-
                 // After removing current frames metadata,
                 // we can re-push the return value to send it back to the caller
                 self.push(return_value)?;
             }
             Instruction::STORE { rel, index } => {
                 let mut frame =
-                    FrameMetadata::get_from_stack(&self.operand_stack, self.frame_pointer)
+                    FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
                         .ok_or(InterpreterError::NotEnoughArguments("STORE"))?;
 
                 let value = self.pop()?;
@@ -582,7 +568,7 @@ impl Interpreter {
                     ValueRel::Arg => {
                         frame
                             .set_arg_at(
-                                &mut self.operand_stack,
+                                &mut self.operand_stack.0,
                                 self.frame_pointer,
                                 *index as usize,
                                 value.clone(),
@@ -597,7 +583,7 @@ impl Interpreter {
                     }
                     ValueRel::Capture => unsafe {
                         let closure = frame
-                            .get_closure(&mut self.operand_stack, self.frame_pointer)
+                            .get_closure(&mut self.operand_stack.0, self.frame_pointer)
                             .ok_or({
                                 InterpreterError::InvalidStoreIndex(ValueRel::Capture, *index, 1)
                             })?;
@@ -623,7 +609,7 @@ impl Interpreter {
                     }
                     ValueRel::Local => frame
                         .set_local_at(
-                            &mut self.operand_stack,
+                            &mut self.operand_stack.0,
                             self.frame_pointer,
                             *index as usize,
                             value.clone(),
@@ -639,13 +625,13 @@ impl Interpreter {
             }
             Instruction::LOAD { rel, index } => {
                 let mut frame =
-                    FrameMetadata::get_from_stack(&self.operand_stack, self.frame_pointer)
+                    FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
                         .ok_or(InterpreterError::NotEnoughArguments("STORE"))?;
 
                 match rel {
                     ValueRel::Arg => {
                         let value = frame
-                            .get_arg_at(&self.operand_stack, self.frame_pointer, *index as usize)
+                            .get_arg_at(&self.operand_stack.0, self.frame_pointer, *index as usize)
                             .ok_or(InterpreterError::InvalidStoreIndex(
                                 ValueRel::Arg,
                                 *index,
@@ -656,7 +642,7 @@ impl Interpreter {
                     }
                     ValueRel::Capture => unsafe {
                         let closure = frame
-                            .get_closure(&mut self.operand_stack, self.frame_pointer)
+                            .get_closure(&mut self.operand_stack.0, self.frame_pointer)
                             .ok_or({
                                 InterpreterError::InvalidStoreIndex(ValueRel::Capture, *index, 1)
                             })?;
@@ -686,7 +672,11 @@ impl Interpreter {
                     }
                     ValueRel::Local => {
                         let value = frame
-                            .get_local_at(&self.operand_stack, self.frame_pointer, *index as usize)
+                            .get_local_at(
+                                &self.operand_stack.0,
+                                self.frame_pointer,
+                                *index as usize,
+                            )
                             .ok_or(InterpreterError::InvalidStoreIndex(
                                 ValueRel::Local,
                                 *index,
@@ -752,16 +742,21 @@ impl Interpreter {
                                 //     let offset = self.operand_stack_len - length;
                                 //     std::slice::from_raw_parts_mut(ptr.add(offset * 2), length * 2)
                                 // };
-                                let borrow_operand_stack_elements = &mut self.operand_stack
+                                let borrow_operand_stack_elements = &mut self.operand_stack.0
                                     [self.operand_stack_len - length + 1..=self.operand_stack_len];
-                                let ptr = borrow_operand_stack_elements.as_mut_ptr() as *mut i64;
-                                // let array = new_array();
-                                let array = unsafe {
-                                    Barray(
-                                        ptr,                  /* [args_1,...,arg_n, tag] */
-                                        rtBox(length as i64), /* n args */
-                                    )
-                                };
+                                // let ptr = borrow_operand_stack_elements.as_mut_ptr() as *mut i64;
+                                let array = new_array(borrow_operand_stack_elements);
+                                // let array = unsafe {
+                                //     Barray(
+                                //         ptr,                  /* [args_1,...,arg_n, tag] */
+                                //         rtBox(length as i64), /* n args */
+                                //     )
+                                // };
+
+                                // remove args
+                                for _ in 0..length {
+                                    self.pop()?;
+                                }
 
                                 self.push(
                                     Object::try_from(array)
@@ -897,6 +892,16 @@ impl Interpreter {
                         let element = get_sexp_el(&*sexp, index);
 
                         // push the boxed element onto the stack
+                        // createStringBuf();
+                        // printValue(as_ptr);
+                        // let c_string = CStr::from_ptr(stringBuf.contents);
+                        // println!(
+                        //     "[LOG][ELEMSEXP] {} {} {}",
+                        //     element,
+                        //     lama_type,
+                        //     c_string.to_string_lossy()
+                        // );
+
                         self.push(Object::new_unboxed(element))?;
                     } else if lama_type == lama_type_STRING {
                         let contents = (*rtToData(as_ptr)).contents.as_ptr();
@@ -1039,10 +1044,13 @@ impl Interpreter {
                     ));
                 }
 
-                let mut args = [0; MAX_ARG_LEN];
+                let length = *arity as usize + 1; // + 1 for offset
+
+                // let mut args = [0; MAX_ARG_LEN];
 
                 // Push offset - which is a first element to args of Bsexp
-                args[0] = *offset as i64;
+                // args[0] = *offset as i64;
+                self.push(Object::new_unboxed(*offset as i64))?;
 
                 // Read captured variables description from code section
                 for i in 0..*arity as usize {
@@ -1056,7 +1064,7 @@ impl Interpreter {
                     match desc.rel {
                         ValueRel::Arg => {
                             let frame = FrameMetadata::get_from_stack(
-                                &self.operand_stack,
+                                &self.operand_stack.0,
                                 self.frame_pointer,
                             )
                             .ok_or(
@@ -1066,18 +1074,19 @@ impl Interpreter {
                             )?;
                             let obj = frame
                                 .get_arg_at(
-                                    &self.operand_stack,
+                                    &self.operand_stack.0,
                                     self.frame_pointer,
                                     desc.index as usize,
                                 )
                                 .ok_or(InterpreterError::NotEnoughArguments(
                                     "trying to create closure frame",
                                 ))?;
-                            args[i + 1] = obj.raw();
+                            // args[i + 1] = obj.raw();
+                            self.push(obj.clone())?;
                         }
                         ValueRel::Capture => {
                             let mut frame = FrameMetadata::get_from_stack(
-                                &self.operand_stack,
+                                &self.operand_stack.0,
                                 self.frame_pointer,
                             )
                             .ok_or(
@@ -1087,7 +1096,7 @@ impl Interpreter {
                             )?;
 
                             let closure = frame
-                                .get_closure(&mut self.operand_stack, self.frame_pointer)
+                                .get_closure(&mut self.operand_stack.0, self.frame_pointer)
                                 .ok_or({
                                     InterpreterError::InvalidLoadIndex(
                                         ValueRel::Capture,
@@ -1104,7 +1113,8 @@ impl Interpreter {
 
                             let element = get_captured_variable(&*to_data, desc.index as usize);
 
-                            args[i + 1] = element;
+                            // args[i + 1] = element;
+                            self.push(Object::new_unboxed(element))?;
                         }
                         ValueRel::Global => {
                             #[cfg(feature = "runtime_checks")]
@@ -1117,11 +1127,12 @@ impl Interpreter {
                             }
 
                             let value = self.globals()[desc.index as usize].clone();
-                            args[i + 1] = value.raw();
+                            // args[i + 1] = value.raw();
+                            self.push(value.clone())?;
                         }
                         ValueRel::Local => {
                             let frame = FrameMetadata::get_from_stack(
-                                &self.operand_stack,
+                                &self.operand_stack.0,
                                 self.frame_pointer,
                             )
                             .ok_or(
@@ -1132,34 +1143,58 @@ impl Interpreter {
 
                             let obj = frame
                                 .get_local_at(
-                                    &self.operand_stack,
+                                    &self.operand_stack.0,
                                     self.frame_pointer,
                                     desc.index as usize,
                                 )
                                 .ok_or(InterpreterError::NotEnoughArguments(
                                     "trying to create closure frame",
                                 ))?;
-                            args[i + 1] = obj.raw();
+                            // args[i + 1] = obj.raw();
+                            self.push(obj.clone())?;
                         }
                     }
                 }
 
-                // Create a new closure object
-                let closure = new_closure(&mut args[0..(*arity as usize + 1)]);
+                // // Reverse the order of arguments, by re-pushing them in reverse order
+                // for _ in 0..(length - 1) {
+                //     let arg = self.pop()?;
+                //     self.push(arg)?;
+                // }
 
-                self.push(
-                    Object::try_from(closure)
-                        .map_err(|_| InterpreterError::InvalidObjectPointer)?,
-                )?;
+                // Create a new closure object
+                let borrow_operand_stack_elements = &mut self.operand_stack.0
+                    [self.operand_stack_len - length + 1..self.operand_stack_len];
+                let closure = new_closure(borrow_operand_stack_elements);
+
+                // Pop arguments from the stack
+                for _ in 0..length {
+                    self.pop()?;
+                }
+
+                let mut closure_obj = Object::try_from(closure)
+                    .map_err(|_| InterpreterError::InvalidObjectPointer)?;
+
+                // println!(
+                //     "[CLCREATE] type: {:#?} anbd {:?}",
+                //     closure_obj.lama_type(),
+                //     closure_obj
+                // );
+
+                self.push(closure_obj)?;
             },
             Instruction::CALLC { arity } => {
                 // Re-push arguments to get to the closure object
-                for _ in 0..*arity {
-                    let arg = self.pop()?;
-                    self.push(arg)?;
-                }
+                // TODO: this doesnt work
+                // for _ in 0..*arity {
+                //     let arg = self.pop()?;
+                //     self.push(arg)?;
+                // }
 
-                let mut obj = self.pop()?; // must be a closure
+                let arity = *arity as usize;
+
+                let mut obj = self.take(arity)?;
+                //self.operand_stack.0[self.operand_stack_len - arity].clone(); // must be a closure
 
                 // check for closure
                 #[cfg(feature = "runtime_checks")]
@@ -1171,7 +1206,7 @@ impl Interpreter {
                 #[cfg(feature = "runtime_checks")]
                 if lama_type != lama_type_CLOSURE {
                     return Err(InterpreterError::InvalidType(
-                        "expected closure object at top of the stack to call a closure".into(),
+                        "expected closure object at top of the stack to call a closure",
                     ));
                 }
 
@@ -1181,7 +1216,7 @@ impl Interpreter {
 
                 // Re-push closure object
                 // `CBEGIN` instruction will collect it
-                self.push(obj.clone())?;
+                // self.push(obj.clone())?;
 
                 unsafe {
                     let to_data = rtToData(
@@ -1191,6 +1226,13 @@ impl Interpreter {
                     // First element in closure object is the offset
                     self.decoder.ip = get_array_el(&*to_data, 0) as usize;
                 }
+
+                let mut frame =
+                    FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
+                        .ok_or(InterpreterError::NotEnoughArguments(
+                            "trying to call closure frame",
+                        ))?;
+                frame.save_closure(&mut self.operand_stack.0, self.frame_pointer, obj);
             }
             Instruction::PATT { kind } => match kind {
                 PattKind::BothAreStr => unsafe {
@@ -1210,9 +1252,7 @@ impl Interpreter {
                 },
                 PattKind::IsStr => unsafe {
                     let obj = self.pop()?;
-                    let ptr = obj
-                        .as_ptr_mut()
-                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+                    let ptr = obj.as_ptr_mut_unchecked();
 
                     let res = Bstring_tag_patt(ptr);
 
@@ -1220,9 +1260,7 @@ impl Interpreter {
                 },
                 PattKind::IsArray => unsafe {
                     let obj = self.pop()?;
-                    let ptr = obj
-                        .as_ptr_mut()
-                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+                    let ptr = obj.as_ptr_mut_unchecked();
 
                     let res = Barray_tag_patt(ptr);
 
@@ -1230,9 +1268,7 @@ impl Interpreter {
                 },
                 PattKind::IsSExp => unsafe {
                     let obj = self.pop()?;
-                    let ptr = obj
-                        .as_ptr_mut()
-                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+                    let ptr = obj.as_ptr_mut_unchecked();
 
                     let res = Bsexp_tag_patt(ptr);
 
@@ -1240,9 +1276,7 @@ impl Interpreter {
                 },
                 PattKind::IsRef => unsafe {
                     let obj = self.pop()?;
-                    let ptr = obj
-                        .as_ptr_mut()
-                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+                    let ptr = obj.as_ptr_mut_unchecked();
 
                     let res = Bboxed_patt(ptr);
 
@@ -1250,9 +1284,7 @@ impl Interpreter {
                 },
                 PattKind::IsVal => unsafe {
                     let obj = self.pop()?;
-                    let ptr = obj
-                        .as_ptr_mut()
-                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+                    let ptr = obj.as_ptr_mut_unchecked();
 
                     let res = Bunboxed_patt(ptr);
 
@@ -1260,9 +1292,7 @@ impl Interpreter {
                 },
                 PattKind::IsLambda => unsafe {
                     let obj = self.pop()?;
-                    let ptr = obj
-                        .as_ptr_mut()
-                        .ok_or(InterpreterError::InvalidObjectPointer)?;
+                    let ptr = obj.as_ptr_mut_unchecked();
 
                     let res = Bclosure_tag_patt(ptr);
 
@@ -1282,10 +1312,14 @@ impl Interpreter {
             return Err(InterpreterError::StackOverflow);
         }
 
+        #[cfg(feature = "runtime_checks")]
+        if (self.operand_stack_len - 1) <= self.global_areas_size {
+            return Err(InterpreterError::StackUnderflow);
+        }
+
         // self.operand_stack.push(obj);
         // if cfg!(feature = "verbose") {
-        //     println!("[LOG] STACK PUSH");
-        //     self.print_stack();
+
         // }
 
         unsafe {
@@ -1296,16 +1330,22 @@ impl Interpreter {
             // let ptr_to_top = __gc_stack_top as *mut Object;
             // *ptr_to_top = obj;
 
+            let ptr_bottom: *const Object = &self.operand_stack.0[0];
+            __gc_stack_top = ptr_bottom as usize;
+
             self.operand_stack_len += 1;
-            self.operand_stack[self.operand_stack_len] = obj;
+            self.operand_stack.0[self.operand_stack_len] = obj;
 
             // Move top pointer one object to the right
             // __gc_stack_top = __gc_stack_top + core::mem::size_of::<Object>();
             // Mutate empty object
-            let ptr_to_top: *const Object = &self.operand_stack[self.operand_stack_len];
+            let ptr_to_top: *const Object = &self.operand_stack.0[self.operand_stack_len];
 
             __gc_stack_bottom = ptr_to_top as usize;
         }
+
+        // println!("[LOG] STACK PUSH");
+        // self.print_stack();
 
         Ok(())
     }
@@ -1313,13 +1353,16 @@ impl Interpreter {
     /// Pop from the operand stack
     #[inline(always)]
     fn pop(&mut self) -> Result<Object, InterpreterError> {
+        #[cfg(feature = "runtime_checks")]
+        if (self.operand_stack_len - 1) <= self.global_areas_size {
+            return Err(InterpreterError::StackUnderflow);
+        }
         // let obj = self
         //     .operand_stack
         //     .pop()
         //     .ok_or(InterpreterError::StackUnderflow);
         // if cfg!(feature = "verbose") {
-        //     println!("[LOG] STACK POP");
-        //     self.print_stack();
+
         // }
 
         unsafe {
@@ -1332,66 +1375,82 @@ impl Interpreter {
             __gc_stack_bottom = __gc_stack_bottom - core::mem::size_of::<Object>();
 
             self.operand_stack_len -= 1;
+
+            // println!("[LOG] STACK POP");
+            // self.print_stack();
+
             Ok(ptr_to_top.read())
         }
 
         // obj
     }
 
-    // /// Take from the operand stack at `index`, relative to the top of the stack
-    // /// removes the element and returns it
-    // fn take(&mut self, index: usize) -> Result<Object, InterpreterError> {
-    //     #[cfg(feature = "runtime_checks")]
-    //     if (self.operand_stack.len() - index - 1) <= self.global_areas_size {
-    //         return Err(InterpreterError::StackUnderflow);
-    //     }
+    /// Take from the operand stack at `index`, relative to the top of the stack
+    /// removes the element and returns it
+    fn take(&mut self, index: usize) -> Result<Object, InterpreterError> {
+        #[cfg(feature = "runtime_checks")]
+        if (self.operand_stack_len - index - 1) <= self.global_areas_size {
+            return Err(InterpreterError::StackUnderflow);
+        }
 
-    //     let relative_index = self.operand_stack.len() - index - 1;
+        unsafe {
+            // let ptr_to_top = __gc_stack_bottom as *mut Object;
+            // *ptr_to_top = obj;
+            // Move top pointer one object to the left
+            __gc_stack_bottom = __gc_stack_bottom - core::mem::size_of::<Object>();
+        }
+        let relative_index = self.operand_stack_len - index;
 
-    //     let obj = self.operand_stack.remove(relative_index);
+        let taken = self.operand_stack.0[relative_index].clone();
 
-    //     // if cfg!(feature = "verbose") {
-    //     //     println!("[LOG] STACK TAKE {}", index);
-    //     //     self.print_stack();
-    //     // }
+        // Remove taken element and shift remaining elements down
 
-    //     // unsafe {
-    //     //     self.gc_sync()?;
-    //     // }
+        // for i in relative_index..self.operand_stack_len {
+        //     self.operand_stack.0[i] = self.operand_stack.0[i + 1];
+        // }
+        if relative_index != self.operand_stack_len {
+            self.operand_stack
+                .0
+                .copy_within(relative_index + 1..=self.operand_stack_len, relative_index);
+            // self.operand_stack.0[self.operand_stack_len] = taken;
+        }
 
-    //     Ok(obj)
-    // }
+        self.operand_stack_len -= 1;
+        // self.operand_stack.0.
+
+        Ok(taken)
+    }
 
     /// Get global objects which occupy 0..global_size area in operand stack
     fn globals(&self) -> &[Object] {
-        &self.operand_stack[0..self.global_areas_size]
+        &self.operand_stack.0[0..self.global_areas_size]
     }
 
     fn globals_mut(&mut self) -> &mut [Object] {
-        &mut self.operand_stack[0..self.global_areas_size]
+        &mut self.operand_stack.0[0..self.global_areas_size]
     }
 
-    // fn print_stack(&self) {
-    //     println!("---------------- STACK BEGIN --------------");
-    //     for (i, obj) in self.operand_stack.iter().enumerate() {
-    //         if i == self.frame_pointer {
-    //             println!("[{}] {} <- frame_pointer", i, obj);
-    //         } else if i == self.frame_pointer + 1 {
-    //             println!("[{}] {} <- closure", i, obj);
-    //         } else if i == self.frame_pointer + 2 {
-    //             println!("[{}] {} <- argn", i, obj);
-    //         } else if i == self.frame_pointer + 3 {
-    //             println!("[{}] {} <- localn", i, obj);
-    //         } else if i == self.frame_pointer + 4 {
-    //             println!("[{}] {} <- old frame pointer", i, obj);
-    //         } else if i == self.frame_pointer + 5 {
-    //             println!("[{}] {} <- return ip", i, obj);
-    //         } else {
-    //             println!("[{}] {}", i, obj);
-    //         }
-    //     }
-    //     println!("---------------- STACK END   --------------");
-    // }
+    fn print_stack(&self) {
+        println!("---------------- STACK BEGIN --------------");
+        // for (i, obj) in self.operand_stack.iter().enumerate() {
+        for i in self.global_areas_size..=self.operand_stack_len {
+            let obj = &self.operand_stack.0[i];
+            if i == self.frame_pointer {
+                println!("[{}] {} <- closure | frame_pointer", i, obj);
+            } else if i == self.frame_pointer + 1 {
+                println!("[{}] {} <- argn", i, obj);
+            } else if i == self.frame_pointer + 2 {
+                println!("[{}] {} <- localn", i, obj);
+            } else if i == self.frame_pointer + 3 {
+                println!("[{}] {} <- old frame pointer", i, obj);
+            } else if i == self.frame_pointer + 4 {
+                println!("[{}] {} <- return ip", i, obj);
+            } else {
+                println!("[{}] {}", i, obj);
+            }
+        }
+        println!("---------------- STACK END   --------------");
+    }
 }
 
 // TODO: add `LINE` diagnostic to all errors
@@ -1555,14 +1614,18 @@ impl core::fmt::Display for InterpreterError {
 impl core::error::Error for InterpreterError {}
 
 pub enum RunError {
-    ErrorAtOffset(usize, InterpreterError),
+    ErrorAtOffset(usize, InterpreterError, Instruction),
     DecoderError(DecoderError),
 }
 
 impl core::fmt::Display for RunError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            RunError::ErrorAtOffset(offset, ie) => write!(f, "Error at offset {}: {}", offset, ie),
+            RunError::ErrorAtOffset(offset, ie, instr) => write!(
+                f,
+                "Error at offset {}: {} \n  during evaluation of {:?}",
+                offset, ie, instr
+            ),
             RunError::DecoderError(err) => write!(f, "Decoder error: {}", err),
         }
     }

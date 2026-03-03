@@ -195,8 +195,8 @@ impl Bytefile {
     pub fn new_dummy() -> Self {
         Bytefile {
             stringtab_size: 0,
-            global_area_size: 100,
-            public_symbols_number: 100,
+            global_area_size: 0, 
+            public_symbols_number: 0,
             code_section: vec![0; 100],
             string_table: vec![],
             public_symbols: vec![],

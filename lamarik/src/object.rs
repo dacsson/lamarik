@@ -9,8 +9,7 @@ use core::fmt::{Debug, Display, Formatter};
 /// An element of operand stack in interpreter:
 /// - Pointers (should be) are boxed due to alignment
 /// - Other objects get boxed on creation and unboxed on usage
-#[derive(Debug, Clone)]
-#[repr(align(16))]
+#[derive(Debug, Clone, Copy)]
 pub struct Object {
     data: i64,
 }
@@ -95,6 +94,11 @@ impl Object {
         } else {
             Some(self.data as *mut T)
         }
+    }
+
+    /// [`as_ptr`]
+    pub fn as_ptr_mut_unchecked<T>(&self) -> *mut T {
+        self.data as *mut T
     }
 
     /// Get lama type of object

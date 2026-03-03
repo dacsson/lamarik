@@ -5,6 +5,8 @@
 
 use core::ffi::{CStr, c_char, c_void};
 
+use crate::object::Object;
+
 mod frame;
 pub mod interpreter;
 pub mod object;
@@ -17,19 +19,19 @@ const NIL_TAG_HASH: i64 = 115865;
 // #define UNBOX(x) (((aint)(x)) >> 1)
 #[inline(always)]
 fn rtUnbox(x: i64) -> i64 {
-    (((x as i64) >> 1) as i64)
+    ((x as i64) >> 1) as i64
 }
 
 // #define BOX(x) ((((aint)(x)) << 1) | 1)
 #[inline(always)]
 fn rtBox(x: i64) -> i64 {
-    ((((x as i64) << 1) | 1) as i64)
+    (((x as i64) << 1) | 1) as i64
 }
 
 // #define UNBOXED(x) (((aint)(x)) & 1)
 #[inline(always)]
 fn isUnboxed(x: i64) -> bool {
-    (((x as i64) & 1) == 1)
+    ((x as i64) & 1) == 1
 }
 
 // #  define DATA_HEADER_SZ (sizeof(auint) + sizeof(ptrt))
@@ -53,7 +55,7 @@ const LEN_MASK: u64 = u64::MAX ^ 7;
 // #define LEN(x) (ptrt)(((ptrt)x & LEN_MASK) >> 3)
 #[inline(always)]
 fn rtLen(x: u64) -> ptrt {
-    (((x & LEN_MASK) >> 3) as ptrt)
+    ((x & LEN_MASK) >> 3) as ptrt
 }
 
 // #define TAG(x) (x & 7)
@@ -66,7 +68,9 @@ fn rtTag(x: u64) -> i32 {
 /// Returns a pointer to *contents* of the S-expression.
 /// To retrieve the actual S-expression, use `rtToSexp`.
 #[inline(always)]
-fn new_sexp(tag: &CStr, args: &mut [i64]) -> *mut c_void {
+fn new_sexp(tag: &CStr, args: &mut [Object]) -> *mut c_void {
+    let ptr = args.as_mut_ptr() as *mut i64;
+
     unsafe {
         let tag_hash = if tag.to_bytes() == "cons".as_bytes() {
             CONS_TAG_HASH
@@ -79,11 +83,11 @@ fn new_sexp(tag: &CStr, args: &mut [i64]) -> *mut c_void {
         };
 
         if let Some(last) = args.last_mut() {
-            *last = tag_hash;
+            *last = Object::new_unboxed(tag_hash);
         }
 
         Bsexp(
-            args.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
+            ptr,                      /* [args_1,...,arg_n, tag] */
             rtBox(args.len() as i64), /* n args */
         )
     }
@@ -106,10 +110,11 @@ fn new_string(bytes: &[u8]) -> Result<*mut c_void, core::ffi::FromBytesWithNulEr
 /// Returns a pointer to *contents* of the array.
 /// To retrieve the actual array, use `rtToData`.
 #[inline(always)]
-fn new_array(elements: &mut [i64]) -> *mut c_void {
+fn new_array(elements: &mut [Object]) -> *mut c_void {
+    let ptr = elements.as_mut_ptr() as *mut i64;
     unsafe {
         Barray(
-            elements.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
+            ptr,                          /* [args_1,...,arg_n, tag] */
             rtBox(elements.len() as i64), /* n args */
         )
     }
@@ -119,9 +124,9 @@ fn new_array(elements: &mut [i64]) -> *mut c_void {
 #[inline(always)]
 fn get_array_el(arr: &data, index: usize) -> i64 {
     unsafe {
-    let contents = arr.contents.as_ptr() as *const crate::object::Object;
-        let obj = contents .add(index).read();
-    obj.raw()
+        let contents = arr.contents.as_ptr() as *const crate::object::Object;
+        let obj = contents.add(index).read();
+        obj.raw()
     }
 }
 
@@ -129,10 +134,12 @@ fn get_array_el(arr: &data, index: usize) -> i64 {
 /// Returns a pointer to *contents* of the closure.
 /// To retrieve the actual closure, use `rtToData`.
 #[inline(always)]
-fn new_closure(args: &mut [i64]) -> *mut c_void {
+fn new_closure(args: &mut [Object]) -> *mut c_void {
+    let ptr = args.as_mut_ptr() as *mut i64;
+
     unsafe {
         Bclosure(
-            args.as_mut_ptr(),        /* [args_1,...,arg_n, tag] */
+            ptr,                      /* [args_1,...,arg_n, tag] */
             rtBox(args.len() as i64), /* n args */
         )
     }

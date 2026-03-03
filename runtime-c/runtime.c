@@ -250,17 +250,11 @@ char *de_hash (aint n) {
   return ++p;
 }
 
-typedef struct {
-  char *contents;
-  aint   ptr;
-  aint   len;
-} StringBuf;
-
-static StringBuf stringBuf;
+StringBuf stringBuf;
 
 #define STRINGBUF_INIT 128
 
-static void createStringBuf () {
+void createStringBuf () {
   stringBuf.contents = (char *)malloc(STRINGBUF_INIT);
   memset(stringBuf.contents, 0, STRINGBUF_INIT);
   stringBuf.ptr = 0;
