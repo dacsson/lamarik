@@ -826,6 +826,11 @@ Builtin::Barray => unsafe {
 },
 ```
 
+### Regressions with `no_std`
+
+- Lamarik: [see here](regression_no_std_lamarik)
+- Lamarifyer: [see here](regression_no_std_lamarifyer)
+
 ## Analyzer
 
 ### Public symbols checks
