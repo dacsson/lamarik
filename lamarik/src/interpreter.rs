@@ -391,24 +391,14 @@ impl Interpreter {
                 "Congratulations! Somehow, you emitted a STI instruction, while the compiler itself never should have"
             ),
             Instruction::CBEGIN { args, locals } => {
-                let ret_ip = self
+                // Top object is a closure obj
+                let closure_obj = self
                     .pop()
                     .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?;
 
-                // Top object is a closure obj
-                let closure_obj =
-                    FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
-                        .ok_or(InterpreterError::NotEnoughArguments(
-                            "trying to call closure frame",
-                        ))?
-                        .get_closure(&mut self.operand_stack.0, self.frame_pointer)
-                        .ok_or(InterpreterError::NotEnoughArguments(
-                            "trying to call closure frame",
-                        ))?
-                        .clone();
-                // self
-                //     .pop()
-                //     .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?; // must be a closure
+                let ret_ip = self
+                    .pop()
+                    .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?;
 
                 let frame_closure_copy = closure_obj.clone();
 
@@ -455,23 +445,33 @@ impl Interpreter {
                 for _ in 0..*locals {
                     self.push(Object::new_boxed(0))?;
                 }
-            }
-            Instruction::BEGIN { args, locals } => {
-                // let mut closure_obj = Object::new_empty();
-                // let mut ret_ip = Object::new_empty();
 
                 let mut frame =
                     FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
                         .ok_or(InterpreterError::NotEnoughArguments(
                             "trying to call closure frame",
                         ))?;
-                let closure_obj_in_prev_frame = if let Some(obj) =
-                    frame.get_closure(&mut self.operand_stack.0, self.frame_pointer)
-                {
-                    obj.clone()
-                } else {
-                    Object::new_empty()
-                };
+                frame.save_closure(&mut self.operand_stack.0, self.frame_pointer, closure_obj);
+            }
+            Instruction::BEGIN { args, locals } => {
+                // let mut closure_obj = Object::new_empty();
+                // let mut ret_ip = Object::new_empty();
+
+                // let mut frame =
+                //     FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
+                //         .ok_or(InterpreterError::NotEnoughArguments(
+                //             "trying to call closure frame",
+                //         ))?;
+                // let closure_obj_in_prev_frame = if let Some(obj) =
+                //     frame.get_closure(&mut self.operand_stack.0, self.frame_pointer)
+                // {
+                //     obj.clone()
+                // } else {
+                //     Object::new_empty()
+                // };
+                let closure_obj = self
+                    .pop()
+                    .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?;
 
                 // Top object is either return_ip or a closure obj
                 let ret_ip = self
@@ -489,7 +489,7 @@ impl Interpreter {
                 self.frame_pointer = self.operand_stack_len + 1;
 
                 // Push closure object onto operand stack
-                self.push(closure_obj_in_prev_frame)?;
+                self.push(closure_obj)?;
 
                 // Push arg and local count
                 self.push(Object::new_unboxed(*args as i64))?;
@@ -506,6 +506,13 @@ impl Interpreter {
                 for _ in 0..*locals {
                     self.push(Object::new_boxed(0))?;
                 }
+
+                let mut frame =
+                    FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
+                        .ok_or(InterpreterError::NotEnoughArguments(
+                            "trying to call closure frame",
+                        ))?;
+                frame.save_closure(&mut self.operand_stack.0, self.frame_pointer, closure_obj);
             }
             Instruction::END | Instruction::RET => {
                 // Get procedures return value
@@ -587,6 +594,8 @@ impl Interpreter {
                             .ok_or({
                                 InterpreterError::InvalidStoreIndex(ValueRel::Capture, *index, 1)
                             })?;
+
+                        // println!("[STORE] closure: {}", closure);
 
                         let to_data = rtToData(
                             closure
@@ -716,6 +725,9 @@ impl Interpreter {
                     // Push old instruction pointer
                     // `BEGIN` instruction will collect it
                     self.push(Object::new_unboxed(self.decoder.ip as i64))?;
+
+                    // Push empty closure object
+                    self.push(Object::new_empty())?;
 
                     if let Some(offset) = offset {
                         self.decoder.ip = *offset as usize;
@@ -1164,7 +1176,11 @@ impl Interpreter {
 
                 // Create a new closure object
                 let borrow_operand_stack_elements = &mut self.operand_stack.0
-                    [self.operand_stack_len - length + 1..self.operand_stack_len];
+                    [self.operand_stack_len - length + 1..=self.operand_stack_len];
+                // println!(
+                //     "[CLOSURE] borrow_operand_stack_elements: {:#?}, arity {}, offset {}",
+                //     borrow_operand_stack_elements, arity, offset
+                // );
                 let closure = new_closure(borrow_operand_stack_elements);
 
                 // Pop arguments from the stack
@@ -1191,9 +1207,12 @@ impl Interpreter {
                 //     self.push(arg)?;
                 // }
 
+                // println!("[CALLC] arity: {}", *arity);
+
                 let arity = *arity as usize;
 
                 let mut obj = self.take(arity)?;
+                // println!("[CALLC] obj: {}", obj);
                 //self.operand_stack.0[self.operand_stack_len - arity].clone(); // must be a closure
 
                 // check for closure
@@ -1225,14 +1244,18 @@ impl Interpreter {
                     );
                     // First element in closure object is the offset
                     self.decoder.ip = get_array_el(&*to_data, 0) as usize;
+                    // println!("[CALLC] offset changes ip: {}", self.decoder.ip)
                 }
 
-                let mut frame =
-                    FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
-                        .ok_or(InterpreterError::NotEnoughArguments(
-                            "trying to call closure frame",
-                        ))?;
-                frame.save_closure(&mut self.operand_stack.0, self.frame_pointer, obj);
+                // Push closure object onto operand stack
+                self.push(obj)?;
+
+                // let mut frame =
+                //     FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
+                //         .ok_or(InterpreterError::NotEnoughArguments(
+                //             "trying to call closure frame",
+                //         ))?;
+                // frame.save_closure(&mut self.operand_stack.0, self.frame_pointer, obj);
             }
             Instruction::PATT { kind } => match kind {
                 PattKind::BothAreStr => unsafe {
