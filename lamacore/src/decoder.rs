@@ -133,10 +133,8 @@ impl Decoder {
                 arity: self.next::<i32>()?,
             }),
             (0x50, 0x6) => Ok(Instruction::CALL {
-                offset: Some(self.next::<i32>()?),
-                n: Some(self.next::<i32>()?),
-                name: None,
-                builtin: false,
+                offset: self.next::<i32>()?,
+                n: self.next::<i32>()?,
             }),
             (0x50, 0x7) => Ok(Instruction::TAG {
                 index: self.next::<i32>()?,
@@ -155,17 +153,13 @@ impl Decoder {
             (0x60, _) if subopcode <= 0x6 => Ok(Instruction::PATT {
                 kind: PattKind::try_from(subopcode).map_err(|_| DecoderError::from(byte))?,
             }),
-            (0x70, _) if subopcode <= 0x3 => Ok(Instruction::CALL {
-                offset: None,
-                n: None,
-                name: Some(Builtin::try_from(subopcode).map_err(|_| DecoderError::from(byte))?),
-                builtin: true,
+            (0x70, _) if subopcode <= 0x3 => Ok(Instruction::CALLBUILTIN {
+                n: 0,
+                name: Builtin::try_from(subopcode).map_err(|_| DecoderError::from(byte))?,
             }),
-            (0x70, 0x4) => Ok(Instruction::CALL {
-                offset: None,
-                n: Some(self.next::<i32>()?),
-                name: Some(Builtin::Barray),
-                builtin: true,
+            (0x70, 0x4) => Ok(Instruction::CALLBUILTIN {
+                n: self.next::<i32>()?,
+                name: Builtin::Barray,
             }),
             _ => Err(DecoderError::InvalidOpcode(byte)),
         }

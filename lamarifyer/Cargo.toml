@@ -14,3 +14,4 @@ bindgen = "0.72.1"
 [features]
 default = []
 verbose = []
+runtime_checks = []

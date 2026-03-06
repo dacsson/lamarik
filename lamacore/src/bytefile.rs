@@ -13,6 +13,7 @@ pub enum BytefileError {
     NoCodeSection,
     InvalidStringIndexInStringTable,
     MainNotFound,
+    InvalidPublicSymbolOffset(u32, u32),
 }
 
 // Memory layout of the bytecode file
@@ -56,6 +57,9 @@ impl Display for BytefileError {
                 write!(f, "Invalid string index in string table")
             }
             BytefileError::MainNotFound => write!(f, "Main function not found"),
+            BytefileError::InvalidPublicSymbolOffset(offset, max) => {
+                write!(f, "Invalid public symbol offset: {} (max: {})", offset, max)
+            }
         }
     }
 }
@@ -142,6 +146,20 @@ impl Bytefile {
             .read_to_end(&mut code_section)
             .map_err(|_| BytefileError::UnexpectedEOF)?;
 
+        // Check public symbols offsets are within bounds
+        for (s_index, offset) in &public_symbols {
+            if *offset >= code_section.len() as u32 {
+                return Err(BytefileError::InvalidPublicSymbolOffset(
+                    *offset,
+                    code_section.len() as u32,
+                ));
+            }
+
+            if *s_index >= string_table.len() as u32 {
+                return Err(BytefileError::InvalidStringIndexInStringTable);
+            }
+        }
+
         Ok(Bytefile {
             stringtab_size,
             global_area_size,
@@ -195,7 +213,7 @@ impl Bytefile {
     pub fn new_dummy() -> Self {
         Bytefile {
             stringtab_size: 0,
-            global_area_size: 0, 
+            global_area_size: 0,
             public_symbols_number: 0,
             code_section: vec![0; 100],
             string_table: vec![],

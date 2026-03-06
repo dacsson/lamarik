@@ -21,7 +21,6 @@ pub const MAX_PARAMS: usize = 0xffff;
 
 #[derive(Debug)]
 pub enum VerifierError {
-    FileIsTooLarge(String, u64),
     DecoderError(DecoderError),
     InvalidJumpOffset(usize, i32, usize),
     StringIndexOutOfBounds,
@@ -38,9 +37,6 @@ pub enum VerifierError {
 impl std::fmt::Display for VerifierError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            VerifierError::FileIsTooLarge(file, size) => {
-                write!(f, "File {} is too large: {}, max is 1GB", file, size)
-            }
             VerifierError::DecoderError(e) => {
                 write!(f, "{}", e)
             }
@@ -119,7 +115,7 @@ impl Verifier {
 
     fn get_call_offset(instr: &Instruction) -> Option<i32> {
         match instr {
-            Instruction::CALL { offset, .. } => *offset,
+            Instruction::CALL { offset, .. } => Some(*offset),
             _ => None,
         }
     }
@@ -152,7 +148,9 @@ impl Verifier {
 
         // Add public symbols to the worklist
         for (_, offset) in &self.decoder.bf.public_symbols {
-            worklist.push_back(*offset);
+            if !worklist.contains(offset) {
+                worklist.push_back(*offset);
+            }
         }
 
         while !worklist.is_empty() {
@@ -188,20 +186,26 @@ impl Verifier {
                 };
 
                 if let Some(offset) = Verifier::get_call_offset(&instr) {
-                    worklist.push_back(offset as u32);
+                    if !worklist.contains(&(offset as u32)) {
+                        worklist.push_back(offset as u32);
+                    }
                 }
             }
 
             // It doesnt mean we will call it!
             if let Instruction::CLOSURE { offset, .. } = instr {
-                worklist.push_back(offset as u32);
+                if !worklist.contains(&(offset as u32)) {
+                    worklist.push_back(offset as u32);
+                }
             }
 
             // Enqueue jump targets
             if Verifier::is_jump(&instr) {
                 match instr {
                     Instruction::JMP { offset } | Instruction::CJMP { offset, .. } => {
-                        worklist.push_back(offset as u32);
+                        if !worklist.contains(&(offset as u32)) {
+                            worklist.push_back(offset as u32);
+                        }
                         target_offsets.set(offset as usize, true);
                     }
                     _ => {}
@@ -210,7 +214,9 @@ impl Verifier {
 
             // Push next instruction
             if !Verifier::is_terminal(&instr) {
-                worklist.push_back(self.decoder.ip as u32);
+                if !worklist.contains(&(self.decoder.ip as u32)) {
+                    worklist.push_back(self.decoder.ip as u32);
+                }
             }
         }
 
@@ -268,7 +274,13 @@ impl Verifier {
             )?;
         }
 
-        Ok((VerificationResult { stack_depths }, ReachableResult { reachables, targets }))
+        Ok((
+            VerificationResult { stack_depths },
+            ReachableResult {
+                reachables,
+                targets,
+            },
+        ))
     }
 
     fn verify_instruction(
@@ -289,7 +301,9 @@ impl Verifier {
         *current_stack_depth += stack_effect;
 
         if *current_stack_depth < 0 {
-            return Err(VerifierError::StackUnderflow(instruction.pop_effect() * -1));
+            return Err(VerifierError::StackUnderflow(
+                instruction.stack_size_effect(),
+            ));
         }
 
         if *current_stack_depth > MAX_OPERAND_STACK_SIZE as isize {
@@ -326,18 +340,13 @@ impl Verifier {
                     ));
                 }
             }
-            Instruction::CALL {
-                offset,
-                n,
-                name,
-                builtin,
-            } if !builtin => {
-                let offset_at = offset.unwrap() as usize;
+            Instruction::CALL { offset, n } => {
+                let offset_at = *offset as usize;
 
-                if (offset.unwrap()) < 0 || offset_at >= code_section_len {
+                if (*offset) < 0 || offset_at >= code_section_len {
                     return Err(VerifierError::InvalidJumpOffset(
                         ip,
-                        offset.unwrap(),
+                        *offset,
                         code_section_len,
                     ));
                 }
@@ -433,11 +442,6 @@ pub struct ReachableResult {
     pub targets: BitVec,
 }
 
-struct Function {
-    offset_begin: usize,
-    offset_end: usize,
-}
-
 pub struct VerificationResult {
     pub stack_depths: Vec<isize>,
 }
@@ -445,157 +449,54 @@ pub struct VerificationResult {
 trait StackEffect {
     /// Returns the stack effect of the instruction.
     fn stack_size_effect(&self) -> isize;
-    fn push_effect(&self) -> isize;
-    fn pop_effect(&self) -> isize;
 }
 
 impl StackEffect for Instruction {
     fn stack_size_effect(&self) -> isize {
         match self {
             Instruction::NOP => 0,
-            Instruction::END => 0,
-            Instruction::RET => 0,
-            Instruction::BINOP { .. } => -1,
+            Instruction::BINOP { .. } => -1, // pop two, push one
             Instruction::CONST { .. } => 1,
             Instruction::STRING { .. } => 1,
-            Instruction::BEGIN { args, locals } | Instruction::CBEGIN { args, locals } => {
+            Instruction::SEXP { n_members, .. } => {
+                // pop n_members arguments, push the new S‑exp
+                1 - (*n_members as isize)
+            }
+            Instruction::JMP { .. } => 0,
+            Instruction::STA => -2, // pop 3, push aggregate back
+            Instruction::STI => 0,
+            Instruction::CBEGIN { args, locals } | Instruction::BEGIN { args, locals } => {
                 /*frame_ptr*/
                 1 + /* closure */ 1 + /*arg count */1 + /*local count*/1
                 + /*ret frame ptr*/ 1 + /*ret ip*/ 1 + /*args*/ *args as isize + /*locals*/ *locals as isize
             }
-            Instruction::CLOSURE { .. } => 1,
-            Instruction::STORE { .. } => 0,
-            Instruction::LOAD { .. } => 1,
-            Instruction::LOADREF { .. } => 1,
-            Instruction::CALL {
-                offset: _,
-                n,
-                name,
-                builtin,
-            } => {
-                if !builtin {
-                    /*ret_ip */
-                    1
-                } else {
-                    match name.as_ref().unwrap() {
-                        Builtin::Barray => {
-                            /*n args */
-                            - (n.unwrap() as isize) + /*array obj*/1
-                        }
-                        Builtin::Lread => 1,
-                        Builtin::Llength => 0,
-                        Builtin::Lwrite => 0,
-                        Builtin::Lstring => 0,
-                    }
-                }
-            }
-            Instruction::CALLC { .. } => {
-                /*closure_obj*/
-                -1 + /*ret_ip */  1 + /*closure_obj*/ 1
-            }
-            Instruction::FAIL { .. } => 0,
-            Instruction::LINE { .. } => 0,
-            Instruction::DROP => -1,
-            Instruction::DUP => 1,
-            Instruction::SWAP => 0,
-            Instruction::JMP { .. } => 0,
-            Instruction::CJMP { .. } => -1,
-            Instruction::ELEM => -1,
-            Instruction::STI => -1,
-            Instruction::STA => -2,
-            Instruction::SEXP {
-                s_index: _,
-                n_members,
-            } => 1 - *n_members as isize,
-            Instruction::TAG { .. } => 0,
-            Instruction::PATT { kind } => match kind {
-                PattKind::IsStr => 0,
-                PattKind::BothAreStr => -1,
-                PattKind::IsArray => 0,
-                PattKind::IsSExp => 0,
-                PattKind::IsRef => 0,
-                PattKind::IsVal => 0,
-                PattKind::IsLambda => 0,
-            },
-            Instruction::ARRAY { .. } => 0,
-            Instruction::HALT => 0,
-        }
-    }
-
-    fn push_effect(&self) -> isize {
-        match self {
-            Instruction::NOP => 0,
-            Instruction::END => 1,
-            Instruction::RET => 1,
-            Instruction::BINOP { .. } => 1,
-            Instruction::CONST { .. } => 1,
-            Instruction::STRING { .. } => 1,
-            Instruction::BEGIN { args, locals } | Instruction::CBEGIN { args, locals } => {
-                /* closure */
-                1 + 1 + /*arg count */1 + /*local count*/1
-                + /*ret frame ptr*/ 1 + /*ret ip*/ 1 + /*args*/ *args as isize + /*locals*/ *locals as isize
-            }
-            Instruction::CLOSURE { .. } => 1,
+            // depends on the current frame metadata
+            Instruction::END | Instruction::RET => 0,
             Instruction::STORE { .. } => 1,
             Instruction::LOAD { .. } => 1,
-            Instruction::LOADREF { .. } => 2,
-            Instruction::CALL {
-                offset: _,
-                n,
-                name,
-                builtin,
-            } => {
-                if !builtin {
-                    /*ret_ip */
-                    1
-                } else {
-                    match name.as_ref().unwrap() {
-                        Builtin::Barray => {
-                            /*array obj*/
-                            1
-                        }
-                        Builtin::Lread => 1,
-                        Builtin::Llength => 1,
-                        Builtin::Lwrite => 1,
-                        Builtin::Lstring => 1,
-                    }
-                }
-            }
-            Instruction::CALLC { .. } => {
-                /*ret_ip */
-                1 + /*closure_obj*/ 1
-            }
-            Instruction::FAIL { .. } => 0,
+            Instruction::DROP => -1,
+            Instruction::DUP => 1,  // pop 1, push 2 copies
+            Instruction::SWAP => 0, // pop 2, push 2 (swapped)
             Instruction::LINE { .. } => 0,
-            Instruction::DROP => 0,
-            Instruction::DUP => 2,
-            Instruction::SWAP => 2,
-            Instruction::JMP { .. } => 0,
-            Instruction::CJMP { .. } => 0,
-            Instruction::ELEM => 1,
-            Instruction::STI => 1,
-            Instruction::STA => 1,
-            Instruction::SEXP {
-                s_index: _,
-                n_members: _,
-            } => 1,
-            Instruction::TAG { .. } => 1,
-            Instruction::PATT { kind } => match kind {
-                PattKind::IsStr => 1,
-                PattKind::BothAreStr => 1,
-                PattKind::IsArray => 1,
-                PattKind::IsSExp => 1,
-                PattKind::IsRef => 1,
-                PattKind::IsVal => 1,
-                PattKind::IsLambda => 1,
+            Instruction::CALL { .. } => 2,
+            Instruction::CALLBUILTIN { name, n } => match name {
+                Builtin::Barray => 0 + *n as isize,
+                Builtin::Llength => 0,
+                Builtin::Lread => 1,
+                Builtin::Lwrite => 0,
+                Builtin::Lstring => 0,
+                _ => 0,
             },
-            Instruction::ARRAY { .. } => 1,
-            Instruction::HALT => 0,
+            Instruction::CJMP { .. } => -1,
+            Instruction::ELEM => -1, // pop index n container, push result
+            Instruction::ARRAY { .. } => 0,
+            Instruction::TAG { .. } => 0,
+            Instruction::FAIL { .. } => -1,
+            Instruction::CLOSURE { .. } => 1,
+            Instruction::CALLC { .. } => 0,
+            Instruction::PATT { .. } => 0,
+            _ => 0,
         }
-    }
-
-    fn pop_effect(&self) -> isize {
-        self.stack_size_effect() - self.push_effect()
     }
 }
 

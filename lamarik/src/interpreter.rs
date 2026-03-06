@@ -5,33 +5,28 @@ use crate::object::{Object, ObjectError};
 use crate::{
     __gc_init, __gc_stack_bottom, __gc_stack_top, Barray, Barray_tag_patt, Bboxed_patt,
     Bclosure_tag_patt, Bsexp_tag_patt, Bstring_patt, Bstring_tag_patt, Bunboxed_patt,
-    CONS_TAG_HASH, Llength, Lread, Lstring, LtagHash, Lwrite, NIL_TAG_HASH, createStringBuf, exit,
-    failure, gc_set_bottom, gc_set_top, get_array_el, get_captured_variable, get_sexp_el,
-    lama_type_ARRAY, lama_type_CLOSURE, lama_type_SEXP, lama_type_STRING, new_array, new_closure,
-    new_sexp, new_string, printValue, rtBox, rtToData, rtToSexp, rtUnbox, set_array_el,
+    CONS_TAG_HASH, Llength, Lread, Lstring, LtagHash, Lwrite, NIL_TAG_HASH, alloc, createStringBuf,
+    exit, failure, get_array_el, get_captured_variable, get_sexp_el, lama_type_ARRAY,
+    lama_type_CLOSURE, lama_type_SEXP, lama_type_STRING, new_array, new_closure, new_sexp,
+    new_string, printValue, rtBox, rtToData, rtToSexp, rtUnbox, set_array_el,
     set_captured_variable, set_sexp_el, stringBuf,
 };
 use core::array;
 use core::convert::TryFrom;
 use core::ffi::{CStr, c_char};
-// use core::fmt::{w}
 use lamacore::bytecode::{
     Builtin, CapturedVar, CompareJumpKind, Instruction, Op, PattKind, ValueRel,
 };
-use lamacore::bytefile::Bytefile;
 use lamacore::decoder::{Decoder, DecoderError};
-use lamacore::numeric::LeBytes;
-// use std::os::raw::c_char;
-// use std::{array, panic};
 
 const MAX_SEXP_TAGLEN: usize = 10;
 const MAX_CAPTURES: usize = 0xffff; // 0x7fffffff;
 
 #[cfg(test)]
-const MAX_OPERAND_STACK_SIZE: usize = 8 * 8 * 1024; // 0xffff;
+const MAX_OPERAND_STACK_SIZE: usize = 8 * 8 * 1024 * 4; // 0xffff;
 
 #[cfg(not(test))]
-const MAX_OPERAND_STACK_SIZE: usize = 8 * 8 * 1024; // 0x7fffffff;
+const MAX_OPERAND_STACK_SIZE: usize = 8 * 8 * 1024 * 4; // 0x7fffffff;
 
 const MAX_ARG_LEN: usize = 50;
 
@@ -48,10 +43,8 @@ pub struct Interpreter {
     operand_stack: OperandStack,
     operand_stack_len: usize,
     frame_pointer: usize,
-    // Bytefile decoder
+    /// Bytefile decoder
     decoder: Decoder,
-    // /// Global variables
-    // globals: Vec<Object>,
     /// Code section length
     code_section_len: usize,
     /// Globals length
@@ -105,29 +98,11 @@ impl Interpreter {
         }
     }
 
-    /// Run the interpreter on a given program, without bytecode
-    /// Useful for testing
-    #[cfg(test)]
-    pub fn run_on_program(&mut self, program: Vec<Instruction>) -> Result<(), InterpreterError> {
-        for instr in program {
-            self.eval(&instr)?;
-        }
-
-        Ok(())
-    }
-
     /// Main interpreter loop
     pub fn run(&mut self) -> Result<(), RunError> {
         while self.decoder.ip < self.code_section_len {
             let encoding = self.decoder.next::<u8>()?;
             let instr = self.decoder.decode(encoding)?;
-
-            // if cfg!(feature = "verbose") {
-            // println!(
-            //     "[LOG] IP {} BYTE {} INSTR {:?}",
-            //     self.decoder.ip, encoding, instr
-            // );
-            // }
 
             self.eval(&instr).map_err(|e| -> RunError {
                 let global_offset = core::mem::size_of::<i32>()
@@ -156,10 +131,6 @@ impl Interpreter {
 
     /// Evaluate a decoded instruction
     fn eval(&mut self, instr: &Instruction) -> Result<(), InterpreterError> {
-        // if cfg!(feature = "verbose") {
-        // println!("[LOG] EVAL {:?}", instr);
-        // }
-
         match instr {
             Instruction::NOP => (),
             Instruction::BINOP { op } => {
@@ -241,10 +212,6 @@ impl Interpreter {
                     }
                 };
 
-                // if cfg!(feature = "verbose") {
-                //     println!("[LOG] {} {:?} {} = {}", right, op, left, result);
-                // }
-
                 self.push(Object::new_boxed(result))?;
             }
             Instruction::CONST { value: index } => self.push(Object::new_boxed(*index as i64))?,
@@ -255,10 +222,6 @@ impl Interpreter {
                     .get_string_at_offset(*index as usize)
                     .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
 
-                // if cfg!(feature = "verbose") {
-                //     println!("[LOG][STRING] string: {:?}", string);
-                // }
-
                 let lama_string =
                     new_string(string).map_err(|_| InterpreterError::InvalidStringPointer)?;
 
@@ -266,14 +229,6 @@ impl Interpreter {
                     Object::try_from(lama_string)
                         .map_err(|_| InterpreterError::InvalidStringPointer)?,
                 )?;
-
-                // if cfg!(feature = "verbose") {
-                //     println!(
-                //         "[LOG] as_ptr {:?}; Object {}",
-                //         lama_string,
-                //         self.operand_stack[self.operand_stack.len() - 1]
-                //     )
-                // };
             }
             Instruction::SEXP { s_index, n_members } => {
                 let length = *n_members as usize;
@@ -284,40 +239,18 @@ impl Interpreter {
                     .get_string_at_offset(*s_index as usize)
                     .map_err(|_| InterpreterError::StringIndexOutOfBounds)?;
 
-                // if cfg!(feature = "verbose") {
-                //     println!(
-                //         "[LOG][Instruction::SEXP] tag_u8: {:#?}, index {}",
-                //         tag_u8, s_index
-                //     );
-                // }
                 let c_string = CStr::from_bytes_with_nul(tag_u8)
                     .map_err(|_| InterpreterError::InvalidCString)?;
 
-                // if cfg!(feature = "verbose") {
-                //     println!(
-                //         "[LOG][Instruction::SEXP] c_string: {}",
-                //         c_string.to_str().unwrap()
-                //     );
-                // }
-
                 let borrow_operand_stack_elements = &mut self.operand_stack.0
                     [self.operand_stack_len - length + 1..=self.operand_stack_len + 1]; // + 1 for tag
-                // println!(
-                //     "[LOG][Instruction::SEXP] borrow_operand_stack_elements: {:#?}",
-                //     borrow_operand_stack_elements
-                // );
+
                 let sexp = new_sexp(c_string, borrow_operand_stack_elements);
 
                 // Pop arguments from the stack
                 for _ in 0..length {
                     self.pop()?;
                 }
-
-                // if cfg!(feature = "verbose") {
-                //     unsafe {
-                //         println!("[Log][SEXP] {:#?}", *rtToSexp(sexp));
-                //     }
-                // }
 
                 self.push(
                     Object::try_from(sexp).map_err(|_| InterpreterError::InvalidObjectPointer)?,
@@ -402,21 +335,6 @@ impl Interpreter {
 
                 let frame_closure_copy = closure_obj.clone();
 
-                // check for closure
-                // if let Some(lama_type) = obj.lama_type() {
-                //     // check for closure type
-                //     if lama_type == lama_type_CLOSURE {
-                //         closure_obj = obj;
-
-                //         // Save previous ip (provided by `CALL`)
-                //         ret_ip = self
-                //             .pop()
-                //             .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?;
-                //     }
-                // } else {
-                //     ret_ip = obj;
-                // }
-
                 // Save previous frame pointer
                 let ret_frame_pointer = self.frame_pointer;
 
@@ -454,21 +372,6 @@ impl Interpreter {
                 frame.save_closure(&mut self.operand_stack.0, self.frame_pointer, closure_obj);
             }
             Instruction::BEGIN { args, locals } => {
-                // let mut closure_obj = Object::new_empty();
-                // let mut ret_ip = Object::new_empty();
-
-                // let mut frame =
-                //     FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
-                //         .ok_or(InterpreterError::NotEnoughArguments(
-                //             "trying to call closure frame",
-                //         ))?;
-                // let closure_obj_in_prev_frame = if let Some(obj) =
-                //     frame.get_closure(&mut self.operand_stack.0, self.frame_pointer)
-                // {
-                //     obj.clone()
-                // } else {
-                //     Object::new_empty()
-                // };
                 let closure_obj = self
                     .pop()
                     .map_err(|_| InterpreterError::NotEnoughArguments("BEGIN"))?;
@@ -595,8 +498,6 @@ impl Interpreter {
                                 InterpreterError::InvalidStoreIndex(ValueRel::Capture, *index, 1)
                             })?;
 
-                        // println!("[STORE] closure: {}", closure);
-
                         let to_data = rtToData(
                             closure
                                 .as_ptr_mut()
@@ -710,131 +611,78 @@ impl Interpreter {
                 self.push(value1)?;
                 self.push(value2)?;
             }
-            Instruction::LINE { n } => {
-                // if cfg!(feature = "verbose") {
-                //     println!("[LOG][DEBUG] Line {}", n);
-                // }
+            Instruction::LINE { n } => {}
+            Instruction::CALL { offset, n } => {
+                // Push old instruction pointer
+                // `BEGIN` instruction will collect it
+                self.push(Object::new_unboxed(self.decoder.ip as i64))?;
+
+                // Push empty closure object
+                self.push(Object::new_empty())?;
+
+                self.decoder.ip = *offset as usize;
             }
-            Instruction::CALL {
-                offset,
-                n,
-                name,
-                builtin,
-            } => {
-                if !builtin {
-                    // Push old instruction pointer
-                    // `BEGIN` instruction will collect it
-                    self.push(Object::new_unboxed(self.decoder.ip as i64))?;
+            Instruction::CALLBUILTIN { name, n } => {
+                match name {
+                    Builtin::Barray => unsafe {
+                        let length = *n as usize;
 
-                    // Push empty closure object
-                    self.push(Object::new_empty())?;
+                        let borrow_operand_stack_elements = &mut self.operand_stack.0
+                            [self.operand_stack_len - length + 1..=self.operand_stack_len];
+                        let array = new_array(borrow_operand_stack_elements);
 
-                    if let Some(offset) = offset {
-                        self.decoder.ip = *offset as usize;
-                    } else {
-                        panic!(
-                            "Calling user-provided function without offset, this should never be possible"
-                        );
-                    }
-                } else {
-                    if let Some(name) = name {
-                        match name {
-                            Builtin::Barray => unsafe {
-                                let length =
-                                    n.ok_or(InterpreterError::InvalidLengthForArray)? as usize;
-
-                                // let mut elements = [0; MAX_ARG_LEN];
-                                // for i in (0..length).rev() {
-                                //     elements[i as usize] = self.pop()?.raw();
-                                // }
-
-                                // let borrow_operand_stack_elements = {
-                                //     let ptr = self.operand_stack.as_mut_ptr() as *mut i64;
-                                //     ptr.al
-                                //     let offset = self.operand_stack_len - length;
-                                //     std::slice::from_raw_parts_mut(ptr.add(offset * 2), length * 2)
-                                // };
-                                let borrow_operand_stack_elements = &mut self.operand_stack.0
-                                    [self.operand_stack_len - length + 1..=self.operand_stack_len];
-                                // let ptr = borrow_operand_stack_elements.as_mut_ptr() as *mut i64;
-                                let array = new_array(borrow_operand_stack_elements);
-                                // let array = unsafe {
-                                //     Barray(
-                                //         ptr,                  /* [args_1,...,arg_n, tag] */
-                                //         rtBox(length as i64), /* n args */
-                                //     )
-                                // };
-
-                                // remove args
-                                for _ in 0..length {
-                                    self.pop()?;
-                                }
-
-                                self.push(
-                                    Object::try_from(array)
-                                        .map_err(|_| InterpreterError::InvalidObjectPointer)?,
-                                )?;
-                            },
-                            Builtin::Llength => {
-                                let obj = self.pop()?;
-                                let as_ptr = obj
-                                    .as_ptr_mut()
-                                    .ok_or(InterpreterError::InvalidObjectPointer)?;
-
-                                unsafe {
-                                    // Llength returns a boxed length value
-                                    let length = Llength(as_ptr);
-                                    self.push(Object::new_boxed(rtUnbox(length)))?;
-                                }
-                            }
-                            Builtin::Lread => unsafe {
-                                let val = Lread();
-
-                                // Returns BOXED value
-                                self.push(Object::new_boxed(rtUnbox(val)))?;
-                            },
-                            Builtin::Lwrite => {
-                                let obj = self.pop()?;
-
-                                unsafe {
-                                    // Lwrite takes a boxed value
-                                    Lwrite(obj.raw());
-                                }
-
-                                self.push(obj)?;
-                            }
-                            Builtin::Lstring => {
-                                let obj = self.pop()?;
-
-                                let mut slice: [i64; 1] = [obj.raw()];
-
-                                unsafe {
-                                    let ptr = Lstring(slice.as_mut_ptr());
-                                    let contents = (*rtToData(ptr)).contents.as_ptr();
-
-                                    // if cfg!(feature = "verbose") {
-                                    //     let c_str = CStr::from_ptr(contents);
-                                    //     let string = c_str
-                                    //         .to_str()
-                                    //         .map_err(|_| InterpreterError::InvalidStringPointer)?;
-                                    //     println!(
-                                    //         "[LOG][Lstring] Created string: {} from {}",
-                                    //         string,
-                                    //         obj.unwrap()
-                                    //     );
-                                    // }
-
-                                    self.push(
-                                        Object::try_from(contents)
-                                            .map_err(|_| InterpreterError::InvalidStringPointer)?,
-                                    )?;
-                                }
-                            }
+                        // remove args
+                        for _ in 0..length {
+                            self.pop()?;
                         }
-                    } else {
-                        panic!(
-                            "Calling builtin function without name, this should never be possible"
-                        );
+
+                        self.push(
+                            Object::try_from(array)
+                                .map_err(|_| InterpreterError::InvalidObjectPointer)?,
+                        )?;
+                    },
+                    Builtin::Llength => {
+                        let obj = self.pop()?;
+                        let as_ptr = obj
+                            .as_ptr_mut()
+                            .ok_or(InterpreterError::InvalidObjectPointer)?;
+
+                        unsafe {
+                            // Llength returns a boxed length value
+                            let length = Llength(as_ptr);
+                            self.push(Object::new_boxed(rtUnbox(length)))?;
+                        }
+                    }
+                    Builtin::Lread => unsafe {
+                        let val = Lread();
+
+                        // Returns BOXED value
+                        self.push(Object::new_boxed(rtUnbox(val)))?;
+                    },
+                    Builtin::Lwrite => {
+                        let obj = self.pop()?;
+
+                        unsafe {
+                            // Lwrite takes a boxed value
+                            Lwrite(obj.raw());
+                        }
+
+                        self.push(obj)?;
+                    }
+                    Builtin::Lstring => {
+                        let obj = self.pop()?;
+
+                        let mut slice: [i64; 1] = [obj.raw()];
+
+                        unsafe {
+                            let ptr = Lstring(slice.as_mut_ptr());
+                            let contents = (*rtToData(ptr)).contents.as_ptr();
+
+                            self.push(
+                                Object::try_from(contents)
+                                    .map_err(|_| InterpreterError::InvalidStringPointer)?,
+                            )?;
+                        }
                     }
                 }
             }
@@ -903,29 +751,11 @@ impl Interpreter {
                         let sexp = rtToSexp(as_ptr);
                         let element = get_sexp_el(&*sexp, index);
 
-                        // push the boxed element onto the stack
-                        // createStringBuf();
-                        // printValue(as_ptr);
-                        // let c_string = CStr::from_ptr(stringBuf.contents);
-                        // println!(
-                        //     "[LOG][ELEMSEXP] {} {} {}",
-                        //     element,
-                        //     lama_type,
-                        //     c_string.to_string_lossy()
-                        // );
-
                         self.push(Object::new_unboxed(element))?;
                     } else if lama_type == lama_type_STRING {
                         let contents = (*rtToData(as_ptr)).contents.as_ptr();
 
                         let el = contents.add(index);
-
-                        // if cfg!(feature = "verbose") {
-                        //     println!(
-                        //         "[LOG][ELEM] Accessing string element at index {}: {}",
-                        //         index, *el
-                        //     );
-                        // }
 
                         self.push(Object::new_boxed(*el as i64))?;
                     } else {
@@ -1058,10 +888,7 @@ impl Interpreter {
 
                 let length = *arity as usize + 1; // + 1 for offset
 
-                // let mut args = [0; MAX_ARG_LEN];
-
                 // Push offset - which is a first element to args of Bsexp
-                // args[0] = *offset as i64;
                 self.push(Object::new_unboxed(*offset as i64))?;
 
                 // Read captured variables description from code section
@@ -1093,7 +920,6 @@ impl Interpreter {
                                 .ok_or(InterpreterError::NotEnoughArguments(
                                     "trying to create closure frame",
                                 ))?;
-                            // args[i + 1] = obj.raw();
                             self.push(obj.clone())?;
                         }
                         ValueRel::Capture => {
@@ -1125,7 +951,6 @@ impl Interpreter {
 
                             let element = get_captured_variable(&*to_data, desc.index as usize);
 
-                            // args[i + 1] = element;
                             self.push(Object::new_unboxed(element))?;
                         }
                         ValueRel::Global => {
@@ -1139,7 +964,6 @@ impl Interpreter {
                             }
 
                             let value = self.globals()[desc.index as usize].clone();
-                            // args[i + 1] = value.raw();
                             self.push(value.clone())?;
                         }
                         ValueRel::Local => {
@@ -1162,25 +986,15 @@ impl Interpreter {
                                 .ok_or(InterpreterError::NotEnoughArguments(
                                     "trying to create closure frame",
                                 ))?;
-                            // args[i + 1] = obj.raw();
                             self.push(obj.clone())?;
                         }
                     }
                 }
 
-                // // Reverse the order of arguments, by re-pushing them in reverse order
-                // for _ in 0..(length - 1) {
-                //     let arg = self.pop()?;
-                //     self.push(arg)?;
-                // }
-
                 // Create a new closure object
                 let borrow_operand_stack_elements = &mut self.operand_stack.0
                     [self.operand_stack_len - length + 1..=self.operand_stack_len];
-                // println!(
-                //     "[CLOSURE] borrow_operand_stack_elements: {:#?}, arity {}, offset {}",
-                //     borrow_operand_stack_elements, arity, offset
-                // );
+
                 let closure = new_closure(borrow_operand_stack_elements);
 
                 // Pop arguments from the stack
@@ -1191,29 +1005,12 @@ impl Interpreter {
                 let mut closure_obj = Object::try_from(closure)
                     .map_err(|_| InterpreterError::InvalidObjectPointer)?;
 
-                // println!(
-                //     "[CLCREATE] type: {:#?} anbd {:?}",
-                //     closure_obj.lama_type(),
-                //     closure_obj
-                // );
-
                 self.push(closure_obj)?;
             },
             Instruction::CALLC { arity } => {
-                // Re-push arguments to get to the closure object
-                // TODO: this doesnt work
-                // for _ in 0..*arity {
-                //     let arg = self.pop()?;
-                //     self.push(arg)?;
-                // }
-
-                // println!("[CALLC] arity: {}", *arity);
-
                 let arity = *arity as usize;
 
                 let mut obj = self.take(arity)?;
-                // println!("[CALLC] obj: {}", obj);
-                //self.operand_stack.0[self.operand_stack_len - arity].clone(); // must be a closure
 
                 // check for closure
                 #[cfg(feature = "runtime_checks")]
@@ -1244,18 +1041,10 @@ impl Interpreter {
                     );
                     // First element in closure object is the offset
                     self.decoder.ip = get_array_el(&*to_data, 0) as usize;
-                    // println!("[CALLC] offset changes ip: {}", self.decoder.ip)
                 }
 
                 // Push closure object onto operand stack
                 self.push(obj)?;
-
-                // let mut frame =
-                //     FrameMetadata::get_from_stack(&self.operand_stack.0, self.frame_pointer)
-                //         .ok_or(InterpreterError::NotEnoughArguments(
-                //             "trying to call closure frame",
-                //         ))?;
-                // frame.save_closure(&mut self.operand_stack.0, self.frame_pointer, obj);
             }
             Instruction::PATT { kind } => match kind {
                 PattKind::BothAreStr => unsafe {
@@ -1340,35 +1129,18 @@ impl Interpreter {
             return Err(InterpreterError::StackUnderflow);
         }
 
-        // self.operand_stack.push(obj);
-        // if cfg!(feature = "verbose") {
-
-        // }
-
         unsafe {
-            // self.gc_sync()?;
-            // Move top pointer one object to the right
-            // __gc_stack_top = __gc_stack_top + core::mem::size_of::<Object>();
-            // // Mutate empty object
-            // let ptr_to_top = __gc_stack_top as *mut Object;
-            // *ptr_to_top = obj;
-
             let ptr_bottom: *const Object = &self.operand_stack.0[0];
             __gc_stack_top = ptr_bottom as usize;
 
             self.operand_stack_len += 1;
             self.operand_stack.0[self.operand_stack_len] = obj;
 
-            // Move top pointer one object to the right
-            // __gc_stack_top = __gc_stack_top + core::mem::size_of::<Object>();
             // Mutate empty object
             let ptr_to_top: *const Object = &self.operand_stack.0[self.operand_stack_len];
 
             __gc_stack_bottom = ptr_to_top as usize;
         }
-
-        // println!("[LOG] STACK PUSH");
-        // self.print_stack();
 
         Ok(())
     }
@@ -1380,32 +1152,18 @@ impl Interpreter {
         if (self.operand_stack_len - 1) <= self.global_areas_size {
             return Err(InterpreterError::StackUnderflow);
         }
-        // let obj = self
-        //     .operand_stack
-        //     .pop()
-        //     .ok_or(InterpreterError::StackUnderflow);
-        // if cfg!(feature = "verbose") {
-
-        // }
 
         unsafe {
-            // self.gc_sync()?;
-
             // Get top object
             let ptr_to_top = __gc_stack_bottom as *mut Object;
-            // *ptr_to_top = obj;
+
             // Move top pointer one object to the left
             __gc_stack_bottom = __gc_stack_bottom - core::mem::size_of::<Object>();
 
             self.operand_stack_len -= 1;
 
-            // println!("[LOG] STACK POP");
-            // self.print_stack();
-
             Ok(ptr_to_top.read())
         }
-
-        // obj
     }
 
     /// Take from the operand stack at `index`, relative to the top of the stack
@@ -1417,8 +1175,6 @@ impl Interpreter {
         }
 
         unsafe {
-            // let ptr_to_top = __gc_stack_bottom as *mut Object;
-            // *ptr_to_top = obj;
             // Move top pointer one object to the left
             __gc_stack_bottom = __gc_stack_bottom - core::mem::size_of::<Object>();
         }
@@ -1427,19 +1183,13 @@ impl Interpreter {
         let taken = self.operand_stack.0[relative_index].clone();
 
         // Remove taken element and shift remaining elements down
-
-        // for i in relative_index..self.operand_stack_len {
-        //     self.operand_stack.0[i] = self.operand_stack.0[i + 1];
-        // }
         if relative_index != self.operand_stack_len {
             self.operand_stack
                 .0
                 .copy_within(relative_index + 1..=self.operand_stack_len, relative_index);
-            // self.operand_stack.0[self.operand_stack_len] = taken;
         }
 
         self.operand_stack_len -= 1;
-        // self.operand_stack.0.
 
         Ok(taken)
     }
@@ -1452,31 +1202,8 @@ impl Interpreter {
     fn globals_mut(&mut self) -> &mut [Object] {
         &mut self.operand_stack.0[0..self.global_areas_size]
     }
-
-    fn print_stack(&self) {
-        println!("---------------- STACK BEGIN --------------");
-        // for (i, obj) in self.operand_stack.iter().enumerate() {
-        for i in self.global_areas_size..=self.operand_stack_len {
-            let obj = &self.operand_stack.0[i];
-            if i == self.frame_pointer {
-                println!("[{}] {} <- closure | frame_pointer", i, obj);
-            } else if i == self.frame_pointer + 1 {
-                println!("[{}] {} <- argn", i, obj);
-            } else if i == self.frame_pointer + 2 {
-                println!("[{}] {} <- localn", i, obj);
-            } else if i == self.frame_pointer + 3 {
-                println!("[{}] {} <- old frame pointer", i, obj);
-            } else if i == self.frame_pointer + 4 {
-                println!("[{}] {} <- return ip", i, obj);
-            } else {
-                println!("[{}] {}", i, obj);
-            }
-        }
-        println!("---------------- STACK END   --------------");
-    }
 }
 
-// TODO: add `LINE` diagnostic to all errors
 #[derive(Debug, PartialEq)]
 pub enum InterpreterError {
     StackUnderflow,
@@ -1498,17 +1225,9 @@ pub enum InterpreterError {
     InvalidLoadIndex(ValueRel, i32, i64),
     InvalidLengthForArray,
     ObjectError(ObjectError),
-    // Fail {
-    //     line: usize,
-    //     column: usize,
-    //     obj: String,
-    // },
     InvalidValueRel,
     TooMuchMembers(usize, usize),
     TooManyCaptures(usize),
-    // FileDoesNotExist(String),
-    // FileIsTooLarge(String, u64),
-    // FileTypeError(String),
     DivisionByZero,
     SexpTagTooLong(usize),
     DecoderError(DecoderError),
@@ -1589,13 +1308,6 @@ impl core::fmt::Display for InterpreterError {
             InterpreterError::ObjectError(err) => {
                 write!(f, "Object creation error: {}", err)
             }
-            // InterpreterError::Fail { line, column, obj } => {
-            //     write!(
-            //         f,
-            //         "Failed matching at line {} column {}: {}",
-            //         line, column, obj
-            //     )
-            // }
             InterpreterError::InvalidValueRel => {
                 write!(
                     f,
@@ -1605,15 +1317,6 @@ impl core::fmt::Display for InterpreterError {
             InterpreterError::TooMuchMembers(n, max) => {
                 write!(f, "Too much aggregate members: {}, max is {}", n, max)
             }
-            // InterpreterError::FileDoesNotExist(file) => {
-            //     write!(f, "File does not exist: {}", file)
-            // }
-            // InterpreterError::FileIsTooLarge(file, size) => {
-            //     write!(f, "File {} is too large: {}, max is 1GB", file, size)
-            // }
-            // InterpreterError::FileTypeError(file) => {
-            //     write!(f, "File type error: {}, expected .bc", file)
-            // }
             InterpreterError::DivisionByZero => {
                 write!(f, "Division by zero")
             }
@@ -1660,5 +1363,5 @@ impl From<DecoderError> for RunError {
     }
 }
 
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;

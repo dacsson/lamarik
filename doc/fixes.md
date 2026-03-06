@@ -740,3 +740,179 @@ Instruction::BEGIN {
         return Err(InterpreterError::StackOverflow);
     }
 ```
+
+# Fixes pt2
+
+## Interpreter
+
+### Allocations pt2 
+
+```
+Не знаю способа избавиться от отведений памяти в Rust'е, кроме как выключив библиотеку std и далее все писать вручную непохожим на Rust образом. Отсутствие отведений в трассе показыввет лишь, что их не было при данном прогоне. Никакое количество прогонов не гарантирует полного покрытия.
+```
+
+- Changes:
+```rust
+// in lib.rs:
+#![no_std]
+```
+
+```rust
+// in interpreter.rs:
+#[repr(align(16))]
+struct OperandStack([Object; MAX_OPERAND_STACK_SIZE]);
+
+pub struct Interpreter {
+    operand_stack: OperandStack, // <- not a vector
+    operand_stack_len: usize,
+    frame_pointer: usize,
+    // Bytefile decoder
+    decoder: Decoder,
+    /// Code section length
+    code_section_len: usize,
+    /// Globals length
+    global_areas_size: usize,
+}
+```
+
+### Globals are not tracked by runtime
+
+```
+globals: Vec<Object>, кстати, тоже работать не может
+```
+
+- Changes:
+```rust
+// Globals now are part of operand stack:
+pub fn new... {
+    ...
+    // Put globals at the start of operand stack
+    let global_areas_size = decoder.bf.global_area_size as usize;
+    for i in 0..global_areas_size {
+        operand_stack.0[i] = Object::new_empty();
+    }
+    ...
+}
+```
+
+### Argument collection:
+
+```
+Нет, статические массивы до максимума длины тоже не подойдут. Найдите способ обойтись без них.
+```
+
+- Changes:
+```rust
+// Take array building for example:
+Builtin::Barray => unsafe {
+    let length =
+        n.ok_or(InterpreterError::InvalidLengthForArray)? as usize;
+    
+    // NEW: now we just borrow the stack elements directly
+    //      no allocation needed, that is just a slice of the operand stack
+    let borrow_operand_stack_elements = &mut self.operand_stack.0
+        [self.operand_stack_len - length + 1..=self.operand_stack_len];
+    let array = new_array(borrow_operand_stack_elements);
+
+    // remove args
+    for _ in 0..length {
+        self.pop()?;
+    }
+
+    self.push(
+        Object::try_from(array)
+            .map_err(|_| InterpreterError::InvalidObjectPointer)?,
+    )?;
+},
+```
+
+## Analyzer
+
+### Public symbols checks
+
+```
+Проверяете ли вы корректность смещений публичных символов? 
+```
+
+- Changed:
+```rust
+// In bytefile parsing:
+// Check public symbols offsets are within bounds
+for (s_index, offset) in &public_symbols {
+    if *offset >= code_section.len() as u32 {
+        return Err(BytefileError::InvalidPublicSymbolOffset(
+            *offset,
+            code_section.len() as u32,
+        ));
+    }
+
+    if *s_index >= string_table.len() as u32 {
+        return Err(BytefileError::InvalidStringIndexInStringTable);
+    }
+}
+```
+
+### Skip already visited offsets in public symbols
+
+```
+Что, если многие публичные символы ссылаются на одно смещение? Не следует ли перед добавлением элемента в очередь всегда проверять, не помечен ли он, и если помечен, сразу помечать и потом помещать в очередь? 
+```
+
+- Changes:
+```rust
+// In verifyer.rs:
+for (_, offset) in &self.decoder.bf.public_symbols {
+    if !worklist.contains(offset) {
+        worklist.push_back(*offset);
+    }
+}
+```
+
+### Unnecessary deduplication
+
+```
+А зачем тут dedup? 
+addresses.dedup()
+```
+
+- Changes:
+```rust
+// In verifyer.rs added checks so we dont need dedup anymore:
+// example
+if !worklist.contains(&(self.decoder.ip as u32)) {
+    worklist.push_back(self.decoder.ip as u32);
+}
+```
+
+### HashMap is too expensive
+
+```
+Ваши структуры, например, хеш-таблицы потребляют очень много памяти. У каждого отдельного блока в куче заголовок 4 слова.
+```
+
+Changed HashMap to Vec:
+| Data structure | Approx. per el memory  |
+|----------------|----------------------------------------------|
+| `HashMap<u16, u32>` | **approx  16 B** (key 2 B + value 4 B + stored hash 8 B, padded to 16 B) |
+| `Vec<(u16, u32)>`            | **approx  8 B** (key 2 B + value 4 B, padded to 8 B) |
+
+This halves the memory usage.
+
+- Changes:
+```rust
+// In analyzer.rs:
+/// On strategy used:
+/// Each instruction is assigned a unique ID upon encountering it,
+/// so we give a compact numeric representation to each instruction.
+/// Then each ID is used as the key in the frequency map,
+/// which is actually just a vector of (ID, count) pairs.
+pub struct Frequency {
+    frequency: Vec<(u16, u32)>,
+    instruction_to_id: Vec<Instruction>,
+}
+```
+
+```rust
+// Packing exmaple
+let key = (id1 as u16) << 8 | id2 as u16;
+```

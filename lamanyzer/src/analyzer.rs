@@ -7,6 +7,7 @@ use bitvec::{BitArr, prelude as bv};
 use lamacore::bytecode::Instruction;
 use lamacore::bytefile::Bytefile;
 use lamacore::decoder::{Decoder, DecoderError};
+use std::array;
 
 #[derive(Debug)]
 pub enum AnalysisError {
@@ -64,7 +65,7 @@ impl Analyzer {
 
     fn get_call_offset(instr: &Instruction) -> Option<i32> {
         match instr {
-            Instruction::CALL { offset, .. } => *offset,
+            Instruction::CALL { offset, .. } => Some(*offset),
             _ => None,
         }
     }
@@ -171,7 +172,6 @@ impl Analyzer {
         // Get reachable addresses from bit vector
         let mut addresses = reachables.iter_ones().collect::<Vec<_>>();
         addresses.sort();
-        addresses.dedup();
 
         self.decoder.ip = addresses[0];
 
@@ -220,15 +220,20 @@ pub struct ReachableResult {
     targets: BitVec,
 }
 
+/// On strategy used:
+/// Each instruction is assigned a unique ID upon encountering it,
+/// so we give a compact numeric representation to each instruction.
+/// Then each ID is used as the key in the frequency map,
+/// which is actually just a vector of (ID, count) pairs.
 pub struct Frequency {
-    frequency: HashMap<u16, u32>,
+    frequency: Vec<(u16, u32)>,
     instruction_to_id: Vec<Instruction>,
 }
 
 impl Frequency {
     pub fn new() -> Self {
         Frequency {
-            frequency: HashMap::new(),
+            frequency: Vec::new(),
             instruction_to_id: Vec::new(),
         }
     }
@@ -245,7 +250,17 @@ impl Frequency {
         };
 
         // Put instruction at first 8 bits
-        *self.frequency.entry((id as u16) << 8).or_insert(0) += 1;
+        let key = (id as u16) << 8;
+
+        if self.frequency.iter().any(|(v, _)| *v == key) {
+            self.frequency
+                .iter_mut()
+                .find(|(v, _)| *v == key)
+                .unwrap()
+                .1 += 1;
+        } else {
+            self.frequency.push((key, 1));
+        }
     }
 
     pub fn add_instruction_pair(&mut self, instruction1: Instruction, instruction2: Instruction) {
@@ -270,10 +285,16 @@ impl Frequency {
         };
 
         // Put instruction pair at first 8 bits
-        *self
-            .frequency
-            .entry((id1 as u16) << 8 | id2 as u16)
-            .or_insert(0) += 1;
+        let key = (id1 as u16) << 8 | id2 as u16;
+        if self.frequency.iter().any(|(v, _)| *v == key) {
+            self.frequency
+                .iter_mut()
+                .find(|(v, _)| *v == key)
+                .unwrap()
+                .1 += 1;
+        } else {
+            self.frequency.push((key, 1));
+        }
     }
 }
 
