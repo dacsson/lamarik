@@ -5,9 +5,13 @@ use bitvec::array::BitArray;
 use bitvec::vec::BitVec;
 use bitvec::{BitArr, prelude as bv};
 use lamacore::bytecode::Instruction;
+use lamacore::bytecode::{Builtin, CompareJumpKind, Op, PattKind, ValueRel};
 use lamacore::bytefile::Bytefile;
 use lamacore::decoder::{Decoder, DecoderError};
 use std::array;
+
+// There is 60 opcodes in total in VM
+const OPCODES_COUNT: usize = 60;
 
 #[derive(Debug)]
 pub enum AnalysisError {
@@ -96,9 +100,15 @@ impl Analyzer {
         let mut worklist = VecDeque::new();
         worklist.reserve(self.decoder.bf.public_symbols.len());
 
+        let add_to_worklist = |offset: u32, list: &mut VecDeque<u32>| {
+            if !list.contains(&offset) {
+                list.push_back(offset);
+            }
+        };
+
         // Add public symbols to the worklist
         for (_, offset) in &self.decoder.bf.public_symbols {
-            worklist.push_back(*offset);
+            add_to_worklist(*offset, &mut worklist);
         }
 
         while !worklist.is_empty() {
@@ -134,7 +144,7 @@ impl Analyzer {
                 };
 
                 if let Some(offset) = Analyzer::get_call_offset(&instr) {
-                    worklist.push_back(offset as u32);
+                    add_to_worklist(offset as u32, &mut worklist);
                 }
             }
 
@@ -142,7 +152,7 @@ impl Analyzer {
             if Analyzer::is_jump(&instr) {
                 match instr {
                     Instruction::JMP { offset } | Instruction::CJMP { offset, .. } => {
-                        worklist.push_back(offset as u32);
+                        add_to_worklist(offset as u32, &mut worklist);
                         target_offsets.set(offset as usize, true);
                     }
                     _ => {}
@@ -151,7 +161,7 @@ impl Analyzer {
 
             // Push next instruction
             if !Analyzer::is_terminal(&instr) {
-                worklist.push_back(self.decoder.ip as u32);
+                add_to_worklist(self.decoder.ip as u32, &mut worklist);
             }
         }
 
@@ -162,7 +172,7 @@ impl Analyzer {
     }
 
     pub fn get_frequency(&mut self) -> Result<Frequency, AnalysisError> {
-        let mut frequency = Frequency::new();
+        // let mut frequency = Frequency::new();
 
         let ReachableResult {
             reachables,
@@ -174,6 +184,9 @@ impl Analyzer {
         addresses.sort();
 
         self.decoder.ip = addresses[0];
+
+        let mut occur_single = vec![0u32; self.decoder.code_section_len];
+        let mut occur_double = vec![0u32; self.decoder.code_section_len];
 
         for address in addresses {
             self.decoder.ip = address;
@@ -202,16 +215,102 @@ impl Analyzer {
                     .decode(next_encoding)
                     .map_err(|e| AnalysisError::DecoderError(e))?;
 
-                frequency.add_instruction_pair(instr.clone(), next_instr);
+                occur_double[address] += 1;
 
                 self.decoder.ip = next_instr_start;
             }
 
             // Single opcode sequence always counts
-            frequency.add_instruction(instr);
+            occur_single[address] += 1;
         }
 
-        Ok(frequency)
+        let mut freq_singles = Vec::new();
+        let mut freq_doubles = Vec::new();
+
+        let mut single_reachables = reachables.clone();
+        let mut double_reachables = reachables.clone();
+
+        for (address, occur) in occur_single.iter().enumerate() {
+            if !single_reachables[address] || *occur == 0 {
+                continue;
+            }
+
+            self.decoder.ip = address;
+            let encoding = self.decoder.next::<u8>().unwrap();
+            let instr = self.decoder.decode(encoding).unwrap();
+
+            // Collect addresses with the same opcode
+            let dups = occur_single
+                .iter()
+                .enumerate()
+                .filter(|(j, _)| {
+                    *j != address && *j > 0 && single_reachables[*j] && {
+                        self.decoder.ip = *j as usize;
+                        let encoding = self.decoder.next::<u8>().unwrap();
+                        let instr2 = self.decoder.decode(encoding).unwrap();
+                        instr == instr2
+                    }
+                })
+                .map(|(address, _)| address)
+                .collect::<Vec<usize>>();
+
+            let count_dups = dups.len();
+
+            freq_singles.push((instr, count_dups as u32 + occur));
+
+            // Mark duplicates as unreachable so we don't insert any copies of (instruiction, occur) into freq_singles
+            for addr in dups {
+                single_reachables.set(addr, false);
+            }
+        }
+
+        for (address, occur) in occur_double.iter().enumerate() {
+            if !double_reachables[address] || *occur == 0 {
+                continue;
+            }
+
+            self.decoder.ip = address;
+            let encoding = self.decoder.next::<u8>().unwrap();
+            let instr = self.decoder.decode(encoding).unwrap();
+
+            let next_encoding = self.decoder.next::<u8>().unwrap();
+            if self.decoder.ip >= self.decoder.code_section_len {
+                continue;
+            }
+
+            let instr_next = self.decoder.decode(next_encoding).unwrap();
+
+            let dups = occur_double
+                .iter()
+                .enumerate()
+                .filter(|(j, _)| {
+                    *j != address && *j > 0 && double_reachables[*j] && {
+                        self.decoder.ip = *j as usize;
+                        let encoding = self.decoder.next::<u8>().unwrap();
+                        let instr2 = self.decoder.decode(encoding).unwrap();
+
+                        let next_encoding = self.decoder.next::<u8>().unwrap();
+                        if self.decoder.ip >= self.decoder.code_section_len {
+                            return false;
+                        }
+                        let instr_next2 = self.decoder.decode(next_encoding).unwrap();
+
+                        instr == instr2 && instr_next == instr_next2
+                    }
+                })
+                .map(|(address, _)| address)
+                .collect::<Vec<usize>>();
+
+            let count_dups = dups.len();
+
+            freq_doubles.push((instr, instr_next, count_dups as u32 + occur));
+
+            for addr in dups {
+                double_reachables.set(addr, false);
+            }
+        }
+
+        Ok(Frequency::new(freq_singles, freq_doubles))
     }
 }
 
@@ -220,140 +319,77 @@ pub struct ReachableResult {
     targets: BitVec,
 }
 
-/// On strategy used:
-/// Each instruction is assigned a unique ID upon encountering it,
-/// so we give a compact numeric representation to each instruction.
-/// Then each ID is used as the key in the frequency map,
-/// which is actually just a vector of (ID, count) pairs.
 pub struct Frequency {
-    frequency: Vec<(u16, u32)>,
-    instruction_to_id: Vec<Instruction>,
+    frequency_single: Vec<(Instruction, u32)>,
+    frequency_double: Vec<(Instruction, Instruction, u32)>,
 }
 
 impl Frequency {
-    pub fn new() -> Self {
+    pub fn new(
+        frequency_single: Vec<(Instruction, u32)>,
+        frequency_double: Vec<(Instruction, Instruction, u32)>,
+    ) -> Self {
         Frequency {
-            frequency: Vec::new(),
-            instruction_to_id: Vec::new(),
-        }
-    }
-
-    pub fn add_instruction(&mut self, instruction: Instruction) {
-        let id = if self.instruction_to_id.contains(&instruction) {
-            self.instruction_to_id
-                .iter()
-                .position(|i| *i == instruction)
-                .unwrap() as u8
-        } else {
-            self.instruction_to_id.push(instruction);
-            self.instruction_to_id.len() as u8 - 1
-        };
-
-        // Put instruction at first 8 bits
-        let key = (id as u16) << 8;
-
-        if self.frequency.iter().any(|(v, _)| *v == key) {
-            self.frequency
-                .iter_mut()
-                .find(|(v, _)| *v == key)
-                .unwrap()
-                .1 += 1;
-        } else {
-            self.frequency.push((key, 1));
-        }
-    }
-
-    pub fn add_instruction_pair(&mut self, instruction1: Instruction, instruction2: Instruction) {
-        let id1 = if self.instruction_to_id.contains(&instruction1) {
-            self.instruction_to_id
-                .iter()
-                .position(|i| *i == instruction1)
-                .unwrap() as u8
-        } else {
-            self.instruction_to_id.push(instruction1);
-            self.instruction_to_id.len() as u8 - 1
-        };
-
-        let id2 = if self.instruction_to_id.contains(&instruction2) {
-            self.instruction_to_id
-                .iter()
-                .position(|i| *i == instruction2)
-                .unwrap() as u8
-        } else {
-            self.instruction_to_id.push(instruction2);
-            self.instruction_to_id.len() as u8 - 1
-        };
-
-        // Put instruction pair at first 8 bits
-        let key = (id1 as u16) << 8 | id2 as u16;
-        if self.frequency.iter().any(|(v, _)| *v == key) {
-            self.frequency
-                .iter_mut()
-                .find(|(v, _)| *v == key)
-                .unwrap()
-                .1 += 1;
-        } else {
-            self.frequency.push((key, 1));
+            frequency_single,
+            frequency_double,
         }
     }
 }
 
 impl Display for Frequency {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut to_vec = self.frequency.iter().collect::<Vec<_>>();
-        to_vec.sort_by(|a, b| b.1.cmp(&a.1));
+        let mut entries: Vec<(String, u32)> = Vec::new();
 
-        for (ids, count) in to_vec {
-            let id1 = (ids >> 8) as u8;
-            let id2 = (ids & 0xFF) as u8;
-
-            if id2 == 0 {
-                writeln!(
-                    f,
-                    "{}: {}",
-                    self.instruction_to_id[id1 as usize].get_opcode_name(),
-                    count
-                )?;
-            } else {
-                writeln!(
-                    f,
-                    "{}; {}: {}",
-                    self.instruction_to_id[id1 as usize].get_opcode_name(),
-                    self.instruction_to_id[id2 as usize].get_opcode_name(),
-                    count
-                )?;
-            }
+        // Single instructions
+        for (instr, count) in &self.frequency_single {
+            entries.push((instr.get_opcode_name(), *count));
         }
+
+        // Instruction pairs
+        for (instr1, instr2, count) in &self.frequency_double {
+            entries.push((
+                format!("{}; {}", instr1.get_opcode_name(), instr2.get_opcode_name()),
+                *count,
+            ));
+        }
+
+        // Sort descending by frequency
+        entries.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+
+        for (name, count) in entries {
+            writeln!(f, "{}: {}", name, count)?;
+        }
+
         Ok(())
     }
 }
 
-impl Debug for Frequency {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut to_vec = self.frequency.iter().collect::<Vec<_>>();
-        to_vec.sort_by(|a, b| b.1.cmp(&a.1));
+// impl Debug for Frequency {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+//         let mut to_vec = self.frequency.iter().collect::<Vec<_>>();
+//         to_vec.sort_by(|a, b| b.1.cmp(&a.1));
 
-        for (ids, count) in to_vec {
-            let id1 = (ids >> 8) as u8;
-            let id2 = (ids & 0xFF) as u8;
+//         for (ids, count) in to_vec {
+//             let id1 = (ids >> 8) as u8;
+//             let id2 = (ids & 0xFF) as u8;
 
-            if id2 == 0 {
-                writeln!(
-                    f,
-                    "{}: {}",
-                    self.instruction_to_id[id1 as usize].get_opcode_name(),
-                    count
-                )?;
-            } else {
-                writeln!(
-                    f,
-                    "{}; {}: {}",
-                    self.instruction_to_id[id1 as usize].get_opcode_name(),
-                    self.instruction_to_id[id2 as usize].get_opcode_name(),
-                    count
-                )?;
-            }
-        }
-        Ok(())
-    }
-}
+//             if id2 == 0 {
+//                 writeln!(
+//                     f,
+//                     "{}: {}",
+//                     self.instruction_to_id[id1 as usize].get_opcode_name(),
+//                     count
+//                 )?;
+//             } else {
+//                 writeln!(
+//                     f,
+//                     "{}; {}: {}",
+//                     self.instruction_to_id[id1 as usize].get_opcode_name(),
+//                     self.instruction_to_id[id2 as usize].get_opcode_name(),
+//                     count
+//                 )?;
+//             }
+//         }
+//         Ok(())
+//     }
+// }

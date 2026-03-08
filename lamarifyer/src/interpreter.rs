@@ -375,10 +375,6 @@ impl Interpreter {
                 let stack_size_for_function = payload >> 16;
                 let args = (payload & 0xFFFF) as usize;
 
-                if stack_size_for_function <= 0 {
-                    return Err(InterpreterError::StackOverflow);
-                }
-
                 if self.operand_stack_len + stack_size_for_function as usize
                     > MAX_OPERAND_STACK_SIZE
                 {

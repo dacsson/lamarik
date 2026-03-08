@@ -120,18 +120,6 @@ impl Verifier {
         }
     }
 
-    fn is_split(instr: &Instruction) -> bool {
-        match instr {
-            Instruction::RET
-            | Instruction::END
-            | Instruction::FAIL { .. }
-            | Instruction::JMP { .. }
-            | Instruction::CALL { .. }
-            | Instruction::CALLC { .. } => true,
-            _ => false,
-        }
-    }
-
     /// Walk bytecode to find reachable offsets, starting from public symbols
     pub fn get_reachables(&mut self) -> Result<ReachableResult, VerifierError> {
         // Initialize offsets in code section with all bits set to false
@@ -146,11 +134,15 @@ impl Verifier {
         let mut worklist = VecDeque::new();
         worklist.reserve(self.decoder.bf.public_symbols.len());
 
+        let add_to_worklist = |offset: u32, list: &mut VecDeque<u32>| {
+            if !list.contains(&offset) {
+                list.push_back(offset);
+            }
+        };
+
         // Add public symbols to the worklist
         for (_, offset) in &self.decoder.bf.public_symbols {
-            if !worklist.contains(offset) {
-                worklist.push_back(*offset);
-            }
+            add_to_worklist(*offset, &mut worklist);
         }
 
         while !worklist.is_empty() {
@@ -186,16 +178,7 @@ impl Verifier {
                 };
 
                 if let Some(offset) = Verifier::get_call_offset(&instr) {
-                    if !worklist.contains(&(offset as u32)) {
-                        worklist.push_back(offset as u32);
-                    }
-                }
-            }
-
-            // It doesnt mean we will call it!
-            if let Instruction::CLOSURE { offset, .. } = instr {
-                if !worklist.contains(&(offset as u32)) {
-                    worklist.push_back(offset as u32);
+                    add_to_worklist(offset as u32, &mut worklist);
                 }
             }
 
@@ -203,9 +186,7 @@ impl Verifier {
             if Verifier::is_jump(&instr) {
                 match instr {
                     Instruction::JMP { offset } | Instruction::CJMP { offset, .. } => {
-                        if !worklist.contains(&(offset as u32)) {
-                            worklist.push_back(offset as u32);
-                        }
+                        add_to_worklist(offset as u32, &mut worklist);
                         target_offsets.set(offset as usize, true);
                     }
                     _ => {}
@@ -214,9 +195,7 @@ impl Verifier {
 
             // Push next instruction
             if !Verifier::is_terminal(&instr) {
-                if !worklist.contains(&(self.decoder.ip as u32)) {
-                    worklist.push_back(self.decoder.ip as u32);
-                }
+                add_to_worklist(self.decoder.ip as u32, &mut worklist);
             }
         }
 
@@ -235,7 +214,6 @@ impl Verifier {
         // Get reachable addresses from bit vector
         let mut addresses = reachables.iter_ones().collect::<Vec<_>>();
         addresses.sort();
-        addresses.dedup();
 
         let mut stack_depths = Vec::new();
         stack_depths.resize(self.decoder.code_section_len, 0);

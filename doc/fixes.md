@@ -866,10 +866,15 @@ for (s_index, offset) in &public_symbols {
 - Changes:
 ```rust
 // In verifyer.rs:
-for (_, offset) in &self.decoder.bf.public_symbols {
-    if !worklist.contains(offset) {
-        worklist.push_back(*offset);
+let add_to_worklist = |offset: u32, list: &mut VecDeque<u32>| {
+    if !list.contains(&offset) {
+        list.push_back(offset);
     }
+};
+
+// Add public symbols to the worklist
+for (_, offset) in &self.decoder.bf.public_symbols {
+    add_to_worklist(*offset, &mut worklist);
 }
 ```
 
@@ -884,8 +889,14 @@ addresses.dedup()
 ```rust
 // In verifyer.rs added checks so we dont need dedup anymore:
 // example
-if !worklist.contains(&(self.decoder.ip as u32)) {
-    worklist.push_back(self.decoder.ip as u32);
+let add_to_worklist = |offset: u32, list: &mut VecDeque<u32>| {
+    if !list.contains(&offset) {
+        list.push_back(offset);
+    }
+};
+
+if let Some(offset) = Analyzer::get_call_offset(&instr) {
+    add_to_worklist(offset as u32, &mut worklist);
 }
 ```
 
@@ -895,29 +906,29 @@ if !worklist.contains(&(self.decoder.ip as u32)) {
 Ваши структуры, например, хеш-таблицы потребляют очень много памяти. У каждого отдельного блока в куче заголовок 4 слова.
 ```
 
-Changed HashMap to Vec:
-| Data structure | Approx. per el memory  |
-|----------------|----------------------------------------------|
-| `HashMap<u16, u32>` | **approx  16 B** (key 2 B + value 4 B + stored hash 8 B, padded to 16 B) |
-| `Vec<(u16, u32)>`            | **approx  8 B** (key 2 B + value 4 B, padded to 8 B) |
+Changed HashMap to Vec
 
 This halves the memory usage.
 
 - Changes:
 ```rust
 // In analyzer.rs:
-/// On strategy used:
-/// Each instruction is assigned a unique ID upon encountering it,
-/// so we give a compact numeric representation to each instruction.
-/// Then each ID is used as the key in the frequency map,
-/// which is actually just a vector of (ID, count) pairs.
 pub struct Frequency {
-    frequency: Vec<(u16, u32)>,
-    instruction_to_id: Vec<Instruction>,
+    frequency_single: Vec<(Instruction, u32)>,
+    frequency_double: Vec<(Instruction, Instruction, u32)>,
 }
 ```
 
-```rust
-// Packing exmaple
-let key = (id1 as u16) << 8 | id2 as u16;
+### Linear search
+
 ```
+Нет, многократно повторяемый линейный поиск чего-либо не может быть решением для массивов из миллиарда элементов.  
+```
+
+Chaged the whole strategy, now we:
+1. Iterate over reachable addresses
+1.1. Always count occurrences of a single opcode, keep their offsets
+1.2. If next instruction is not terminal and not a target, we keep offset of first instruction in that pair of instructions
+2. Iterate over found occurences, decode instructions at their offsets, find all other offsets with the same instruction, pop them from list and append their counts to the current count - i.e. collect frequencies
+
+- Changes: please take a look at `lamanyzer/src/analyzer.rs` [here](../lamanyzer/src/analyzer.rs)
