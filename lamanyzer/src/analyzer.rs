@@ -9,6 +9,7 @@ use lamacore::bytecode::{Builtin, CompareJumpKind, Op, PattKind, ValueRel};
 use lamacore::bytefile::Bytefile;
 use lamacore::decoder::{Decoder, DecoderError};
 use std::array;
+use std::cmp::Reverse;
 
 // There is 60 opcodes in total in VM
 const OPCODES_COUNT: usize = 60;
@@ -96,9 +97,6 @@ impl Analyzer {
         let mut target_offsets = BitVec::new();
         target_offsets.resize(self.decoder.code_section_len, false);
 
-        let mut visited_offsets = BitVec::new();
-        visited_offsets.resize(self.decoder.code_section_len, false);
-
         // Walking queue
         let mut worklist = VecDeque::new();
         worklist.reserve(self.decoder.bf.public_symbols.len());
@@ -113,7 +111,7 @@ impl Analyzer {
 
         // Add public symbols to the worklist
         for (_, offset) in &self.decoder.bf.public_symbols {
-            add_to_worklist(*offset, &mut worklist, &mut visited_offsets);
+            add_to_worklist(*offset, &mut worklist, &mut reachable_offsets);
         }
 
         while !worklist.is_empty() {
@@ -123,14 +121,6 @@ impl Analyzer {
             self.decoder.ip = offset as usize;
 
             let addr = offset as usize;
-
-            // Skip if visited
-            if reachable_offsets[addr] {
-                continue;
-            }
-
-            // Mark visited
-            reachable_offsets.set(addr, true);
 
             let encoding = self
                 .decoder
@@ -149,7 +139,7 @@ impl Analyzer {
                 };
 
                 if let Some(offset) = Analyzer::get_call_offset(&instr) {
-                    add_to_worklist(offset as u32, &mut worklist, &mut visited_offsets);
+                    add_to_worklist(offset as u32, &mut worklist, &mut reachable_offsets);
                 }
             }
 
@@ -157,7 +147,7 @@ impl Analyzer {
             if Analyzer::is_jump(&instr) {
                 match instr {
                     Instruction::JMP { offset } | Instruction::CJMP { offset, .. } => {
-                        add_to_worklist(offset as u32, &mut worklist, &mut visited_offsets);
+                        add_to_worklist(offset as u32, &mut worklist, &mut reachable_offsets);
                         target_offsets.set(offset as usize, true);
                     }
                     _ => {}
@@ -166,8 +156,15 @@ impl Analyzer {
 
             // Push next instruction
             if !Analyzer::is_terminal(&instr) {
-                add_to_worklist(self.decoder.ip as u32, &mut worklist, &mut visited_offsets);
+                add_to_worklist(
+                    self.decoder.ip as u32,
+                    &mut worklist,
+                    &mut reachable_offsets,
+                );
             }
+
+            // Mark visited
+            reachable_offsets.set(addr, true);
         }
 
         Ok(ReachableResult {
@@ -182,13 +179,19 @@ impl Analyzer {
             targets,
         } = self.get_reachables()?;
 
+        // Maximum possible frequency
+        let max_singles = reachables.count_ones();
+        // Maximum possible double frequency, we count it only when there is set bit followed by another set bit
+        let max_doubles = reachables
+            .iter()
+            .zip(reachables.iter().skip(1))
+            .filter(|(a, b)| **a != false && **b != false)
+            .count();
+
         self.decoder.ip = reachables.first_one().unwrap() as usize;
 
-        let mut occur_single = vec![0u32; self.decoder.code_section_len];
-        let mut occur_double = vec![0u32; self.decoder.code_section_len];
-
-        let mut singles = Vec::new();
-        let mut doubles = Vec::new();
+        let mut singles: Vec<Occurence> = Vec::with_capacity(max_singles);
+        let mut doubles: Vec<Occurence> = Vec::with_capacity(max_doubles);
 
         for address in reachables.iter_ones() {
             self.decoder.ip = address;
@@ -218,66 +221,164 @@ impl Analyzer {
                     .map_err(|e| AnalysisError::DecoderError(e))?;
 
                 // occur_double[address] += 1;
-                doubles.push((instr.clone(), next_instr));
+                doubles.push(Occurence {
+                    address: address as u32,
+                    count: 0,
+                });
 
                 self.decoder.ip = next_instr_start;
             }
 
             // Single opcode sequence always counts
-            singles.push(instr);
+            singles.push(Occurence {
+                address: address as u32,
+                count: 0,
+            });
         }
 
-        let (freq_singles, freq_doubles) = self.count_dups(singles, doubles);
+        // Sort by the underlying instruction at the given offset
+        singles.sort_unstable_by(|a, b| {
+            let addr_a = a.address;
+            let addr_b = b.address;
+            let instr_a = self.decode_at(addr_a);
+            let instr_b = self.decode_at(addr_b);
+            instr_a.partial_cmp(&instr_b).unwrap()
+        });
+        doubles.sort_unstable_by(|a, b| {
+            let addr_a = a.address;
+            let addr_b = b.address;
+            let pair_a = self.decode_pair(addr_a);
+            let pair_b = self.decode_pair(addr_b);
 
-        Ok(Frequency::new(freq_singles, freq_doubles))
-    }
+            match pair_a.0.partial_cmp(&pair_b.0).unwrap() {
+                std::cmp::Ordering::Equal => pair_a.1.partial_cmp(&pair_b.1).unwrap(),
+                ord => ord,
+            }
+        });
 
-    fn count_dups(
-        &mut self,
-        mut singles: Vec<Instruction>,
-        mut doubles: Vec<(Instruction, Instruction)>,
-    ) -> (
-        Vec<(Instruction, usize)>,
-        Vec<(Instruction, Instruction, usize)>,
-    ) {
-        singles.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        doubles.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        // Single pass to now count actual frequencies
+        let mut freq_singles = Vec::new(); // elements of `singles` will move into this
+        let mut freq_doubles = Vec::new(); // elements of `doubles` will move into this
 
-        let mut freq_singles = Vec::new();
-        let mut freq_doubles = Vec::new();
-
+        // Because of sorting by instruction we actually will walk exactl amount of occurences before moving to next instruction here
         let mut singles_iter = singles.into_iter();
-
-        if let Some(mut instr) = singles_iter.next() {
+        if let Some(mut occ) = singles_iter.next() {
             let mut count = 1;
-            for next in singles_iter {
-                if next == instr {
+            for next_occ in singles_iter {
+                let instr = self.decode_at(occ.address);
+                if instr == self.decode_at(next_occ.address) {
                     count += 1;
                 } else {
-                    freq_singles.push((instr, count));
-                    instr = next;
+                    freq_singles.push(Occurence {
+                        address: occ.address,
+                        count,
+                    });
+                    occ = next_occ;
                     count = 1;
                 }
             }
-            freq_singles.push((instr, count));
+            freq_singles.push(Occurence {
+                address: occ.address,
+                count,
+            });
         }
 
         let mut doubles_iter = doubles.into_iter();
         if let Some(mut pair) = doubles_iter.next() {
             let mut count = 1;
-            for next in doubles_iter {
-                if next == pair {
+            for pair_next in doubles_iter {
+                let (next_instr1, next_instr2) = self.decode_pair(pair_next.address);
+                let (instr1, instr2) = self.decode_pair(pair.address);
+                if (next_instr1, next_instr2) == (instr1, instr2) {
                     count += 1;
                 } else {
-                    freq_doubles.push((pair.0, pair.1, count));
-                    pair = next;
+                    freq_doubles.push(Occurence {
+                        address: pair.address,
+                        count,
+                    });
+                    pair = pair_next;
                     count = 1;
                 }
             }
-            freq_doubles.push((pair.0, pair.1, count));
+            freq_doubles.push(Occurence {
+                address: pair.address,
+                count,
+            });
         }
 
-        (freq_singles, freq_doubles)
+        // Now sort by count
+        freq_singles.sort_by_key(|occ| Reverse(occ.count));
+        freq_doubles.sort_by_key(|occ| Reverse(occ.count));
+
+        Ok(Frequency::new(
+            freq_singles,
+            freq_doubles,
+            max_singles,
+            max_doubles,
+        ))
+    }
+
+    pub fn dump_frequency(&mut self, freq: Frequency) {
+        let real_max_single = freq
+            .frequency_single
+            .iter()
+            .max_by_key(|s| s.count)
+            .unwrap();
+        let real_max_double = freq
+            .frequency_double
+            .iter()
+            .max_by_key(|s| s.count)
+            .unwrap();
+        let max = real_max_single.count.max(real_max_double.count);
+
+        let mut singles_iter = freq.frequency_single.into_iter().peekable();
+        let mut doubles_iter = freq.frequency_double.into_iter().peekable();
+
+        while singles_iter.peek().is_some() || doubles_iter.peek().is_some() {
+            // Both are sorted, so now we dump in order based on max frequency
+
+            let only_singles_left = !doubles_iter.peek().is_some() && singles_iter.peek().is_some();
+            let singles_not_empty = singles_iter.peek().is_some();
+            let doubles_not_empty = doubles_iter.peek().is_some();
+            let singles_closer_to_max = singles_not_empty
+                && doubles_not_empty
+                && (max - singles_iter.peek().unwrap().count
+                    < max - doubles_iter.peek().unwrap().count);
+
+            if singles_closer_to_max || only_singles_left {
+                let Occurence { address, count } = singles_iter.next().unwrap();
+                let instr_at_addr = self.decode_at(address);
+                println!("{}: {}", instr_at_addr.get_opcode_name(), count);
+            } else if doubles_not_empty {
+                let Occurence { address, count } = doubles_iter.next().unwrap();
+                let (instr_at_addr, next_instr_at_addr) = self.decode_pair(address);
+                println!(
+                    "{}; {}: {}",
+                    instr_at_addr.get_opcode_name(),
+                    next_instr_at_addr.get_opcode_name(),
+                    count
+                );
+            };
+        }
+    }
+
+    fn decode_pair(&mut self, addr: u32) -> (Instruction, Instruction) {
+        self.decoder.ip = addr as usize;
+
+        let enc1 = self.decoder.next::<u8>().unwrap();
+        let i1 = self.decoder.decode(enc1).unwrap();
+
+        let enc2 = self.decoder.next::<u8>().unwrap();
+        let i2 = self.decoder.decode(enc2).unwrap();
+
+        (i1, i2)
+    }
+
+    fn decode_at(&mut self, addr: u32) -> Instruction {
+        self.decoder.ip = addr as usize;
+
+        let enc = self.decoder.next::<u8>().unwrap();
+        self.decoder.decode(enc).unwrap()
     }
 }
 
@@ -287,76 +388,29 @@ pub struct ReachableResult {
 }
 
 pub struct Frequency {
-    frequency_single: Vec<(Instruction, usize)>,
-    frequency_double: Vec<(Instruction, Instruction, usize)>,
+    frequency_single: Vec<Occurence>,
+    frequency_double: Vec<Occurence>,
+    max_singles: usize,
+    max_doubles: usize,
 }
 
 impl Frequency {
     pub fn new(
-        frequency_single: Vec<(Instruction, usize)>,
-        frequency_double: Vec<(Instruction, Instruction, usize)>,
+        frequency_single: Vec<Occurence>,
+        frequency_double: Vec<Occurence>,
+        max_singles: usize,
+        max_doubles: usize,
     ) -> Self {
         Frequency {
             frequency_single,
             frequency_double,
+            max_singles,
+            max_doubles,
         }
     }
 }
 
-impl Display for Frequency {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut entries: Vec<(String, usize)> = Vec::new();
-
-        // Single instructions
-        for (instr, count) in &self.frequency_single {
-            entries.push((instr.get_opcode_name(), *count));
-        }
-
-        // Instruction pairs
-        for (instr1, instr2, count) in &self.frequency_double {
-            entries.push((
-                format!("{}; {}", instr1.get_opcode_name(), instr2.get_opcode_name()),
-                *count,
-            ));
-        }
-
-        // Sort descending by frequency
-        entries.sort_unstable_by(|a, b| b.1.cmp(&a.1));
-
-        for (name, count) in entries {
-            writeln!(f, "{}: {}", name, count)?;
-        }
-
-        Ok(())
-    }
+pub struct Occurence {
+    address: u32,
+    count: u32,
 }
-
-// impl Debug for Frequency {
-//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-//         let mut to_vec = self.frequency.iter().collect::<Vec<_>>();
-//         to_vec.sort_by(|a, b| b.1.cmp(&a.1));
-
-//         for (ids, count) in to_vec {
-//             let id1 = (ids >> 8) as u8;
-//             let id2 = (ids & 0xFF) as u8;
-
-//             if id2 == 0 {
-//                 writeln!(
-//                     f,
-//                     "{}: {}",
-//                     self.instruction_to_id[id1 as usize].get_opcode_name(),
-//                     count
-//                 )?;
-//             } else {
-//                 writeln!(
-//                     f,
-//                     "{}; {}: {}",
-//                     self.instruction_to_id[id1 as usize].get_opcode_name(),
-//                     self.instruction_to_id[id2 as usize].get_opcode_name(),
-//                     count
-//                 )?;
-//             }
-//         }
-//         Ok(())
-//     }
-// }

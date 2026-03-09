@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         err
     })?;
 
-    println!("{}", frequency);
+    analyzer.dump_frequency(frequency);
 
     Ok(())
 }

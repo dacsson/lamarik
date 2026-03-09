@@ -130,9 +130,6 @@ impl Verifier {
         let mut target_offsets = BitVec::new();
         target_offsets.resize(self.decoder.code_section_len, false);
 
-        let mut visited_offsets = BitVec::new();
-        visited_offsets.resize(self.decoder.code_section_len, false);
-
         // Walking queue
         let mut worklist = VecDeque::new();
         worklist.reserve(self.decoder.bf.public_symbols.len());
@@ -147,7 +144,7 @@ impl Verifier {
 
         // Add public symbols to the worklist
         for (_, offset) in &self.decoder.bf.public_symbols {
-            add_to_worklist(*offset, &mut worklist, &mut visited_offsets);
+            add_to_worklist(*offset, &mut worklist, &mut reachable_offsets);
         }
 
         while !worklist.is_empty() {
@@ -157,14 +154,6 @@ impl Verifier {
             self.decoder.ip = offset as usize;
 
             let addr = offset as usize;
-
-            // Skip if visited
-            if reachable_offsets[addr] {
-                continue;
-            }
-
-            // Mark visited
-            reachable_offsets.set(addr, true);
 
             let encoding = self
                 .decoder
@@ -183,7 +172,7 @@ impl Verifier {
                 };
 
                 if let Some(offset) = Verifier::get_call_offset(&instr) {
-                    add_to_worklist(offset as u32, &mut worklist, &mut visited_offsets);
+                    add_to_worklist(offset as u32, &mut worklist, &mut reachable_offsets);
                 }
             }
 
@@ -191,7 +180,7 @@ impl Verifier {
             if Verifier::is_jump(&instr) {
                 match instr {
                     Instruction::JMP { offset } | Instruction::CJMP { offset, .. } => {
-                        add_to_worklist(offset as u32, &mut worklist, &mut visited_offsets);
+                        add_to_worklist(offset as u32, &mut worklist, &mut reachable_offsets);
                         target_offsets.set(offset as usize, true);
                     }
                     _ => {}
@@ -200,8 +189,15 @@ impl Verifier {
 
             // Push next instruction
             if !Verifier::is_terminal(&instr) {
-                add_to_worklist(self.decoder.ip as u32, &mut worklist, &mut visited_offsets);
+                add_to_worklist(
+                    self.decoder.ip as u32,
+                    &mut worklist,
+                    &mut reachable_offsets,
+                );
             }
+
+            // Mark visited
+            reachable_offsets.set(addr, true);
         }
 
         Ok(ReachableResult {
