@@ -96,19 +96,24 @@ impl Analyzer {
         let mut target_offsets = BitVec::new();
         target_offsets.resize(self.decoder.code_section_len, false);
 
+        let mut visited_offsets = BitVec::new();
+        visited_offsets.resize(self.decoder.code_section_len, false);
+
         // Walking queue
         let mut worklist = VecDeque::new();
         worklist.reserve(self.decoder.bf.public_symbols.len());
 
-        let add_to_worklist = |offset: u32, list: &mut VecDeque<u32>| {
-            if !list.contains(&offset) {
+        let add_to_worklist = |offset: u32, list: &mut VecDeque<u32>, visited: &mut BitVec| {
+            let offsetu = offset as usize;
+            if !visited[offsetu] {
+                visited.set(offsetu, true);
                 list.push_back(offset);
             }
         };
 
         // Add public symbols to the worklist
         for (_, offset) in &self.decoder.bf.public_symbols {
-            add_to_worklist(*offset, &mut worklist);
+            add_to_worklist(*offset, &mut worklist, &mut visited_offsets);
         }
 
         while !worklist.is_empty() {
@@ -144,7 +149,7 @@ impl Analyzer {
                 };
 
                 if let Some(offset) = Analyzer::get_call_offset(&instr) {
-                    add_to_worklist(offset as u32, &mut worklist);
+                    add_to_worklist(offset as u32, &mut worklist, &mut visited_offsets);
                 }
             }
 
@@ -152,7 +157,7 @@ impl Analyzer {
             if Analyzer::is_jump(&instr) {
                 match instr {
                     Instruction::JMP { offset } | Instruction::CJMP { offset, .. } => {
-                        add_to_worklist(offset as u32, &mut worklist);
+                        add_to_worklist(offset as u32, &mut worklist, &mut visited_offsets);
                         target_offsets.set(offset as usize, true);
                     }
                     _ => {}
@@ -161,7 +166,7 @@ impl Analyzer {
 
             // Push next instruction
             if !Analyzer::is_terminal(&instr) {
-                add_to_worklist(self.decoder.ip as u32, &mut worklist);
+                add_to_worklist(self.decoder.ip as u32, &mut worklist, &mut visited_offsets);
             }
         }
 
@@ -172,23 +177,17 @@ impl Analyzer {
     }
 
     pub fn get_frequency(&mut self) -> Result<Frequency, AnalysisError> {
-        // let mut frequency = Frequency::new();
-
         let ReachableResult {
             reachables,
             targets,
         } = self.get_reachables()?;
 
-        // Get reachable addresses from bit vector
-        let mut addresses = reachables.iter_ones().collect::<Vec<_>>();
-        addresses.sort();
-
-        self.decoder.ip = addresses[0];
+        self.decoder.ip = reachables.first_one().unwrap() as usize;
 
         let mut occur_single = vec![0u32; self.decoder.code_section_len];
         let mut occur_double = vec![0u32; self.decoder.code_section_len];
 
-        for address in addresses {
+        for address in reachables.iter_ones() {
             self.decoder.ip = address;
 
             let encoding = self

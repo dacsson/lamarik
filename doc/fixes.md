@@ -932,3 +932,45 @@ Chaged the whole strategy, now we:
 2. Iterate over found occurences, decode instructions at their offsets, find all other offsets with the same instruction, pop them from list and append their counts to the current count - i.e. collect frequencies
 
 - Changes: please take a look at `lamanyzer/src/analyzer.rs` [here](../lamanyzer/src/analyzer.rs)
+
+## Analyzer pt. 2
+
+### Linear check
+
+```
+Зачем вам проверка линейным перебором? Если проверять битик посещения инструкции, и если не выставлен, выставлять и помещать в вектор, алгоритм перестанет быть квадратичным.
+```
+
+- Changes:
+```rust
+
+let mut visited_offsets = BitVec::new();
+visited_offsets.resize(self.decoder.code_section_len, false);
+
+let add_to_worklist = |offset: u32, list: &mut VecDeque<u32>, visited: &mut BitVec| {
+    let offsetu = offset as usize;
+    if !visited[offsetu] {
+        visited.set(offsetu, true);
+        list.push_back(offset);
+    }
+};
+```
+
+### Requires too much memory
+
+```
+Ваша реализация потребляет больше 16х размер входного файла памяти.
+```
+
+1. Unnecessary `address` copy from reachable offsets
+
+- Changes:
+```rust
+// Do not collect reachable addresses into a vector
+// let mut addresses = reachables.iter_ones().collect::<Vec<_>>();
+// addresses.sort();
+// Instead, iterate over the bitset directly
+for address in reachables.iter_ones() {
+...
+}
+```
