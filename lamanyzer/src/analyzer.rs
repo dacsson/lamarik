@@ -256,12 +256,8 @@ impl Analyzer {
             }
         });
 
-        // Single pass to now count actual frequencies
-        let mut freq_singles = Vec::new(); // elements of `singles` will move into this
-        let mut freq_doubles = Vec::new(); // elements of `doubles` will move into this
-
         // Because of sorting by instruction we actually will walk exactl amount of occurences before moving to next instruction here
-        let mut singles_iter = singles.into_iter();
+        let mut singles_iter = singles.iter_mut();
         if let Some(mut occ) = singles_iter.next() {
             let mut count = 1;
             for next_occ in singles_iter {
@@ -269,21 +265,16 @@ impl Analyzer {
                 if instr == self.decode_at(next_occ.address) {
                     count += 1;
                 } else {
-                    freq_singles.push(Occurence {
-                        address: occ.address,
-                        count,
-                    });
+                    occ.count = count;
+
                     occ = next_occ;
                     count = 1;
                 }
             }
-            freq_singles.push(Occurence {
-                address: occ.address,
-                count,
-            });
+            occ.count = count;
         }
 
-        let mut doubles_iter = doubles.into_iter();
+        let mut doubles_iter = doubles.iter_mut();
         if let Some(mut pair) = doubles_iter.next() {
             let mut count = 1;
             for pair_next in doubles_iter {
@@ -292,30 +283,20 @@ impl Analyzer {
                 if (next_instr1, next_instr2) == (instr1, instr2) {
                     count += 1;
                 } else {
-                    freq_doubles.push(Occurence {
-                        address: pair.address,
-                        count,
-                    });
+                    pair.count = count;
+
                     pair = pair_next;
                     count = 1;
                 }
             }
-            freq_doubles.push(Occurence {
-                address: pair.address,
-                count,
-            });
+            pair.count = count;
         }
 
         // Now sort by count
-        freq_singles.sort_by_key(|occ| Reverse(occ.count));
-        freq_doubles.sort_by_key(|occ| Reverse(occ.count));
+        singles.sort_by_key(|occ| Reverse(occ.count));
+        doubles.sort_by_key(|occ| Reverse(occ.count));
 
-        Ok(Frequency::new(
-            freq_singles,
-            freq_doubles,
-            max_singles,
-            max_doubles,
-        ))
+        Ok(Frequency::new(singles, doubles, max_singles, max_doubles))
     }
 
     pub fn dump_frequency(&mut self, freq: Frequency) {
@@ -348,16 +329,20 @@ impl Analyzer {
             if singles_closer_to_max || only_singles_left {
                 let Occurence { address, count } = singles_iter.next().unwrap();
                 let instr_at_addr = self.decode_at(address);
-                println!("{}: {}", instr_at_addr.get_opcode_name(), count);
+                if count > 0 {
+                    println!("{}: {}", instr_at_addr.get_opcode_name(), count);
+                }
             } else if doubles_not_empty {
                 let Occurence { address, count } = doubles_iter.next().unwrap();
                 let (instr_at_addr, next_instr_at_addr) = self.decode_pair(address);
-                println!(
-                    "{}; {}: {}",
-                    instr_at_addr.get_opcode_name(),
-                    next_instr_at_addr.get_opcode_name(),
-                    count
-                );
+                if count > 0 {
+                    println!(
+                        "{}; {}: {}",
+                        instr_at_addr.get_opcode_name(),
+                        next_instr_at_addr.get_opcode_name(),
+                        count
+                    );
+                }
             };
         }
     }
