@@ -130,19 +130,24 @@ impl Verifier {
         let mut target_offsets = BitVec::new();
         target_offsets.resize(self.decoder.code_section_len, false);
 
+        let mut visited_offsets = BitVec::new();
+        visited_offsets.resize(self.decoder.code_section_len, false);
+
         // Walking queue
         let mut worklist = VecDeque::new();
         worklist.reserve(self.decoder.bf.public_symbols.len());
 
-        let add_to_worklist = |offset: u32, list: &mut VecDeque<u32>| {
-            if !list.contains(&offset) {
+        let add_to_worklist = |offset: u32, list: &mut VecDeque<u32>, visited: &mut BitVec| {
+            let offsetu = offset as usize;
+            if !visited[offsetu] {
+                visited.set(offsetu, true);
                 list.push_back(offset);
             }
         };
 
         // Add public symbols to the worklist
         for (_, offset) in &self.decoder.bf.public_symbols {
-            add_to_worklist(*offset, &mut worklist);
+            add_to_worklist(*offset, &mut worklist, &mut visited_offsets);
         }
 
         while !worklist.is_empty() {
@@ -178,7 +183,7 @@ impl Verifier {
                 };
 
                 if let Some(offset) = Verifier::get_call_offset(&instr) {
-                    add_to_worklist(offset as u32, &mut worklist);
+                    add_to_worklist(offset as u32, &mut worklist, &mut visited_offsets);
                 }
             }
 
@@ -186,7 +191,7 @@ impl Verifier {
             if Verifier::is_jump(&instr) {
                 match instr {
                     Instruction::JMP { offset } | Instruction::CJMP { offset, .. } => {
-                        add_to_worklist(offset as u32, &mut worklist);
+                        add_to_worklist(offset as u32, &mut worklist, &mut visited_offsets);
                         target_offsets.set(offset as usize, true);
                     }
                     _ => {}
@@ -195,7 +200,7 @@ impl Verifier {
 
             // Push next instruction
             if !Verifier::is_terminal(&instr) {
-                add_to_worklist(self.decoder.ip as u32, &mut worklist);
+                add_to_worklist(self.decoder.ip as u32, &mut worklist, &mut visited_offsets);
             }
         }
 

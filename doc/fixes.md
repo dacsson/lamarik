@@ -974,3 +974,34 @@ for address in reachables.iter_ones() {
 ...
 }
 ```
+
+2. Get rid of `occur_single` and `occur_double` vectors
+
+Instead, we:
+- Collect all reachable instructions (and seq. of 2) into a vector 
+- Sort by opcode 
+- Walk through the sorted vector to count duplicates, because we sorted by opcode we will walk the exact amount of instructions there really is
+
+So, we got rid of:
+```rust
+// Two huge vectors
+let mut occur_single = vec![0u32; self.decoder.code_section_len];
+let mut occur_double = vec![0u32; self.decoder.code_section_len];
+
+// Vector allocation at every search for duplicates
+let dups = occur_single
+    .iter()
+    .enumerate()
+    .filter(|(j, _)| {
+        *j != address && *j > 0 && single_reachables[*j] && {
+            self.decoder.ip = *j as usize;
+            let encoding = self.decoder.next::<u8>().unwrap();
+            let instr2 = self.decoder.decode(encoding).unwrap();
+            instr == instr2
+        }
+    })
+    .map(|(address, _)| address)
+    .collect::<Vec<usize>>();
+```
+
+Please take a look at `lamanyzer/src/analyzer.rs` [here](../lamanyzer/src/analyzer.rs)

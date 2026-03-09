@@ -187,6 +187,9 @@ impl Analyzer {
         let mut occur_single = vec![0u32; self.decoder.code_section_len];
         let mut occur_double = vec![0u32; self.decoder.code_section_len];
 
+        let mut singles = Vec::new();
+        let mut doubles = Vec::new();
+
         for address in reachables.iter_ones() {
             self.decoder.ip = address;
 
@@ -214,102 +217,67 @@ impl Analyzer {
                     .decode(next_encoding)
                     .map_err(|e| AnalysisError::DecoderError(e))?;
 
-                occur_double[address] += 1;
+                // occur_double[address] += 1;
+                doubles.push((instr.clone(), next_instr));
 
                 self.decoder.ip = next_instr_start;
             }
 
             // Single opcode sequence always counts
-            occur_single[address] += 1;
+            singles.push(instr);
         }
+
+        let (freq_singles, freq_doubles) = self.count_dups(singles, doubles);
+
+        Ok(Frequency::new(freq_singles, freq_doubles))
+    }
+
+    fn count_dups(
+        &mut self,
+        mut singles: Vec<Instruction>,
+        mut doubles: Vec<(Instruction, Instruction)>,
+    ) -> (
+        Vec<(Instruction, usize)>,
+        Vec<(Instruction, Instruction, usize)>,
+    ) {
+        singles.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        doubles.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
         let mut freq_singles = Vec::new();
         let mut freq_doubles = Vec::new();
 
-        let mut single_reachables = reachables.clone();
-        let mut double_reachables = reachables.clone();
+        let mut singles_iter = singles.into_iter();
 
-        for (address, occur) in occur_single.iter().enumerate() {
-            if !single_reachables[address] || *occur == 0 {
-                continue;
+        if let Some(mut instr) = singles_iter.next() {
+            let mut count = 1;
+            for next in singles_iter {
+                if next == instr {
+                    count += 1;
+                } else {
+                    freq_singles.push((instr, count));
+                    instr = next;
+                    count = 1;
+                }
             }
-
-            self.decoder.ip = address;
-            let encoding = self.decoder.next::<u8>().unwrap();
-            let instr = self.decoder.decode(encoding).unwrap();
-
-            // Collect addresses with the same opcode
-            let dups = occur_single
-                .iter()
-                .enumerate()
-                .filter(|(j, _)| {
-                    *j != address && *j > 0 && single_reachables[*j] && {
-                        self.decoder.ip = *j as usize;
-                        let encoding = self.decoder.next::<u8>().unwrap();
-                        let instr2 = self.decoder.decode(encoding).unwrap();
-                        instr == instr2
-                    }
-                })
-                .map(|(address, _)| address)
-                .collect::<Vec<usize>>();
-
-            let count_dups = dups.len();
-
-            freq_singles.push((instr, count_dups as u32 + occur));
-
-            // Mark duplicates as unreachable so we don't insert any copies of (instruiction, occur) into freq_singles
-            for addr in dups {
-                single_reachables.set(addr, false);
-            }
+            freq_singles.push((instr, count));
         }
 
-        for (address, occur) in occur_double.iter().enumerate() {
-            if !double_reachables[address] || *occur == 0 {
-                continue;
+        let mut doubles_iter = doubles.into_iter();
+        if let Some(mut pair) = doubles_iter.next() {
+            let mut count = 1;
+            for next in doubles_iter {
+                if next == pair {
+                    count += 1;
+                } else {
+                    freq_doubles.push((pair.0, pair.1, count));
+                    pair = next;
+                    count = 1;
+                }
             }
-
-            self.decoder.ip = address;
-            let encoding = self.decoder.next::<u8>().unwrap();
-            let instr = self.decoder.decode(encoding).unwrap();
-
-            let next_encoding = self.decoder.next::<u8>().unwrap();
-            if self.decoder.ip >= self.decoder.code_section_len {
-                continue;
-            }
-
-            let instr_next = self.decoder.decode(next_encoding).unwrap();
-
-            let dups = occur_double
-                .iter()
-                .enumerate()
-                .filter(|(j, _)| {
-                    *j != address && *j > 0 && double_reachables[*j] && {
-                        self.decoder.ip = *j as usize;
-                        let encoding = self.decoder.next::<u8>().unwrap();
-                        let instr2 = self.decoder.decode(encoding).unwrap();
-
-                        let next_encoding = self.decoder.next::<u8>().unwrap();
-                        if self.decoder.ip >= self.decoder.code_section_len {
-                            return false;
-                        }
-                        let instr_next2 = self.decoder.decode(next_encoding).unwrap();
-
-                        instr == instr2 && instr_next == instr_next2
-                    }
-                })
-                .map(|(address, _)| address)
-                .collect::<Vec<usize>>();
-
-            let count_dups = dups.len();
-
-            freq_doubles.push((instr, instr_next, count_dups as u32 + occur));
-
-            for addr in dups {
-                double_reachables.set(addr, false);
-            }
+            freq_doubles.push((pair.0, pair.1, count));
         }
 
-        Ok(Frequency::new(freq_singles, freq_doubles))
+        (freq_singles, freq_doubles)
     }
 }
 
@@ -319,14 +287,14 @@ pub struct ReachableResult {
 }
 
 pub struct Frequency {
-    frequency_single: Vec<(Instruction, u32)>,
-    frequency_double: Vec<(Instruction, Instruction, u32)>,
+    frequency_single: Vec<(Instruction, usize)>,
+    frequency_double: Vec<(Instruction, Instruction, usize)>,
 }
 
 impl Frequency {
     pub fn new(
-        frequency_single: Vec<(Instruction, u32)>,
-        frequency_double: Vec<(Instruction, Instruction, u32)>,
+        frequency_single: Vec<(Instruction, usize)>,
+        frequency_double: Vec<(Instruction, Instruction, usize)>,
     ) -> Self {
         Frequency {
             frequency_single,
@@ -337,7 +305,7 @@ impl Frequency {
 
 impl Display for Frequency {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut entries: Vec<(String, u32)> = Vec::new();
+        let mut entries: Vec<(String, usize)> = Vec::new();
 
         // Single instructions
         for (instr, count) in &self.frequency_single {
