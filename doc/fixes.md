@@ -1005,3 +1005,4 @@ let dups = occur_single
 ```
 
 Please take a look at `lamanyzer/src/analyzer.rs` [here](../lamanyzer/src/analyzer.rs)
+Sorted file example: [here](Sort.freq.txt)
