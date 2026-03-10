@@ -11,7 +11,6 @@ use crate::{
     rtBox, rtToData, rtToSexp, rtUnbox, set_array_el, set_captured_variable, set_sexp_el,
     stringBuf,
 };
-use bitvec::prelude::*;
 use core::array;
 use core::convert::TryFrom;
 use core::ffi::{CStr, c_char};
@@ -100,7 +99,7 @@ impl Interpreter {
     }
 
     /// Main interpreter loop
-    pub fn run(&mut self, reachables: BitVec) -> Result<(), RunError> {
+    pub fn run(&mut self) -> Result<(), RunError> {
         while self.decoder.ip < self.code_section_len {
             let encoding = self.decoder.next::<u8>()?;
             let instr = self.decoder.decode(encoding)?;
@@ -1037,7 +1036,7 @@ impl Interpreter {
                     self.push(Object::new_unboxed(res))?;
                 },
             },
-            _ => panic!("Unimplemented instruction {:?}", instr),
+            Instruction::LOADREF {..} | Instruction::HALT => panic!("You shouldn't be here")
         };
 
         Ok(())

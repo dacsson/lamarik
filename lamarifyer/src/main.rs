@@ -5,6 +5,8 @@ use lamarifyer::interpreter::{Interpreter, InterpreterError};
 use std::fs::File;
 use std::io::Read;
 
+use crate::verifyer::Verifier;
+
 mod verifyer;
 
 /// Lama VM bytecode interpreter
@@ -56,28 +58,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let decoder = Decoder::new(bytefile);
 
     let mut verifier = verifyer::Verifier::new(decoder);
-    let res = verifier.verify().map_err(|err| {
+    verifier.verify().map_err(|err| {
         eprintln!("{}", err);
         err
     })?;
 
-    let mut new_bytefile = Bytefile::parse(content).map_err(|err| {
-        eprintln!("{}", err);
-        err
-    })?;
-    for (offset, depth) in res.0.stack_depths.iter().enumerate() {
-        if *depth != 0 {
-            let begin_instr_bytes = &new_bytefile.code_section[offset - 8..offset - 4];
-            let mut payload = u32::from_le_bytes(begin_instr_bytes.try_into().unwrap());
-            payload |= (depth.to_le() as u32) << 16;
-            new_bytefile.code_section[offset - 8..offset - 4]
-                .copy_from_slice(&payload.to_le_bytes());
-        }
-    }
+    // Move decoder from verifier to interpreter
+    let Verifier { mut decoder, .. } = verifier;
 
-    let new_decoder = Decoder::new(new_bytefile);
-    let mut interp = Interpreter::new(new_decoder);
-    let _ = interp.run(res.1.reachables).map_err(|err| {
+    // Reset IP to main offset
+    decoder.ip = decoder.bf.main_offset as usize;
+
+    let mut interp = Interpreter::new(decoder);
+    let _ = interp.run().map_err(|err| {
         eprintln!("{}", err);
         err
     });
