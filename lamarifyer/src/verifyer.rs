@@ -137,31 +137,10 @@ impl Verifier {
         }
     }
 
-    fn is_jump(instr: &Instruction) -> bool {
-        match instr {
-            Instruction::JMP { .. } | Instruction::CJMP { .. } => true,
-            _ => false,
-        }
-    }
-
     fn is_terminal(instr: &Instruction) -> bool {
         match instr {
             Instruction::RET | Instruction::END | Instruction::FAIL { .. } => true,
             _ => false,
-        }
-    }
-
-    fn is_call(instr: &Instruction) -> bool {
-        match instr {
-            Instruction::CALL { .. } => true,
-            _ => false,
-        }
-    }
-
-    fn get_call_offset(instr: &Instruction) -> Option<i32> {
-        match instr {
-            Instruction::CALL { offset, .. } => Some(*offset),
-            _ => None,
         }
     }
 
@@ -182,13 +161,13 @@ impl Verifier {
         self.decoder.ip - start as usize
     }
 
-    /// Pushes (offset, func_count) of the current instruction onto the queue
-    fn queue_instruction(&mut self, offset: u32, func_count: usize) {
-        self.instr_queue[self.instr_len] = (offset as i64) << 32 | func_count as i64;
+    /// Pushes (offset, func_begin_offset) of the current instruction onto the queue
+    fn queue_instruction(&mut self, offset: u32, func_begin_offset: usize) {
+        self.instr_queue[self.instr_len] = (offset as i64) << 32 | func_begin_offset as i64;
         self.instr_len += 1;
     }
 
-    /// Returns (offset, func_count) of the current instruction from the queue
+    /// Returns (offset, func_begin_offset) of the current instruction from the queue
     fn instruction_queue_pop(&mut self) -> (u32, usize) {
         self.instr_len -= 1;
         let val = self.instr_queue[self.instr_len];
@@ -234,16 +213,6 @@ impl Verifier {
         }
     }
 
-    /// Returns (offset, stack_depth)
-    fn peek_function(&self) -> Option<(usize, isize)> {
-        if self.func_len == 0 {
-            None
-        } else {
-            let val = self.func_queue[self.func_len - 1];
-            Some(((val >> 32) as usize, (val & 0xffffffff) as isize))
-        }
-    }
-
     /// Writes the stack depth at big word of begin instruction byte
     fn write_function_stack_depth_at(&mut self, offset: usize, stack_depth: isize) {
         let begin_instr_bytes = &self.decoder.bf.code_section[offset + 1..offset + 1 + 4];
@@ -253,33 +222,44 @@ impl Verifier {
             .copy_from_slice(&payload.to_le_bytes());
     }
 
-    fn drop_function(&mut self) -> (usize, isize) {
-        let val = self.func_queue[self.func_len - 1];
-        self.func_queue[self.func_len - 1] = 0;
-        let offset = (val >> 32) as usize;
-        let stack_depth = (val & 0xffffffff) as isize;
-        self.func_len -= 1;
-        (offset, stack_depth)
+    fn update_max_stack_depth(&mut self, func_offset: usize, current_depth: isize) {
+        for i in 0..self.func_len {
+            let val = self.func_queue[i];
+            let offset = (val >> 32) as usize;
+            if offset == func_offset {
+                let curr_max = (val & 0xffffffff) as isize;
+                let new_max = std::cmp::max(curr_max, std::cmp::max(0, current_depth));
+                self.func_queue[i] = (func_offset as i64) << 32 | new_max as i64;
+                return;
+            }
+        }
+        // add to lookup aftr
+        self.func_queue[self.func_len] =
+            (func_offset as i64) << 32 | std::cmp::max(0, current_depth) as i64;
+        self.func_len += 1;
     }
 
     pub fn verify(&mut self) -> Result<(), VerifierError> {
-        // We pick arbitrary big enough length of array, because otherwise we'd need to allocate dynamically
-        // Oh boy do i want to just slap `self.decoder.code_section_len` in there
         let mut stack_depth = [UNSEEN; MAX_OPERAND_STACK_SIZE];
-
         let mut curr_stack_depth = 0;
-        let mut func_count = 0;
+
         // Main is the only starting point
-        self.queue_instruction(self.decoder.bf.main_offset, self.decoder.bf.main_offset);
+        self.queue_instruction(
+            self.decoder.bf.main_offset,
+            self.decoder.bf.main_offset as usize,
+        );
 
         while !self.instruction_queue_is_empty() {
-            let (offset_at, curr_func) = self.instruction_queue_pop();
+            let (offset_at, func_offset) = self.instruction_queue_pop();
             let instr = self.decode_at(offset_at);
             let next_offset = offset_at + self.instruction_length(offset_at) as u32;
             let length = self.instruction_length(offset_at as u32);
             let offset = offset_at as usize;
 
-            // println!("[LOG] instr: {:?} offset {} curr_func {}", instr, offset, curr_func);
+            // println!(
+            //     "[LOG] offset_at={} func_offset={} instr={:?}",
+            //     offset_at, func_offset, instr
+            // );
 
             if offset + length > self.decoder.code_section_len {
                 return Err(VerifierError::ExceededCodeSize(offset));
@@ -288,15 +268,10 @@ impl Verifier {
             if Verifier::is_pending(stack_depth[offset]) {
                 // Jump target
                 curr_stack_depth = Verifier::decode_depth(stack_depth[offset]) as isize;
-                // println!(
-                //     "[LOG][is_pending=true] current stack depth: {:?}",
-                //     curr_stack_depth
-                // );
             }
 
             // Skip visited
             if Verifier::is_visited(stack_depth[offset]) {
-                // println!("[LOG] [SKIPPING THIS INSTRUCTION]");
                 if self.instruction_queue_is_empty() {
                     continue;
                 }
@@ -307,7 +282,6 @@ impl Verifier {
 
                 curr_stack_depth =
                     Verifier::decode_depth(stack_depth[next_offset as usize]) as isize;
-                // println!("[LOG] current stack depth: {:?}", curr_stack_depth);
 
                 if Verifier::is_unseen(stack_depth[next_offset as usize]) {
                     return Err(VerifierError::InvalidControlFlow);
@@ -317,23 +291,12 @@ impl Verifier {
                     // Force the next isntr to have the correct stack depth
                     stack_depth[next_offset as usize] =
                         Verifier::encode_pending(curr_stack_depth as u32);
-                    // println!(
-                    //     "[LOG] stack depth: {:?} of next_offset: {}",
-                    //     Verifier::decode_depth(stack_depth[next_offset as usize]),
-                    //     next_offset
-                    // );
                 }
-                println!("[LOG][SKIP] {:?}", instr);
                 continue;
             }
 
-            // IMPORTANT: here we store pre-instr depth as visited, so jumps will get the right depth at merge point
             stack_depth[offset] = Verifier::encode_visited(curr_stack_depth as u32);
-            // let depth_pre_effect = Verifier::decode_depth(stack_depth[offset]) as isize;
-            let stack_effect = instr.stack_size_effect();
-            // println!("[LOG] stack effect: {:?}", stack_effect);
-            curr_stack_depth += stack_effect;
-            // println!("[LOG] current stack depth: {:?}", curr_stack_depth);
+            curr_stack_depth += instr.stack_size_effect();
 
             if curr_stack_depth < 0 {
                 return Err(VerifierError::StackUnderflow(curr_stack_depth));
@@ -342,41 +305,9 @@ impl Verifier {
                 return Err(VerifierError::StackOverflow);
             }
 
-            // stack_depth[offset] = Verifier::encode_visited(curr_stack_depth as u32);
-            // println!(
-            //     "[LOG] stack depth: {:?} at offset: {} curr_stack_depth: {}",
-            //     Verifier::decode_depth(stack_depth[offset]),
-            //     offset,
-            //     curr_stack_depth
-            // );
+            // Dynamically updates max stack depth on-the-fly (like a boss)
+            self.update_max_stack_depth(func_offset, curr_stack_depth);
 
-            if !self.function_queue_is_empty() {
-                self.set_function_stack_depth(curr_stack_depth);
-            }
-
-            // Beware, a new function arrives
-            match instr {
-                Instruction::BEGIN { .. } | Instruction::CBEGIN { .. } => {
-                    self.queue_function(offset as u32, curr_stack_depth);
-                    println!("[LOG][queue_function] offset {} curr_stack_depth {} is_visited", offset, curr_stack_depth);
-                    // curr_func += 1;
-                    // func_count += 1;
-                }
-                _ => {}
-            }
-
-            if self.function_queue_is_empty() {
-                return Err(VerifierError::InvalidControlFlow);
-            }
-
-            let (func_offset, func_stack_depth) = self
-                .peek_function()
-                .ok_or(VerifierError::ExpectedFunction)?;
-            // if curr_stack_depth < func_stack_depth {
-            //     return Err(VerifierError::InvalidControlFlow);
-            // }
-
-            // Handle jumps with targets
             match instr {
                 Instruction::CJMP {
                     offset: target_at, ..
@@ -396,16 +327,7 @@ impl Verifier {
 
                     if !Verifier::is_unseen(stack_depth[target]) {
                         // We are at merge point of control flow
-                        // TODO: check legitamate
-                        // println!(
-                        //     "[LOG] checking stack balance: for curr {} - {}, for target {} {}",
-                        //     offset,
-                        //     curr_stack_depth,
-                        //     target,
-                        //     Verifier::decode_depth(stack_depth[target])
-                        // );
                         if Verifier::decode_depth(stack_depth[target]) != curr_stack_depth as u32 {
-                            // TODO: Specify that we failed at cfg merge point
                             return Err(VerifierError::StackUnbalanced(
                                 Verifier::decode_depth(stack_depth[target]),
                                 curr_stack_depth,
@@ -413,14 +335,11 @@ impl Verifier {
                         }
                     } else {
                         stack_depth[target] = Verifier::encode_pending(curr_stack_depth as u32);
-                        // println!(
-                        //     "[LOG] stack depth: {:?} at target: {}",
-                        //     Verifier::decode_depth(stack_depth[target]), target
-                        // );
-                        self.queue_instruction(target_at as u32, curr_func);
+                        // IMPORTANT: He inherits the current func_offset
+                        self.queue_instruction(target_at as u32, func_offset);
                     }
 
-                    // Skip direct jumps
+                    // Skip direct (no branchings)
                     if let Instruction::JMP { .. } = instr {
                         continue;
                     }
@@ -440,8 +359,6 @@ impl Verifier {
                         ));
                     }
 
-                    // Check that call leads to BEGIN/CBEGIN
-                    // let target_instr = self.decode_at(target_at as u32);
                     if !matches!(
                         self.decode_at(target_at as u32),
                         Instruction::BEGIN { .. } | Instruction::CBEGIN { .. }
@@ -449,62 +366,24 @@ impl Verifier {
                         return Err(VerifierError::ExpectedBegin(format!("{:?}", instr)));
                     }
 
-                    if Verifier::is_unseen(stack_depth[target]) {
-                        stack_depth[target] = Verifier::encode_pending(curr_stack_depth as u32);
-                        // println!(
-                        //     "[LOG][encode_pending=true] stack depth: {:?} at target: {}",
-                        //     Verifier::decode_depth(stack_depth[target]), target
-                        // );
-                        func_count += 1;
-                        self.queue_instruction(target_at as u32, curr_func + 1);
-                        println!("[LOG][queue_instruction with new func count] target {} func_count {}", target_at, func_count);
-                    }
+                    stack_depth[target] = Verifier::encode_pending(curr_stack_depth as u32);
+
+                    // New func/context we create
+                    self.queue_instruction(target_at as u32, target);
                 }
                 _ => {}
             }
 
-            // NOTE: offset is after the opcode (? might change later)
-            // println!("[LOG] verifying instruction for func_offset {} curr_func {}", func_offset, curr_func);
-            self.verify_instruction(func_offset, curr_func, &instr)?;
+            // NOTE: use offset insted of id
+            self.verify_instruction(func_offset, &instr)?;
 
-            // Now check for terminal instructions
             if Verifier::is_terminal(&instr) {
-                // let need_to_drop_curr_func = self.instr_len > 1
-                //     && self.peek_instruction(0).is_some()
-                //     && self
-                //         .peek_instruction(0)
-                //         .ok_or(VerifierError::ExpectedInstruction)?
-                //         .1
-                //         != curr_func
-                //     && self.peek_instruction(1).is_some()
-                //     && self
-                //         .peek_instruction(1)
-                //         .ok_or(VerifierError::ExpectedInstruction)?
-                //         .1
-                //         != curr_func;
-                let mut need_to_drop_curr_func = true;
-                for i in 0..std::cmp::min(2, self.instr_len) {
-                    if let Some((_, id)) = self.peek_instruction(i) {
-                        if id == curr_func {
-                            need_to_drop_curr_func = false;
-                            break;
-                        }
-                    }
-                }
-                if need_to_drop_curr_func {
-                    println!("[LOG][FUNCTION_DROP] new function: (offset, stack) : {:?}", self.peek_function());
-                    self.drop_function();
-                    stack_depth[func_offset] = Verifier::encode_visited(curr_stack_depth as u32);
-                    println!("[LOG][drop_func] curr_func {} next_instr_func_count {:?}", curr_func, self.peek_instruction(1));
-                }
-
-                self.write_function_stack_depth_at(func_offset, func_stack_depth);
-
+                // (Function dropping logic is completely deleted from here)
                 if self.instruction_queue_is_empty() {
                     continue;
                 }
 
-                let (next_offset, next_func_count) = self
+                let (next_offset, _) = self
                     .peek_instruction(0)
                     .ok_or(VerifierError::ExpectedInstruction)?;
 
@@ -514,16 +393,22 @@ impl Verifier {
                 if Verifier::is_visited(stack_depth[next_offset as usize]) {
                     stack_depth[next_offset as usize] =
                         Verifier::encode_pending(curr_stack_depth as u32);
-                    // println!(
-                    //     "[LOG] stack depth: {:?} at next_offset: {}",
-                    //     stack_depth[next_offset as usize], next_offset
-                    // );
                 }
-
                 continue;
             }
 
-            self.queue_instruction(next_offset, curr_func);
+            // He again inherits the cur func_offset, sequentially
+            self.queue_instruction(next_offset, func_offset);
+        }
+
+        // Here we patch all bytecode instructions at the very end
+        // TODO: verifyer should actually move its decoder to interpreter to avoid cloning a whole bytefile
+        for i in 0..self.func_len {
+            let val = self.func_queue[i];
+            let target_func_offset = (val >> 32) as usize;
+            let max_depth = (val & 0xffffffff) as isize;
+
+            self.write_function_stack_depth_at(target_func_offset, max_depth);
         }
 
         Ok(())
@@ -578,7 +463,6 @@ impl Verifier {
     fn verify_instruction(
         &mut self,
         func_offset: usize,
-        curr_func: usize,
         instruction: &Instruction,
     ) -> Result<(), VerifierError> {
         match instruction {
@@ -598,12 +482,8 @@ impl Verifier {
                 if args > MAX_PARAMS {
                     return Err(VerifierError::InvalidBeginArgs(args as i32));
                 }
-
-                println!("{:?}", instruction);
             }
-            Instruction::END => {
-                println!("{:?}", instruction);
-            }
+            Instruction::END => {}
             Instruction::JMP { offset } | Instruction::CJMP { offset, .. } => {
                 let offset_at = *offset as usize;
 
@@ -694,7 +574,6 @@ impl Verifier {
                                 self.decoder.bf.global_area_size as i64,
                             ));
                         } else {
-                            println!("[LOG][LOADLOCAL] curr func is {}", curr_func);
                             return Err(VerifierError::InvalidLoadIndex(
                                 ValueRel::Global,
                                 *index,
@@ -802,7 +681,7 @@ impl StackEffect for Instruction {
             Instruction::DUP => 1,  // pop 1, push 2 copies
             Instruction::SWAP => 0, // pop 2, push 2 (swapped)
             Instruction::LINE { .. } => 0,
-            Instruction::CALL { .. } => 0, // we dont count temporary pushes (ret_ip)
+            Instruction::CALL { offset, n } => -(*n as isize) + 1, // we dont count temporary pushes (ret_ip)
             Instruction::CALLBUILTIN { name, n } => match name {
                 Builtin::Barray => 1 - *n as isize,
                 Builtin::Llength => 0,
@@ -817,7 +696,7 @@ impl StackEffect for Instruction {
             Instruction::TAG { .. } => 0,
             Instruction::FAIL { .. } => -1,
             Instruction::CLOSURE { .. } => 1,
-            Instruction::CALLC { .. } => 1,
+            Instruction::CALLC { arity } => -(*arity as isize),
             Instruction::PATT { kind } => match kind {
                 PattKind::BothAreStr => -1,
                 _ => 0,
