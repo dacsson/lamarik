@@ -15,11 +15,11 @@ test100.lama                   [PASS]  target:0.002s
 Running dump/test095.bc
 test095.lama                   [PASS]  target:0.002s
 Running dump/test022.bc
-test022.lama                   [PASS]  target:0.002s
+test022.lama                   [PASS]  target:0.001s
 Running dump/test103.bc
 test103.lama                   [PASS]  target:0.001s
 Running dump/test086.bc
-test086.lama                   [PASS]  target:0.002s
+test086.lama                   [PASS]  target:0.001s
 Running dump/test102.bc
 test102.lama                   [PASS]  target:0.002s
 Running dump/test003.bc
@@ -29,25 +29,25 @@ test084.lama                   [PASS]  target:0.002s
 Running dump/test088.bc
 test088.lama                   [PASS]  target:0.002s
 Running dump/test016.bc
-test016.lama                   [PASS]  target:0.002s
+test016.lama                   [PASS]  target:0.001s
 Running dump/test029.bc
 test029.lama                   [PASS]  target:0.002s
 Running dump/test027.bc
-test027.lama                   [PASS]  target:0.002s
+test027.lama                   [PASS]  target:0.003s
 Running dump/test034.bc
 test034.lama                   [PASS]  target:0.002s
 Running dump/test112.bc
-test112.lama                   [PASS]  target:0.002s
+test112.lama                   [PASS]  target:0.003s
 Running dump/test101.bc
 test101.lama                   [PASS]  target:0.002s
 Running dump/test017.bc
-test017.lama                   [PASS]  target:0.002s
+test017.lama                   [PASS]  target:0.003s
 Running dump/test009.bc
-test009.lama                   [PASS]  target:0.002s
+test009.lama                   [PASS]  target:0.003s
 Running dump/test078.bc
 test078.lama                   [PASS]  target:0.002s
 Running dump/test803.bc
-test803.lama                   [FAIL]  target:0.002s
+test803.lama                   [FAIL]  target:0.001s
 Running dump/test083.bc
 test083.lama                   [PASS]  target:0.002s
 Running dump/test012.bc
@@ -59,13 +59,13 @@ test023.lama                   [PASS]  target:0.002s
 Running dump/test097.bc
 test097.lama                   [PASS]  target:0.002s
 Running dump/test020.bc
-test020.lama                   [PASS]  target:0.022s
+test020.lama                   [PASS]  target:0.023s
 Running dump/test802.bc
 test802.lama                   [PASS]  target:0.002s
 Running dump/test091.bc
 test091.lama                   [PASS]  target:0.002s
 Running dump/test028.bc
-test028.lama                   [PASS]  target:0.002s
+test028.lama                   [PASS]  target:0.001s
 Running dump/test073.bc
 test073.lama                   [PASS]  target:0.002s
 Running dump/test042.bc
@@ -82,7 +82,7 @@ test001.lama                   [PASS]  target:0.002s
 Running dump/test094.bc
 test094.lama                   [PASS]  target:0.002s
 Running dump/test106.bc
-test106.lama                   [PASS]  target:0.002s
+test106.lama                   [PASS]  target:0.001s
 Running dump/test024.bc
 test024.lama                   [PASS]  target:0.002s
 Running dump/test104.bc
@@ -98,7 +98,7 @@ test093.lama                   [PASS]  target:0.002s
 Running dump/test046.bc
 test046.lama                   [PASS]  target:0.002s
 Running dump/test050.bc
-test050.lama                   [PASS]  target:0.002s
+test050.lama                   [PASS]  target:0.001s
 Running dump/test059.bc
 test059.lama                   [PASS]  target:0.002s
 Running dump/test040.bc
@@ -108,7 +108,7 @@ test072.lama                   [PASS]  target:0.002s
 Running dump/test080.bc
 test080.lama                   [PASS]  target:0.002s
 Running dump/test098.bc
-test098.lama                   [PASS]  target:0.002s
+test098.lama                   [PASS]  target:0.001s
 Running dump/test010.bc
 test010.lama                   [PASS]  target:0.004s
 Running dump/test026.bc
@@ -116,7 +116,7 @@ test026.lama                   [PASS]  target:0.002s
 Running dump/test008.bc
 test008.lama                   [PASS]  target:0.002s
 Running dump/test002.bc
-test002.lama                   [PASS]  target:0.002s
+test002.lama                   [PASS]  target:0.001s
 test111.lama                   [ERROR] Compilation failed for /home/safonoff/Uni/VirtualMachines/Lama/regression/test111.lama
 Fatal error: exception Failure("ERROR: undefined label 'Lstringcat'")
 
@@ -125,7 +125,7 @@ test801.lama                   [PASS]  target:0.002s
 Running dump/test107.bc
 test107.lama                   [PASS]  target:0.002s
 Running dump/test015.bc
-test015.lama                   [PASS]  target:0.027s
+test015.lama                   [PASS]  target:0.025s
 test054.lama                   [ERROR] Compilation failed for /home/safonoff/Uni/VirtualMachines/Lama/regression/test054.lama
 Fatal error: exception Failure("Indirect assignment is not supported yet: If (Var (\"z\"), Scope ([], Ref (\"x\")), Scope ([], Ref (\"y\")))")
 
@@ -136,19 +136,19 @@ test090.lama                   [PASS]  target:0.002s
 Running dump/test019.bc
 test019.lama                   [PASS]  target:0.003s
 Running dump/test074.bc
-test074.lama                   [PASS]  target:0.693s
+test074.lama                   [PASS]  target:0.739s
 Running dump/test041.bc
-test041.lama                   [PASS]  target:0.001s
+test041.lama                   [PASS]  target:0.002s
 Running dump/test021.bc
-test021.lama                   [PASS]  target:0.002s
+test021.lama                   [PASS]  target:0.001s
 Running dump/test007.bc
 test007.lama                   [PASS]  target:0.001s
 Running dump/test077.bc
 test077.lama                   [PASS]  target:0.002s
 Running dump/test011.bc
-test011.lama                   [PASS]  target:0.002s
+test011.lama                   [PASS]  target:0.001s
 Running dump/test089.bc
-test089.lama                   [PASS]  target:0.002s
+test089.lama                   [PASS]  target:0.001s
 Running dump/test014.bc
 test014.lama                   [PASS]  target:0.002s
 Running dump/test025.bc
@@ -168,7 +168,7 @@ Summary
 Total   : 79
 Passed  : 75
 Failed  : 4
-Target  : 0.868s
+Target  : 0.914s
 
 Details of failures are stored in failures.log
 

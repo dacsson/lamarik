@@ -241,7 +241,7 @@ impl Verifier {
 
     pub fn verify(&mut self) -> Result<(), VerifierError> {
         let mut stack_depth = [UNSEEN; MAX_OPERAND_STACK_SIZE];
-        let mut curr_stack_depth = 0;
+        let mut curr_stack_depth = 2;
 
         // Main is the only starting point
         self.queue_instruction(
@@ -296,7 +296,14 @@ impl Verifier {
             }
 
             stack_depth[offset] = Verifier::encode_visited(curr_stack_depth as u32);
-            curr_stack_depth += instr.stack_size_effect();
+            let push_effect = instr.stack_push_effect();
+            let pop_effect = instr.stack_pop_effect();
+
+            if curr_stack_depth - (pop_effect as isize) < 0 {
+                return Err(VerifierError::StackUnderflow(curr_stack_depth));
+            }
+
+            curr_stack_depth += push_effect as isize - pop_effect as isize;
 
             if curr_stack_depth < 0 {
                 return Err(VerifierError::StackUnderflow(curr_stack_depth));
@@ -639,18 +646,11 @@ impl Verifier {
     }
 }
 
-pub struct ReachableResult {
-    pub reachables: BitVec,
-    pub targets: BitVec,
-}
-
-pub struct VerificationResult {
-    pub stack_depths: Vec<isize>,
-}
-
 trait StackEffect {
     /// Returns the stack effect of the instruction.
     fn stack_size_effect(&self) -> isize;
+    fn stack_push_effect(&self) -> usize;
+    fn stack_pop_effect(&self) -> usize;
 }
 
 impl StackEffect for Instruction {
@@ -702,6 +702,82 @@ impl StackEffect for Instruction {
                 _ => 0,
             },
             _ => 0,
+        }
+    }
+
+    fn stack_pop_effect(&self) -> usize {
+        match self {
+            Instruction::NOP => 0,
+            Instruction::BINOP { .. } => 2,
+            Instruction::CONST { .. } => 0,
+            Instruction::STRING { .. } => 0,
+            Instruction::SEXP { n_members, .. } => *n_members as usize,
+            Instruction::JMP { .. } => 0,
+            Instruction::STA => 3,
+            Instruction::STI => 0,
+            Instruction::CBEGIN { .. } | Instruction::BEGIN { .. } => 2,
+            Instruction::END | Instruction::RET => 0,
+            Instruction::STORE { .. } => 1,
+            Instruction::LOAD { .. } => 0,
+            Instruction::DROP => 1,
+            Instruction::DUP => 1,
+            Instruction::SWAP => 2,
+            Instruction::LINE { .. } => 0,
+            Instruction::CALL { offset, n } => *n as usize,
+            Instruction::CALLBUILTIN { name, n } => match name {
+                Builtin::Barray => *n as usize,
+                Builtin::Llength => 1,
+                Builtin::Lread => 0,
+                Builtin::Lwrite => 1,
+                Builtin::Lstring => 1,
+                _ => 0,
+            },
+            Instruction::CJMP { .. } => 1,
+            Instruction::ELEM => 2,
+            Instruction::ARRAY { .. } => 1,
+            Instruction::TAG { .. } => 1,
+            Instruction::FAIL { .. } => 1,
+            Instruction::CLOSURE { arity, .. } => *arity as usize + 1,
+            Instruction::CALLC { arity, .. } => *arity as usize,
+            Instruction::PATT { kind } => match kind {
+                PattKind::BothAreStr => 2,
+                _ => 1,
+            },
+            Instruction::LOADREF { .. } | Instruction::HALT => 0,
+        }
+    }
+
+    fn stack_push_effect(&self) -> usize {
+        match self {
+            Instruction::NOP => 0,
+            Instruction::BINOP { .. } => 1,
+            Instruction::CONST { .. } => 1,
+            Instruction::STRING { .. } => 1,
+            Instruction::SEXP { .. } => 1,
+            Instruction::JMP { .. } => 0,
+            Instruction::STA => 1,
+            Instruction::STI => 0,
+            Instruction::CBEGIN { locals, .. } | Instruction::BEGIN { locals, .. } => {
+                5 + *locals as usize
+            }
+            Instruction::END | Instruction::RET => 0,
+            Instruction::STORE { .. } => 1,
+            Instruction::LOAD { .. } => 1,
+            Instruction::DROP => 0,
+            Instruction::DUP => 2,
+            Instruction::SWAP => 2,
+            Instruction::LINE { .. } => 0,
+            Instruction::CALL { .. } => 1,
+            Instruction::CALLBUILTIN { .. } => 1,
+            Instruction::CJMP { .. } => 0,
+            Instruction::ELEM => 1,
+            Instruction::ARRAY { .. } => 1,
+            Instruction::TAG { .. } => 1,
+            Instruction::FAIL { .. } => 0,
+            Instruction::CLOSURE { arity, .. } => *arity as usize + 2,
+            Instruction::CALLC { .. } => 0,
+            Instruction::PATT { .. } => 1,
+            Instruction::LOADREF { .. } | Instruction::HALT => 0,
         }
     }
 }
