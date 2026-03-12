@@ -348,6 +348,12 @@ impl Verifier {
 
                     // Skip direct (no branchings)
                     if let Instruction::JMP { .. } = instr {
+                        if self.instruction_queue_is_empty() {
+                            continue;
+                        }
+                        let (next_offset, _) = self.peek_instruction(0).unwrap();
+                        let depth = Verifier::decode_depth(stack_depth[next_offset as usize]) as isize;
+                        curr_stack_depth = depth;
                         continue;
                     }
                 }
@@ -373,10 +379,13 @@ impl Verifier {
                         return Err(VerifierError::ExpectedBegin(format!("{:?}", instr)));
                     }
 
-                    stack_depth[target] = Verifier::encode_pending(curr_stack_depth as u32);
+                    if Verifier::is_unseen(stack_depth[target]) {
+                        // 2 is CALL stack push effect, BEGINs pop effect is 2 (closure_obj and ret_ip)
+                        stack_depth[target] = Verifier::encode_pending(2);
 
-                    // New func/context we create
-                    self.queue_instruction(target_at as u32, target);
+                        // New func/context we create
+                        self.queue_instruction(target_at as u32, target);
+                    }
                 }
                 _ => {}
             }

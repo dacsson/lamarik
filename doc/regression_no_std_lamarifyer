@@ -5,27 +5,27 @@ test105.lama                   [PASS]  target:0.001s
 Running dump/test018.bc
 test018.lama                   [PASS]  target:0.002s
 Running dump/test013.bc
-test013.lama                   [PASS]  target:0.002s
+test013.lama                   [PASS]  target:0.001s
 Running dump/test082.bc
 test082.lama                   [PASS]  target:0.002s
 Running dump/test085.bc
-test085.lama                   [PASS]  target:0.002s
+test085.lama                   [PASS]  target:0.001s
 Running dump/test100.bc
-test100.lama                   [PASS]  target:0.002s
+test100.lama                   [PASS]  target:0.001s
 Running dump/test095.bc
-test095.lama                   [PASS]  target:0.002s
+test095.lama                   [PASS]  target:0.001s
 Running dump/test022.bc
-test022.lama                   [PASS]  target:0.001s
+test022.lama                   [PASS]  target:0.002s
 Running dump/test103.bc
-test103.lama                   [PASS]  target:0.001s
+test103.lama                   [PASS]  target:0.002s
 Running dump/test086.bc
-test086.lama                   [PASS]  target:0.001s
+test086.lama                   [PASS]  target:0.002s
 Running dump/test102.bc
 test102.lama                   [PASS]  target:0.002s
 Running dump/test003.bc
 test003.lama                   [PASS]  target:0.002s
 Running dump/test084.bc
-test084.lama                   [PASS]  target:0.002s
+test084.lama                   [PASS]  target:0.001s
 Running dump/test088.bc
 test088.lama                   [PASS]  target:0.002s
 Running dump/test016.bc
@@ -33,17 +33,17 @@ test016.lama                   [PASS]  target:0.001s
 Running dump/test029.bc
 test029.lama                   [PASS]  target:0.002s
 Running dump/test027.bc
-test027.lama                   [PASS]  target:0.003s
+test027.lama                   [PASS]  target:0.002s
 Running dump/test034.bc
-test034.lama                   [PASS]  target:0.002s
+test034.lama                   [PASS]  target:0.001s
 Running dump/test112.bc
-test112.lama                   [PASS]  target:0.003s
+test112.lama                   [PASS]  target:0.001s
 Running dump/test101.bc
 test101.lama                   [PASS]  target:0.002s
 Running dump/test017.bc
-test017.lama                   [PASS]  target:0.003s
+test017.lama                   [PASS]  target:0.002s
 Running dump/test009.bc
-test009.lama                   [PASS]  target:0.003s
+test009.lama                   [PASS]  target:0.002s
 Running dump/test078.bc
 test078.lama                   [PASS]  target:0.002s
 Running dump/test803.bc
@@ -57,9 +57,9 @@ test096.lama                   [PASS]  target:0.002s
 Running dump/test023.bc
 test023.lama                   [PASS]  target:0.002s
 Running dump/test097.bc
-test097.lama                   [PASS]  target:0.002s
+test097.lama                   [PASS]  target:0.001s
 Running dump/test020.bc
-test020.lama                   [PASS]  target:0.023s
+test020.lama                   [PASS]  target:0.021s
 Running dump/test802.bc
 test802.lama                   [PASS]  target:0.002s
 Running dump/test091.bc
@@ -67,7 +67,7 @@ test091.lama                   [PASS]  target:0.002s
 Running dump/test028.bc
 test028.lama                   [PASS]  target:0.001s
 Running dump/test073.bc
-test073.lama                   [PASS]  target:0.002s
+test073.lama                   [PASS]  target:0.001s
 Running dump/test042.bc
 test042.lama                   [PASS]  target:0.002s
 test110.lama                   [ERROR] Compilation failed for /home/safonoff/Uni/VirtualMachines/Lama/regression/test110.lama
@@ -78,11 +78,11 @@ test045.lama                   [PASS]  target:0.002s
 Running dump/test063.bc
 test063.lama                   [PASS]  target:0.002s
 Running dump/test001.bc
-test001.lama                   [PASS]  target:0.002s
+test001.lama                   [PASS]  target:0.001s
 Running dump/test094.bc
 test094.lama                   [PASS]  target:0.002s
 Running dump/test106.bc
-test106.lama                   [PASS]  target:0.001s
+test106.lama                   [PASS]  target:0.002s
 Running dump/test024.bc
 test024.lama                   [PASS]  target:0.002s
 Running dump/test104.bc
@@ -96,11 +96,11 @@ test099.lama                   [PASS]  target:0.002s
 Running dump/test093.bc
 test093.lama                   [PASS]  target:0.002s
 Running dump/test046.bc
-test046.lama                   [PASS]  target:0.002s
+test046.lama                   [PASS]  target:0.001s
 Running dump/test050.bc
-test050.lama                   [PASS]  target:0.001s
+test050.lama                   [PASS]  target:0.002s
 Running dump/test059.bc
-test059.lama                   [PASS]  target:0.002s
+test059.lama                   [PASS]  target:0.001s
 Running dump/test040.bc
 test040.lama                   [PASS]  target:0.002s
 Running dump/test072.bc
@@ -110,22 +110,22 @@ test080.lama                   [PASS]  target:0.002s
 Running dump/test098.bc
 test098.lama                   [PASS]  target:0.001s
 Running dump/test010.bc
-test010.lama                   [PASS]  target:0.004s
+test010.lama                   [PASS]  target:0.003s
 Running dump/test026.bc
-test026.lama                   [PASS]  target:0.002s
+test026.lama                   [PASS]  target:0.001s
 Running dump/test008.bc
-test008.lama                   [PASS]  target:0.002s
+test008.lama                   [PASS]  target:0.001s
 Running dump/test002.bc
-test002.lama                   [PASS]  target:0.001s
+test002.lama                   [PASS]  target:0.002s
 test111.lama                   [ERROR] Compilation failed for /home/safonoff/Uni/VirtualMachines/Lama/regression/test111.lama
 Fatal error: exception Failure("ERROR: undefined label 'Lstringcat'")
 
 Running dump/test801.bc
 test801.lama                   [PASS]  target:0.002s
 Running dump/test107.bc
-test107.lama                   [PASS]  target:0.002s
+test107.lama                   [PASS]  target:0.001s
 Running dump/test015.bc
-test015.lama                   [PASS]  target:0.025s
+test015.lama                   [PASS]  target:0.021s
 test054.lama                   [ERROR] Compilation failed for /home/safonoff/Uni/VirtualMachines/Lama/regression/test054.lama
 Fatal error: exception Failure("Indirect assignment is not supported yet: If (Var (\"z\"), Scope ([], Ref (\"x\")), Scope ([], Ref (\"y\")))")
 
@@ -136,17 +136,17 @@ test090.lama                   [PASS]  target:0.002s
 Running dump/test019.bc
 test019.lama                   [PASS]  target:0.003s
 Running dump/test074.bc
-test074.lama                   [PASS]  target:0.739s
+test074.lama                   [PASS]  target:0.706s
 Running dump/test041.bc
 test041.lama                   [PASS]  target:0.002s
 Running dump/test021.bc
-test021.lama                   [PASS]  target:0.001s
+test021.lama                   [PASS]  target:0.002s
 Running dump/test007.bc
 test007.lama                   [PASS]  target:0.001s
 Running dump/test077.bc
-test077.lama                   [PASS]  target:0.002s
+test077.lama                   [PASS]  target:0.001s
 Running dump/test011.bc
-test011.lama                   [PASS]  target:0.001s
+test011.lama                   [PASS]  target:0.002s
 Running dump/test089.bc
 test089.lama                   [PASS]  target:0.001s
 Running dump/test014.bc
@@ -168,7 +168,7 @@ Summary
 Total   : 79
 Passed  : 75
 Failed  : 4
-Target  : 0.914s
+Target  : 0.863s
 
 Details of failures are stored in failures.log
 
