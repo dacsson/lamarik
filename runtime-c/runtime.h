@@ -14,7 +14,14 @@
 #include <sys/mman.h>
 #include <time.h>
 
+typedef struct {
+  char *contents;
+  aint   ptr;
+  aint   len;
+} StringBuf;
+
 extern size_t __gc_stack_top, __gc_stack_bottom;
+extern StringBuf stringBuf;
 
 #define WORD_SIZE (CHAR_BIT * sizeof(ptrt))
 
@@ -81,5 +88,6 @@ aint LtagHash (char *s);
 // }
 
 void printValue (void *p);
+void createStringBuf ();
 
 #endif

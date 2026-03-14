@@ -11,7 +11,7 @@ lamacore = { path = "../lamacore" }
 bindgen = "0.72.1"
 
 [features]
-default = []
+default = ["runtime_checks"]
 verbose = []
 runtime_checks = []
 

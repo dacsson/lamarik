@@ -29,14 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         err
     })?;
     if metadata.len() >= MAX_FILE_SIZE {
-        return Err(InterpreterError::FileIsTooLarge(
-            args.lama_file.to_string(),
-            metadata.len(),
-        ))
-        .map_err(|err| {
-            eprintln!("{}", err);
-            err
-        })?;
+        panic!("File is too large: {} > {}", metadata.len(), MAX_FILE_SIZE);
     }
 
     let mut file: File = File::open(args.lama_file).map_err(|err| {

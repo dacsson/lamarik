@@ -1,7 +1,7 @@
 //! Descriptor of Lama bytecode
 use std::convert::TryFrom;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
 pub enum Op {
     ADD, // +
     SUB, // -
@@ -19,7 +19,7 @@ pub enum Op {
 }
 
 /// Scoping rule for a value
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
 pub enum ValueRel {
     Global,
     Local,
@@ -27,14 +27,14 @@ pub enum ValueRel {
     Capture, // Captured by closure
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
 pub enum CompareJumpKind {
     ISZERO,    // jump if operand is zero
     ISNONZERO, // jump if operand is non-zero
 }
 
 /// Builtin functions
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
 pub enum Builtin {
     Lread,
     Lwrite,
@@ -44,7 +44,7 @@ pub enum Builtin {
 }
 
 /// Pattern matching kind
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
 pub enum PattKind {
     /// Tests whether the two operands are both strings and
     /// store the same bytes.
@@ -71,7 +71,7 @@ pub struct CapturedVar {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
 pub enum Instruction {
     NOP,
     /// Marks the end of the procedure definition. When executed
@@ -146,14 +146,14 @@ pub enum Instruction {
     /// Calls a function with 𝑛 arguments. The bytecode for the
     /// function begins at 𝑙 (given as an offset from the start of the byte
     /// code). Pushes the returned value onto the stack.
-    /// OR calls a builtin function.
     CALL {
-        offset: Option<i32>,
-        n: Option<i32>,
-        /// Name of the builtin function
-        /// "Lread", "Lwrite", "Llength", "Lstring"
-        name: Option<Builtin>,
-        builtin: bool,
+        offset: i32,
+        n: i32,
+    },
+    /// calls a builtin function.
+    CALLBUILTIN {
+        name: Builtin,
+        n: i32,
     },
     /// Calls a closure with 𝑛 arguments. The first
     /// operand must be the closure, followed by the arguments. Pushes
@@ -326,20 +326,14 @@ impl Instruction {
             Instruction::STORE { rel, index } => format!("STORE {} {}", rel, index),
             Instruction::LOAD { rel, index } => format!("LOAD {} {}", rel, index),
             Instruction::LOADREF { rel, index } => format!("LDA {} {}", rel, index),
-            Instruction::CALL {
-                offset,
-                n,
-                name,
-                builtin: _,
-            } => {
-                if let Some(name) = name {
-                    if let Some(n) = n {
-                        format!("CALL {:#?} {}", name, n)
-                    } else {
-                        format!("CALL {:#?}", name)
-                    }
+            Instruction::CALL { offset, n } => {
+                format!("CALL {} {}", offset, n)
+            }
+            Instruction::CALLBUILTIN { name, n } => {
+                if let Builtin::Barray = name {
+                    format!("CALLB {:#?} {}", name, n)
                 } else {
-                    format!("CALL {} {}", offset.unwrap(), n.unwrap())
+                    format!("CALL {:#?}", name)
                 }
             }
             Instruction::CALLC { arity } => format!("CALLC {}", arity),

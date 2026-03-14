@@ -740,3 +740,269 @@ Instruction::BEGIN {
         return Err(InterpreterError::StackOverflow);
     }
 ```
+
+# Fixes pt2
+
+## Interpreter
+
+### Allocations pt2 
+
+```
+Не знаю способа избавиться от отведений памяти в Rust'е, кроме как выключив библиотеку std и далее все писать вручную непохожим на Rust образом. Отсутствие отведений в трассе показыввет лишь, что их не было при данном прогоне. Никакое количество прогонов не гарантирует полного покрытия.
+```
+
+- Changes:
+```rust
+// in lib.rs:
+#![no_std]
+```
+
+```rust
+// in interpreter.rs:
+#[repr(align(16))]
+struct OperandStack([Object; MAX_OPERAND_STACK_SIZE]);
+
+pub struct Interpreter {
+    operand_stack: OperandStack, // <- not a vector
+    operand_stack_len: usize,
+    frame_pointer: usize,
+    // Bytefile decoder
+    decoder: Decoder,
+    /// Code section length
+    code_section_len: usize,
+    /// Globals length
+    global_areas_size: usize,
+}
+```
+
+### Globals are not tracked by runtime
+
+```
+globals: Vec<Object>, кстати, тоже работать не может
+```
+
+- Changes:
+```rust
+// Globals now are part of operand stack:
+pub fn new... {
+    ...
+    // Put globals at the start of operand stack
+    let global_areas_size = decoder.bf.global_area_size as usize;
+    for i in 0..global_areas_size {
+        operand_stack.0[i] = Object::new_empty();
+    }
+    ...
+}
+```
+
+### Argument collection:
+
+```
+Нет, статические массивы до максимума длины тоже не подойдут. Найдите способ обойтись без них.
+```
+
+- Changes:
+```rust
+// Take array building for example:
+Builtin::Barray => unsafe {
+    let length =
+        n.ok_or(InterpreterError::InvalidLengthForArray)? as usize;
+    
+    // NEW: now we just borrow the stack elements directly
+    //      no allocation needed, that is just a slice of the operand stack
+    let borrow_operand_stack_elements = &mut self.operand_stack.0
+        [self.operand_stack_len - length + 1..=self.operand_stack_len];
+    let array = new_array(borrow_operand_stack_elements);
+
+    // remove args
+    for _ in 0..length {
+        self.pop()?;
+    }
+
+    self.push(
+        Object::try_from(array)
+            .map_err(|_| InterpreterError::InvalidObjectPointer)?,
+    )?;
+},
+```
+
+### Regressions with `no_std`
+
+- Lamarik: [see here](regression_no_std_lamarik)
+- Lamarifyer: [see here](regression_no_std_lamarifyer)
+
+## Analyzer
+
+### Public symbols checks
+
+```
+Проверяете ли вы корректность смещений публичных символов? 
+```
+
+- Changed:
+```rust
+// In bytefile parsing:
+// Check public symbols offsets are within bounds
+for (s_index, offset) in &public_symbols {
+    if *offset >= code_section.len() as u32 {
+        return Err(BytefileError::InvalidPublicSymbolOffset(
+            *offset,
+            code_section.len() as u32,
+        ));
+    }
+
+    if *s_index >= string_table.len() as u32 {
+        return Err(BytefileError::InvalidStringIndexInStringTable);
+    }
+}
+```
+
+### Skip already visited offsets in public symbols
+
+```
+Что, если многие публичные символы ссылаются на одно смещение? Не следует ли перед добавлением элемента в очередь всегда проверять, не помечен ли он, и если помечен, сразу помечать и потом помещать в очередь? 
+```
+
+- Changes:
+```rust
+// In verifyer.rs:
+let add_to_worklist = |offset: u32, list: &mut VecDeque<u32>| {
+    if !list.contains(&offset) {
+        list.push_back(offset);
+    }
+};
+
+// Add public symbols to the worklist
+for (_, offset) in &self.decoder.bf.public_symbols {
+    add_to_worklist(*offset, &mut worklist);
+}
+```
+
+### Unnecessary deduplication
+
+```
+А зачем тут dedup? 
+addresses.dedup()
+```
+
+- Changes:
+```rust
+// In verifyer.rs added checks so we dont need dedup anymore:
+// example
+let add_to_worklist = |offset: u32, list: &mut VecDeque<u32>| {
+    if !list.contains(&offset) {
+        list.push_back(offset);
+    }
+};
+
+if let Some(offset) = Analyzer::get_call_offset(&instr) {
+    add_to_worklist(offset as u32, &mut worklist);
+}
+```
+
+### HashMap is too expensive
+
+```
+Ваши структуры, например, хеш-таблицы потребляют очень много памяти. У каждого отдельного блока в куче заголовок 4 слова.
+```
+
+Changed HashMap to Vec
+
+This halves the memory usage.
+
+- Changes:
+```rust
+// In analyzer.rs:
+pub struct Frequency {
+    frequency_single: Vec<(Instruction, u32)>,
+    frequency_double: Vec<(Instruction, Instruction, u32)>,
+}
+```
+
+### Linear search
+
+```
+Нет, многократно повторяемый линейный поиск чего-либо не может быть решением для массивов из миллиарда элементов.  
+```
+
+Chaged the whole strategy, now we:
+1. Iterate over reachable addresses
+1.1. Always count occurrences of a single opcode, keep their offsets
+1.2. If next instruction is not terminal and not a target, we keep offset of first instruction in that pair of instructions
+2. Iterate over found occurences, decode instructions at their offsets, find all other offsets with the same instruction, pop them from list and append their counts to the current count - i.e. collect frequencies
+
+- Changes: please take a look at `lamanyzer/src/analyzer.rs` [here](../lamanyzer/src/analyzer.rs)
+
+## Analyzer pt. 2
+
+### Linear check
+
+```
+Зачем вам проверка линейным перебором? Если проверять битик посещения инструкции, и если не выставлен, выставлять и помещать в вектор, алгоритм перестанет быть квадратичным.
+```
+
+- Changes:
+```rust
+
+let mut visited_offsets = BitVec::new();
+visited_offsets.resize(self.decoder.code_section_len, false);
+
+let add_to_worklist = |offset: u32, list: &mut VecDeque<u32>, visited: &mut BitVec| {
+    let offsetu = offset as usize;
+    if !visited[offsetu] {
+        visited.set(offsetu, true);
+        list.push_back(offset);
+    }
+};
+```
+
+### Requires too much memory
+
+```
+Ваша реализация потребляет больше 16х размер входного файла памяти.
+```
+
+1. Unnecessary `address` copy from reachable offsets
+
+- Changes:
+```rust
+// Do not collect reachable addresses into a vector
+// let mut addresses = reachables.iter_ones().collect::<Vec<_>>();
+// addresses.sort();
+// Instead, iterate over the bitset directly
+for address in reachables.iter_ones() {
+...
+}
+```
+
+2. Get rid of `occur_single` and `occur_double` vectors
+
+Instead, we:
+- Collect all reachable instructions (and seq. of 2) into a vector 
+- Sort by opcode 
+- Walk through the sorted vector to count duplicates, because we sorted by opcode we will walk the exact amount of instructions there really is
+
+So, we got rid of:
+```rust
+// Two huge vectors
+let mut occur_single = vec![0u32; self.decoder.code_section_len];
+let mut occur_double = vec![0u32; self.decoder.code_section_len];
+
+// Vector allocation at every search for duplicates
+let dups = occur_single
+    .iter()
+    .enumerate()
+    .filter(|(j, _)| {
+        *j != address && *j > 0 && single_reachables[*j] && {
+            self.decoder.ip = *j as usize;
+            let encoding = self.decoder.next::<u8>().unwrap();
+            let instr2 = self.decoder.decode(encoding).unwrap();
+            instr == instr2
+        }
+    })
+    .map(|(address, _)| address)
+    .collect::<Vec<usize>>();
+```
+
+Please take a look at `lamanyzer/src/analyzer.rs` [here](../lamanyzer/src/analyzer.rs)
+Sorted file example: [here](Sort.freq.txt)
