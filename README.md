@@ -8,6 +8,9 @@ It was abandoned due to rapid changes in Zig language, which made distributing t
 Also, the runtime has some quirks, which led to a number of bugs when translating and linking with Zig. Some functions 
 and logic were used in this Rust version almost verbatim.
 
+> [!WARNING]
+> If you are a student in this course (Virtualization and Virtual Machines) and you want to do these assignments in Rust - _don't_. It is just much much more painfull to do/get credits. You have been warned!
+
 # Usage
 
 ## Building
@@ -58,7 +61,7 @@ You can run a `*.bc` file with the following commands:
 
 ## Testing
 
-You can run internal tests, but be sure to enable the `runtime_checks` feature:
+You can run internal tests, but be sure to enable the `runtime_checks` feature and disable `no_std` in `lib.rs`:
 
 ```
 => cargo test --features "runtime_checks" -- --test-threads=1
@@ -94,28 +97,3 @@ Performance has been tested on a `perfomance/Sort.lama` file with default heap s
 | lama-rs  | Runtime checks    | 3m7.228ss     | 3m3.093s     | 0m3.201s     |
 | lama-rs  | Static checks     | 3m40.362s     | 3m35.054s     | 0m5.210s     |
 
-# Project structure
-```
-.
-├── build.rs
-├── Cargo.lock
-├── Cargo.toml
-├── doc
-│   ├── failures.log     <- expected regressions failures
-│   └── regression.txt   <- regression tests output
-├── README.md            <- you are here
-├── runtime-c            <- Lama runtime, from original repo
-│   ├── ...
-├── src
-│   ├── analyzer.rs      <- CFG builder, frequency analysis
-│   ├── bytecode.rs      <- Lama bytecode description
-│   ├── disasm.rs        <- Lama disassembler
-│   ├── frame.rs         <- Frame description
-│   ├── interpreter      
-│   │   └── tests.rs     <- interpreter internal tests
-│   ├── interpreter.rs   <- main interpreter logic
-│   ├── lib.rs           <- exposes runtime API
-│   ├── main.rs
-│   ├── numeric.rs       <- helper traits for numerics
-│   └── object.rs        <- operand stack object description
-```
