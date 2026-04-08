@@ -300,6 +300,84 @@ impl TryFrom<u8> for Builtin {
     }
 }
 
+impl TryFrom<u8> for CompareJumpKind {
+    type Error = ();
+
+    fn try_from(subopcode: u8) -> Result<Self, Self::Error> {
+        match subopcode {
+            0x0 => Ok(CompareJumpKind::ISZERO),
+            0x1 => Ok(CompareJumpKind::ISNONZERO),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<&Op> for &i32 {
+    fn from(op: &Op) -> Self {
+        match op {
+            Op::ADD => &0,
+            Op::SUB => &1,
+            Op::MUL => &2,
+            Op::DIV => &3,
+            Op::MOD => &4,
+            Op::LT => &5,
+            Op::LEQ => &6,
+            Op::GT => &7,
+            Op::GEQ => &8,
+            Op::EQ => &9,
+            Op::NEQ => &10,
+            Op::AND => &11,
+            Op::OR => &12,
+        }
+    }
+}
+
+impl From<&ValueRel> for &i32 {
+    fn from(rel: &ValueRel) -> Self {
+        match rel {
+            ValueRel::Global => &1,
+            ValueRel::Local => &2,
+            ValueRel::Arg => &3,
+            ValueRel::Capture => &4,
+        }
+    }
+}
+
+impl From<&Builtin> for &i32 {
+    fn from(builtin: &Builtin) -> Self {
+        match builtin {
+            Builtin::Lread => &1,
+            Builtin::Lwrite => &2,
+            Builtin::Llength => &3,
+            Builtin::Lstring => &4,
+            Builtin::Barray => &5,
+        }
+    }
+}
+
+impl From<&CompareJumpKind> for &i32 {
+    fn from(jump_kind: &CompareJumpKind) -> Self {
+        match jump_kind {
+            CompareJumpKind::ISZERO => &1,
+            CompareJumpKind::ISNONZERO => &2,
+        }
+    }
+}
+
+impl From<&PattKind> for &i32 {
+    fn from(kind: &PattKind) -> Self {
+        match kind {
+            PattKind::BothAreStr => &1,
+            PattKind::IsStr => &2,
+            PattKind::IsArray => &3,
+            PattKind::IsSExp => &4,
+            PattKind::IsRef => &5,
+            PattKind::IsVal => &6,
+            PattKind::IsLambda => &7,
+        }
+    }
+}
+
 impl std::fmt::Display for ValueRel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -353,5 +431,25 @@ impl Instruction {
             Instruction::ARRAY { n } => format!("ARRAY {}", n),
             Instruction::HALT => String::from("HALT"),
         }
+    }
+
+    pub fn discriminant(&self) -> u8 {
+        // SAFETY: Because `Self` is marked `repr(u8)`, its layout is a `repr(C)` `union`
+        // between `repr(C)` structs, each of which has the `u8` discriminant as its first
+        // field, so we can read the discriminant without offsetting the pointer.
+        unsafe { *<*const _>::from(self).cast::<u8>() }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn discriminant() {
+        assert_eq!(Instruction::NOP.discriminant(), 0);
+        assert_eq!(Instruction::BINOP {op: Op::ADD}.discriminant(), 3);
+        assert_eq!(Instruction::BINOP {op: Op::SUB}.discriminant(), 3);
+        assert_eq!(Instruction::ARRAY {n: 10}.discriminant(), 28);
     }
 }
