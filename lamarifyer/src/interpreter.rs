@@ -138,14 +138,6 @@ impl Interpreter {
             let encoding = self.decoder.next::<u8>()?;
             let instr = self.decoder.decode(encoding)?;
 
-            // HACK: if we encounter END instruction, while in frame 0
-            //       (a.k.a main function) we exit the interpreter
-            // if let Instruction::END = instr
-            //     && self.frame_pointer == self.global_areas_size
-            // {
-            //     return Ok(());
-            // }
-
             DISPATCH_TABLE[instr.discriminant() as usize](self, instr.clone()).map_err(
                 |e| -> RunError {
                     let global_offset = core::mem::size_of::<i32>()
@@ -163,59 +155,6 @@ impl Interpreter {
         }
 
         Ok(())
-    }
-
-    /// Evaluate a decoded instruction
-    fn eval_next(&mut self, _: Instruction) -> Result<(), InterpreterError> {
-        let encoding = self.decoder.next::<u8>()?;
-        let instr = self.decoder.decode(encoding)?;
-
-        // // HACK: if we encounter END instruction, while in frame 0
-        // //       (a.k.a main function) we exit the interpreter
-        // if let Instruction::END = instr
-        //     && self.frame_pointer == self.global_areas_size
-        // {
-        //     return Ok(());
-        // }
-
-        become DISPATCH_TABLE[instr.discriminant() as usize](self, instr)
-
-        // match instr {
-        //     Instruction::NOP => self.eval_nop(&0, &0)?,
-        //     Instruction::BINOP { op } => self.eval_binop(op.into(), &0)?,
-        //     Instruction::CONST { value: index } => self.eval_const(index, &0)?,
-        //     Instruction::STRING { index } => self.eval_string(index, &0)?,
-        //     Instruction::SEXP { s_index, n_members } => self.eval_sexp(s_index, n_members)?,
-        //     Instruction::JMP { offset } => self.eval_jmp(offset, &0)?,
-        //     Instruction::STA => self.eval_sta(&0, &0)?,
-        //     Instruction::STI => self.eval_sti(&0, &0)?,
-        //     Instruction::CBEGIN {
-        //         args: payload,
-        //         locals,
-        //     } => self.eval_cbegin(payload, locals)?,
-        //     Instruction::BEGIN {
-        //         args: payload,
-        //         locals,
-        //     } => self.eval_begin(payload, locals)?,
-        //     Instruction::END | Instruction::RET => self.eval_end(&0, &0)?,
-        //     Instruction::STORE { rel, index } => self.eval_store(rel.into(), index)?,
-        //     Instruction::LOAD { rel, index } => self.eval_load(rel.into(), index)?,
-        //     Instruction::DROP => self.eval_drop(&0, &0)?,
-        //     Instruction::DUP => self.eval_dup(&0, &0)?,
-        //     Instruction::SWAP => self.eval_swap(&0, &0)?,
-        //     Instruction::LINE { n } => {}
-        //     Instruction::CALL { offset, n } => self.eval_call(offset, &0)?,
-        //     Instruction::CALLBUILTIN { name, n } => self.eval_call_builtin(name.into(), n)?,
-        //     Instruction::CJMP { offset, kind } => self.eval_cjmp(offset, kind.into())?,
-        //     Instruction::ELEM => self.eval_elem(&0, &0)?,
-        //     Instruction::ARRAY { n } => self.eval_array(n, &0)?,
-        //     Instruction::TAG { index, n } => self.eval_tag(index, n)?,
-        //     Instruction::FAIL { line, column } => self.eval_fail(line, column)?,
-        //     Instruction::CLOSURE { offset, arity } => self.eval_closure(offset, arity)?,
-        //     Instruction::CALLC { arity } => self.eval_callc(arity, &0)?,
-        //     Instruction::PATT { kind } => self.eval_patt(kind.into(), &0)?,
-        //     Instruction::LOADREF { .. } | Instruction::HALT => self.eval_load_ref(&0, &0)?,
-        // };
     }
 
     fn eval_halt(&mut self, _: Instruction) -> Result<(), InterpreterError> {
@@ -986,8 +925,7 @@ impl Interpreter {
 
         // if we encounter END instruction, while in frame 0
         // (a.k.a main function) we exit the interpreter
-        if self.frame_pointer == self.global_areas_size
-        {
+        if self.frame_pointer == self.global_areas_size {
             return Ok(());
         }
 
