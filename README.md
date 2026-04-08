@@ -45,8 +45,8 @@ This project is split into separate tools:
 
 - `lamacore` - a library for shared function on Lama bytecode files and it's descriptions, not an executable
 - `lamanyzer` - analysis of bytefile for instruction frequencys
-- `lamarik` - **basic interpreter** with runtime checks
-- `lamarifyer` - **direct threaded code interpreter** with static analysis of bytefile before interpretation
+- `lamarik` - **basic (switch/match) interpreter** with runtime checks
+- `lamarifyer` - **indirect call table interpreter** with static analysis of bytefile before interpretation
 
 ### Running
 
@@ -99,7 +99,7 @@ linux command.
 | lamac -i              | -                    | -                 | 8m37.099s     | 8m30.830s     | 0m4.446s     |
 | lamarik               | basic interpretation | Runtime checks    | 3m7.228ss     | 3m3.093s      | 0m3.201s     |
 | lamarifyer            | basic interpretation | Static checks     | 3m40.362s     | 3m35.054s     | 0m5.210s     |
-| lamarifyer            | direct threaded code | Static checks     | 3m4.245s      | 2m58.469s     | 0m5.661s     |
-| lamarifyer + LTO      | direct threaded code | Static checks     | 2m50.739s     | 2m44.975s     | 0m5.583s     |
-| lamarifyer + LTO + O3 | direct threaded code | Static checks     | 1m34.020s     | 1m28.600s     | 0m5.346s     |
+| lamarifyer            | call table dispacth  | Static checks     | 3m4.245s      | 2m58.469s     | 0m5.661s     |
+| lamarifyer + LTO      | call table dispacth  | Static checks     | 2m50.739s     | 2m44.975s     | 0m5.583s     |
+| lamarifyer + LTO + O3 | call table dispacth  | Static checks     | 1m34.020s     | 1m28.600s     | 0m5.346s     |
 
