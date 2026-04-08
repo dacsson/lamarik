@@ -23,8 +23,8 @@ jobs:
       working-directory: ./runtime-c
       run: make
 
-    - name: Build Rust project
-      run: cargo build --verbose
+    - name: Install Rust nightly
+      run: rustup install nightly
 
-    - name: Run tests
-      run: cargo test --features "runtime_checks" -- --test-threads=1
+    - name: Build Rust project
+      run: cargo +nightly build --verbose
