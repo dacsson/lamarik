@@ -1,8 +1,13 @@
 # What's this?
 
-This is a [Lama](https://github.com/PLTools/Lama) bytecode interpreters for Virtual Machines course. Done entirely in
-Rust and mostly uses `no_std` environment.
+<img align="left" src="doc/logo_lamarik.svg" width="150">
 
+This is a [LaMa](https://github.com/PLTools/Lama) bytecode interpreters for Virtual Machines course. 
+
+Features basic interpretation, bytecode analysis and optimized interpreter which beats LaMa stack interpreter on `Sort` benchmark.
+
+Done entirely in Rust and mostly uses `no_std` environment.
+<br></br>
 > [!NOTE]
 > There is also a [Zig version](https://github.com/dacsson/LamaRpreter), which is 70-80% ready.
 > It was abandoned due to rapid changes in Zig language, which made distributing the project that much harder.
