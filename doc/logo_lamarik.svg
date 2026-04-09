@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2d1b69;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a0a3e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="llama" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f4a460;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d2691e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c4dff;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#448aff;stop-opacity:0.3" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="245" fill="url(#bg)" stroke="#7c4dff" stroke-width="4"/>
+
+  <!-- Subtle glow behind llama -->
+  <ellipse cx="260" cy="300" rx="140" ry="120" fill="url(#glow)" opacity="0.3"/>
+
+  <!-- Llama body -->
+  <ellipse cx="270" cy="330" rx="95" ry="65" fill="url(#llama)"/>
+
+  <!-- Llama neck -->
+  <path d="M 230 300 Q 215 230 210 180 Q 208 160 220 155 Q 240 148 250 165 Q 260 200 265 280"
+        fill="url(#llama)" stroke="#c0762e" stroke-width="1.5"/>
+
+  <!-- Llama head -->
+  <ellipse cx="215" cy="152" rx="32" ry="24" fill="url(#llama)" transform="rotate(-10, 215, 152)"/>
+
+  <!-- Llama snout -->
+  <ellipse cx="192" cy="158" rx="16" ry="12" fill="#e8b87a" transform="rotate(-5, 192, 158)"/>
+
+  <!-- Llama eye -->
+  <circle cx="210" cy="145" r="5" fill="#1a0a3e"/>
+  <circle cx="211" cy="143.5" r="1.8" fill="white"/>
+
+  <!-- Llama ear left -->
+  <path d="M 210 135 Q 195 108 200 100 Q 205 95 212 110 Q 215 125 215 135"
+        fill="url(#llama)" stroke="#c0762e" stroke-width="1"/>
+
+  <!-- Llama ear right -->
+  <path d="M 225 132 Q 225 105 230 97 Q 236 92 238 108 Q 237 122 232 132"
+        fill="url(#llama)" stroke="#c0762e" stroke-width="1"/>
+
+  <!-- Llama legs -->
+  <rect x="200" y="375" width="18" height="55" rx="6" fill="#c0762e"/>
+  <rect x="235" y="380" width="18" height="50" rx="6" fill="#c0762e"/>
+  <rect x="300" y="378" width="18" height="52" rx="6" fill="#c0762e"/>
+  <rect x="335" y="375" width="18" height="55" rx="6" fill="#c0762e"/>
+
+  <!-- Llama hooves -->
+  <rect x="197" y="426" width="24" height="8" rx="4" fill="#8B4513"/>
+  <rect x="232" y="426" width="24" height="8" rx="4" fill="#8B4513"/>
+  <rect x="297" y="426" width="24" height="8" rx="4" fill="#8B4513"/>
+  <rect x="332" y="426" width="24" height="8" rx="4" fill="#8B4513"/>
+
+  <!-- Llama tail -->
+  <path d="M 360 300 Q 380 285 385 295 Q 382 310 365 315"
+        fill="#d2691e" stroke="#c0762e" stroke-width="1"/>
+
+  <!-- Code brackets floating - left -->
+  <text x="85" y="200" font-family="monospace" font-size="48" font-weight="bold" fill="#7c4dff" opacity="0.8">{</text>
+
+  <!-- Code brackets floating - right -->
+  <text x="390" y="250" font-family="monospace" font-size="48" font-weight="bold" fill="#7c4dff" opacity="0.8">}</text>
+
+  <!-- Lambda symbol on llama -->
+  <text x="255" y="345" font-family="serif" font-size="50" font-weight="bold" fill="#2d1b69" opacity="0.6" text-anchor="middle">&#955;</text>
+
+  <!-- Terminal prompt chevron -->
+  <text x="105" y="350" font-family="monospace" font-size="36" font-weight="bold" fill="#4fc3f7" opacity="0.7">&#62;_</text>
+
+  <!-- Small floating code dots -->
+  <circle cx="400" cy="170" r="4" fill="#4fc3f7" opacity="0.5"/>
+  <circle cx="415" cy="185" r="3" fill="#7c4dff" opacity="0.5"/>
+  <circle cx="395" cy="195" r="3.5" fill="#4fc3f7" opacity="0.4"/>
+
+  <circle cx="120" cy="280" r="3" fill="#7c4dff" opacity="0.4"/>
+  <circle cx="108" cy="295" r="4" fill="#4fc3f7" opacity="0.5"/>
+  <circle cx="125" cy="305" r="2.5" fill="#7c4dff" opacity="0.3"/>
+
+  <!-- Text: lamarik -->
+  <text x="256" y="478" font-family="monospace" font-size="38" font-weight="bold" fill="#e0e0e0" text-anchor="middle" letter-spacing="3">lamarik</text>
+
+  <!-- Small smile on llama -->
+  <path d="M 186 164 Q 192 170 198 164" fill="none" stroke="#8B4513" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
